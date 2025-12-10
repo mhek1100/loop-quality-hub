@@ -3,7 +3,17 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import Dashboard from "./pages/Dashboard";
+import KpiDashboard from "./pages/KpiDashboard";
+import Submissions from "./pages/Submissions";
+import SubmissionDetail from "./pages/SubmissionDetail";
+import QuestionnaireEditor from "./pages/QuestionnaireEditor";
+import Questionnaires from "./pages/Questionnaires";
+import Pipeline from "./pages/Pipeline";
+import Users from "./pages/Users";
+import AuditLog from "./pages/AuditLog";
+import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -15,8 +25,18 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route element={<DashboardLayout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/kpi" element={<KpiDashboard />} />
+            <Route path="/submissions" element={<Submissions />} />
+            <Route path="/submissions/:id" element={<SubmissionDetail />} />
+            <Route path="/submissions/:id/indicator/:indicatorCode" element={<QuestionnaireEditor />} />
+            <Route path="/questionnaires" element={<Questionnaires />} />
+            <Route path="/pipeline" element={<Pipeline />} />
+            <Route path="/users" element={<Users />} />
+            <Route path="/audit" element={<AuditLog />} />
+            <Route path="/help" element={<Help />} />
+          </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

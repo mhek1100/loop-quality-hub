@@ -531,82 +531,122 @@ export const syncJobs: SyncJob[] = [
 const generateStableKpiData = (): KpiData[] => {
   const kpiData: KpiData[] = [];
   
-  // Stable seed values for each indicator-facility combination
-  const seedValues: Record<string, Record<string, number>> = {
-    "PI": { "fac-001": 23.4, "fac-002": 18.7, "fac-003": 21.2 },
-    "RP": { "fac-001": 8.2, "fac-002": 12.5, "fac-003": 6.8 },
-    "UPWL": { "fac-001": 15.6, "fac-002": 11.3, "fac-003": 14.1 },
-    "FALLS": { "fac-001": 32.8, "fac-002": 28.4, "fac-003": 25.9 },
-    "MED": { "fac-001": 5.3, "fac-002": 7.1, "fac-003": 4.8 },
-    "ADL": { "fac-001": 42.1, "fac-002": 38.5, "fac-003": 45.2 },
-    "INC": { "fac-001": 28.7, "fac-002": 31.2, "fac-003": 26.4 },
-    "HOSP": { "fac-001": 12.4, "fac-002": 9.8, "fac-003": 11.6 },
-    "WF": { "fac-001": 87.3, "fac-002": 92.1, "fac-003": 85.6 },
-    "CE": { "fac-001": 78.5, "fac-002": 82.3, "fac-003": 76.8 },
-    "QOL": { "fac-001": 81.2, "fac-002": 79.6, "fac-003": 83.4 },
-    "AH": { "fac-001": 34.5, "fac-002": 38.2, "fac-003": 31.7 },
-    "EN": { "fac-001": 22.8, "fac-002": 25.4, "fac-003": 20.1 },
-    "LO": { "fac-001": 18.3, "fac-002": 15.7, "fac-003": 19.8 }
-  };
-
-  // Trend data showing varied patterns - some improving, some worsening
-  const trendData: Record<string, number[]> = {
-    "PI": [10.5, 9.8, 9.2, 8.8, 8.5, 8.2, 7.9, 8.2],      // Getting worse (increasing is bad)
-    "RP": [14.2, 13.5, 13.1, 12.8, 12.6, 12.5, 12.3, 12.5], // Getting worse (increasing is bad)
-    "UPWL": [17.2, 16.8, 16.1, 15.9, 15.8, 15.6, 15.3, 15.3], // Stable
-    "FALL": [28.2, 27.1, 26.5, 25.8, 25.2, 24.8, 24.6, 24.6], // Improving (decreasing is good)
-    "MM": [45.2, 44.5, 43.8, 43.1, 42.5, 42.1, 41.8, 42.1],  // Getting slightly worse
-    "ADL": [20.5, 19.8, 19.2, 18.8, 18.5, 18.2, 17.9, 18.4], // Getting worse (increasing is bad)
-    "IC": [24.2, 23.5, 22.8, 22.3, 21.8, 21.5, 22.1, 22.3],  // Getting slightly worse
-    "HP": [16.2, 15.8, 15.2, 14.8, 14.5, 14.2, 13.9, 14.8],  // Getting worse
-    "WF": [14.5, 15.2, 15.8, 16.1, 16.4, 16.2, 15.9, 16.2],  // Getting slightly worse (higher turnover is bad)
-    "CE": [82.1, 83.5, 84.8, 85.6, 86.4, 87.3, 87.5, 87.5],  // Improving (higher is good)
-    "QOL": [78.8, 79.5, 80.2, 81.2, 81.8, 82.3, 82.3, 82.3], // Stable/improving
-    "AH": [74.2, 75.1, 76.5, 77.8, 78.2, 78.6, 78.6, 78.6],  // Stable/improving
-    "EN": [72.5, 73.2, 74.1, 75.5, 76.1, 76.8, 77.2, 77.2],  // Improving
-    "LO": [68.2, 69.8, 71.5, 73.1, 74.7, 75.3, 75.8, 75.8]   // Improving
-  };
-
-  // Previous quarter values for calculating real deltas
-  const previousValues: Record<string, Record<string, number>> = {
-    "PI": { "fac-001": 7.9, "fac-002": 8.4, "fac-003": 8.0 },
-    "RP": { "fac-001": 12.3, "fac-002": 12.8, "fac-003": 12.1 },
-    "UPWL": { "fac-001": 15.3, "fac-002": 15.5, "fac-003": 15.1 },
-    "FALL": { "fac-001": 25.2, "fac-002": 24.8, "fac-003": 23.9 },
-    "MM": { "fac-001": 41.8, "fac-002": 42.5, "fac-003": 41.5 },
-    "ADL": { "fac-001": 17.9, "fac-002": 18.8, "fac-003": 18.5 },
-    "IC": { "fac-001": 21.5, "fac-002": 22.8, "fac-003": 21.2 },
-    "HP": { "fac-001": 13.9, "fac-002": 15.2, "fac-003": 14.5 },
-    "WF": { "fac-001": 15.9, "fac-002": 16.8, "fac-003": 15.5 },
-    "CE": { "fac-001": 84.2, "fac-002": 82.5, "fac-003": 85.8 },
-    "QOL": { "fac-001": 80.1, "fac-002": 78.5, "fac-003": 81.2 },
-    "AH": { "fac-001": 76.2, "fac-002": 74.8, "fac-003": 77.5 },
-    "EN": { "fac-001": 74.5, "fac-002": 72.2, "fac-003": 75.8 },
-    "LO": { "fac-001": 72.8, "fac-002": 70.5, "fac-003": 73.2 }
-  };
-
-  const quarters = ["Q1 2024", "Q2 2024", "Q3 2024", "Q4 2024", "Q1 2025", "Q2 2025"];
+  // All quarters we want to generate data for
+  const allPeriods = [
+    { id: "rp-q1-2024", label: "Q1 2024" },
+    { id: "rp-q2-2024", label: "Q2 2024" },
+    { id: "rp-q3-2024", label: "Q3 2024" },
+    { id: "rp-q4-2024", label: "Q4 2024" },
+    { id: "rp-q1-2025", label: "Q1 2025" },
+    { id: "rp-q2-2025", label: "Q2 2025" },
+    { id: "rp-q3-2025", label: "Q3 2025" },
+    { id: "rp-q4-2025", label: "Q4 2025" },
+  ];
   
-  facilities.forEach(facility => {
-    INDICATORS.forEach(indicator => {
-      const currentValue = seedValues[indicator.code]?.[facility.id] || 25;
-      const prevValue = previousValues[indicator.code]?.[facility.id] || currentValue * 0.95;
-      const delta = currentValue - prevValue;
-      const deltaPercent = (delta / prevValue) * 100;
-      const trend = trendData[indicator.code] || [20, 21, 22, 23, 24, 25];
-      
-      kpiData.push({
-        indicatorCode: indicator.code,
-        facilityId: facility.id,
-        periodId: "rp-q2-2025",
-        value: Number(currentValue.toFixed(1)),
-        previousValue: Number(prevValue.toFixed(1)),
-        delta: Number(delta.toFixed(1)),
-        deltaPercent: Number(deltaPercent.toFixed(1)),
-        trend,
-        trendPeriods: quarters,
-        unit: indicator.code === "WF" ? "%" : "per 1,000 bed days",
-        isComplete: facility.id !== "fac-002" || indicator.code !== "PI"
+  const quarterLabels = allPeriods.map(p => p.label);
+  
+  // Historical data for each indicator across all 8 quarters
+  // Format: [Q1-2024, Q2-2024, Q3-2024, Q4-2024, Q1-2025, Q2-2025, Q3-2025, Q4-2025]
+  const historicalData: Record<string, Record<string, number[]>> = {
+    "PI": { 
+      "fac-001": [10.5, 9.8, 9.2, 8.8, 8.5, 8.2, 7.9, 8.2],
+      "fac-002": [11.2, 10.5, 10.1, 9.6, 9.2, 8.8, 8.5, 8.7],
+      "fac-003": [9.8, 9.2, 8.8, 8.5, 8.1, 7.8, 7.5, 7.6]
+    },
+    "RP": { 
+      "fac-001": [14.2, 13.5, 13.1, 12.8, 12.6, 12.5, 12.3, 12.5],
+      "fac-002": [15.1, 14.2, 13.8, 13.4, 13.1, 12.8, 12.5, 12.8],
+      "fac-003": [13.5, 12.8, 12.4, 12.1, 11.8, 11.5, 11.2, 11.4]
+    },
+    "UPWL": { 
+      "fac-001": [17.2, 16.8, 16.1, 15.9, 15.8, 15.6, 15.3, 15.3],
+      "fac-002": [18.5, 17.8, 17.2, 16.8, 16.5, 16.2, 15.8, 15.9],
+      "fac-003": [16.1, 15.6, 15.2, 14.9, 14.6, 14.3, 14.1, 14.2]
+    },
+    "FALL": { 
+      "fac-001": [28.2, 27.1, 26.5, 25.8, 25.2, 24.8, 24.6, 24.6],
+      "fac-002": [30.5, 29.2, 28.5, 27.8, 27.2, 26.8, 26.4, 26.2],
+      "fac-003": [26.8, 25.5, 24.8, 24.2, 23.8, 23.4, 23.1, 22.8]
+    },
+    "MM": { 
+      "fac-001": [45.2, 44.5, 43.8, 43.1, 42.5, 42.1, 41.8, 42.1],
+      "fac-002": [48.5, 47.2, 46.5, 45.8, 45.2, 44.8, 44.2, 44.5],
+      "fac-003": [42.8, 42.1, 41.5, 40.9, 40.4, 40.1, 39.8, 40.2]
+    },
+    "ADL": { 
+      "fac-001": [20.5, 19.8, 19.2, 18.8, 18.5, 18.2, 17.9, 18.4],
+      "fac-002": [22.1, 21.2, 20.5, 20.1, 19.8, 19.4, 19.1, 19.5],
+      "fac-003": [18.8, 18.2, 17.8, 17.4, 17.1, 16.8, 16.5, 16.8]
+    },
+    "IC": { 
+      "fac-001": [24.2, 23.5, 22.8, 22.3, 21.8, 21.5, 22.1, 22.3],
+      "fac-002": [26.5, 25.8, 25.1, 24.5, 24.1, 23.8, 24.2, 24.5],
+      "fac-003": [22.1, 21.5, 21.1, 20.6, 20.2, 19.8, 20.2, 20.4]
+    },
+    "HP": { 
+      "fac-001": [16.2, 15.8, 15.2, 14.8, 14.5, 14.2, 13.9, 14.8],
+      "fac-002": [18.5, 17.8, 17.2, 16.8, 16.4, 16.1, 15.8, 16.5],
+      "fac-003": [14.8, 14.2, 13.8, 13.4, 13.1, 12.8, 12.5, 13.2]
+    },
+    "WF": { 
+      "fac-001": [18.5, 17.8, 17.2, 16.8, 16.4, 16.2, 15.9, 16.2],
+      "fac-002": [20.2, 19.5, 18.8, 18.2, 17.8, 17.4, 17.1, 17.5],
+      "fac-003": [16.8, 16.2, 15.8, 15.4, 15.1, 14.8, 14.5, 14.8]
+    },
+    "CE": { 
+      "fac-001": [82.1, 83.5, 84.8, 85.6, 86.4, 87.3, 87.5, 87.5],
+      "fac-002": [78.5, 80.2, 81.5, 82.8, 83.8, 84.5, 85.2, 85.8],
+      "fac-003": [84.2, 85.5, 86.8, 87.5, 88.2, 88.8, 89.2, 89.5]
+    },
+    "QOL": { 
+      "fac-001": [78.8, 79.5, 80.2, 81.2, 81.8, 82.3, 82.3, 82.3],
+      "fac-002": [75.5, 76.8, 78.1, 79.2, 80.1, 80.8, 81.2, 81.5],
+      "fac-003": [80.2, 81.5, 82.5, 83.2, 83.8, 84.2, 84.5, 84.8]
+    },
+    "AH": { 
+      "fac-001": [74.2, 75.1, 76.5, 77.8, 78.2, 78.6, 78.6, 78.6],
+      "fac-002": [70.5, 72.1, 73.8, 75.2, 76.5, 77.2, 77.8, 78.2],
+      "fac-003": [76.8, 77.5, 78.5, 79.5, 80.2, 80.8, 81.2, 81.5]
+    },
+    "EN": { 
+      "fac-001": [72.5, 73.2, 74.1, 75.5, 76.1, 76.8, 77.2, 77.2],
+      "fac-002": [68.8, 70.2, 71.8, 73.2, 74.5, 75.5, 76.2, 76.8],
+      "fac-003": [74.5, 75.5, 76.5, 77.8, 78.5, 79.2, 79.8, 80.2]
+    },
+    "LO": { 
+      "fac-001": [68.2, 69.8, 71.5, 73.1, 74.7, 75.3, 75.8, 75.8],
+      "fac-002": [64.5, 66.5, 68.5, 70.2, 72.1, 73.5, 74.5, 75.2],
+      "fac-003": [70.5, 72.2, 74.1, 75.8, 77.2, 78.1, 78.8, 79.2]
+    }
+  };
+  
+  // Generate data for each period, facility, and indicator
+  allPeriods.forEach((period, periodIndex) => {
+    facilities.forEach(facility => {
+      INDICATORS.forEach(indicator => {
+        const facilityHistory = historicalData[indicator.code]?.[facility.id];
+        const currentValue = facilityHistory?.[periodIndex] || 25;
+        const prevValue = periodIndex > 0 ? (facilityHistory?.[periodIndex - 1] || currentValue * 0.95) : currentValue;
+        const delta = currentValue - prevValue;
+        const deltaPercent = prevValue !== 0 ? (delta / prevValue) * 100 : 0;
+        
+        // For trend, show all historical values up to current period
+        const trendValues = facilityHistory?.slice(0, periodIndex + 1) || [currentValue];
+        const trendLabels = quarterLabels.slice(0, periodIndex + 1);
+        
+        kpiData.push({
+          indicatorCode: indicator.code,
+          facilityId: facility.id,
+          periodId: period.id,
+          value: Number(currentValue.toFixed(1)),
+          previousValue: Number(prevValue.toFixed(1)),
+          delta: Number(delta.toFixed(1)),
+          deltaPercent: Number(deltaPercent.toFixed(1)),
+          trend: trendValues,
+          trendPeriods: trendLabels,
+          unit: indicator.code === "WF" ? "%" : "per 1,000 bed days",
+          isComplete: !(facility.id === "fac-002" && indicator.code === "PI" && period.id === "rp-q4-2025")
+        });
       });
     });
   });

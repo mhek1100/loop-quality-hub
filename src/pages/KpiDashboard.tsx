@@ -33,7 +33,7 @@ import {
 
 const KpiDashboard = () => {
   const [selectedFacility, setSelectedFacility] = useState("all");
-  const [selectedPeriod, setSelectedPeriod] = useState("rp-q2-2025");
+  const [selectedPeriod, setSelectedPeriod] = useState("rp-q4-2025");
   const [selectedIndicator, setSelectedIndicator] = useState<IndicatorCode>("PI");
   
   const allKpiData = getAllKpiData();
@@ -116,11 +116,14 @@ const KpiDashboard = () => {
                 <SelectValue placeholder="Select period" />
               </SelectTrigger>
               <SelectContent>
-                {reportingPeriods.slice(0, 4).map(period => (
-                  <SelectItem key={period.id} value={period.id}>
-                    {period.quarter}
-                  </SelectItem>
-                ))}
+                <SelectItem value="rp-q4-2025">Q4 2025</SelectItem>
+                <SelectItem value="rp-q3-2025">Q3 2025</SelectItem>
+                <SelectItem value="rp-q2-2025">Q2 2025</SelectItem>
+                <SelectItem value="rp-q1-2025">Q1 2025</SelectItem>
+                <SelectItem value="rp-q4-2024">Q4 2024</SelectItem>
+                <SelectItem value="rp-q3-2024">Q3 2024</SelectItem>
+                <SelectItem value="rp-q2-2024">Q2 2024</SelectItem>
+                <SelectItem value="rp-q1-2024">Q1 2024</SelectItem>
               </SelectContent>
             </Select>
 

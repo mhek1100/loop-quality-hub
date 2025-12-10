@@ -140,16 +140,15 @@ const SubmissionDetail = () => {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs defaultValue="indicators-overview" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="indicators">Indicators</TabsTrigger>
+          <TabsTrigger value="indicators-overview">Indicators Overview</TabsTrigger>
           <TabsTrigger value="validation">Validation & Warnings</TabsTrigger>
           <TabsTrigger value="history">Submission History</TabsTrigger>
           <TabsTrigger value="fhir">Raw FHIR Payload</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6">
+        <TabsContent value="indicators-overview" className="space-y-6">
           {/* Summary Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Card>
@@ -178,87 +177,7 @@ const SubmissionDetail = () => {
             </Card>
           </div>
 
-          {/* Indicators Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Indicator Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {submission.questionnaires.map(q => {
-                  const indicator = getIndicatorByCode(q.indicatorCode);
-                  const warningsCount = q.questions.reduce((a, qu) => a + qu.warnings.length, 0);
-                  const errorsCount = q.questions.reduce((a, qu) => a + qu.errors.length, 0);
-                  
-                  return (
-                    <div 
-                      key={q.id}
-                      className="p-4 rounded-xl border border-border/50 hover:border-primary/30 transition-colors"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <IndicatorChip category={indicator?.category || "Clinical"} />
-                        <StatusBadge status={q.status} size="sm" />
-                      </div>
-                      <h3 className="font-medium text-sm">{q.indicatorName}</h3>
-                      <div className="flex items-center gap-2 mt-2">
-                        {errorsCount > 0 && (
-                          <span className="flex items-center gap-1 text-destructive text-xs">
-                            <AlertCircle className="h-3 w-3" />
-                            {errorsCount}
-                          </span>
-                        )}
-                        {warningsCount > 0 && (
-                          <span className="flex items-center gap-1 text-warning text-xs">
-                            <AlertTriangle className="h-3 w-3" />
-                            {warningsCount}
-                          </span>
-                        )}
-                        {errorsCount === 0 && warningsCount === 0 && (
-                          <span className="flex items-center gap-1 text-success text-xs">
-                            <CheckCircle className="h-3 w-3" />
-                            Valid
-                          </span>
-                        )}
-                      </div>
-                      <Button variant="ghost" size="sm" className="mt-3 w-full" asChild>
-                        <Link to={`/submissions/${submission.id}/indicator/${q.indicatorCode}`}>
-                          Open Questionnaire
-                        </Link>
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Timeline */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Activity Timeline</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {relatedLogs.slice(0, 5).map(log => {
-                  const user = getUserById(log.userId);
-                  return (
-                    <div key={log.id} className="flex gap-4">
-                      <div className="w-2 h-2 mt-2 rounded-full bg-primary" />
-                      <div className="flex-1">
-                        <p className="text-sm">{log.details}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {user?.name} • {new Date(log.timestamp).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="indicators">
+          {/* Indicators Table */}
           <Card>
             <CardContent className="p-0">
               <table className="w-full">
@@ -305,6 +224,31 @@ const SubmissionDetail = () => {
                   })}
                 </tbody>
               </table>
+            </CardContent>
+          </Card>
+
+          {/* Timeline */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Activity Timeline</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {relatedLogs.slice(0, 5).map(log => {
+                  const user = getUserById(log.userId);
+                  return (
+                    <div key={log.id} className="flex gap-4">
+                      <div className="w-2 h-2 mt-2 rounded-full bg-primary" />
+                      <div className="flex-1">
+                        <p className="text-sm">{log.details}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {user?.name} • {new Date(log.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

@@ -1,19 +1,10 @@
 // QI Questionnaire Types following FHIR structure
 // Hierarchy: Questionnaire → Section (Level 1) → SubSection (Level 2) → Question (Level 3)
 
-export type SectionCode = 
-  | "PI"   // Pressure Injuries
-  | "RP"   // Restrictive Practices
-  | "UPWL" // Unplanned Weight Loss
-  | "FMI"  // Falls and Major Injury
-  | "MM"   // Medication Management
-  | "ADL"  // Activities of Daily Living
-  | "IAD"  // Incontinence Care (Incontinence Associated Dermatitis)
-  | "HP"   // Hospitalisation
-  | "WF"   // Workforce
-  | "CEI"  // Consumer Experience
-  | "QOL"  // Quality of Life
-  | "AH";  // Allied Health
+// Using existing IndicatorCode from types.ts for backward compatibility
+import { IndicatorCode } from "../types";
+
+export type SectionCode = IndicatorCode;
 
 export type ResponseType = "integer" | "string" | "date" | "boolean";
 

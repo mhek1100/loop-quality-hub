@@ -54,6 +54,24 @@ const indicatorIcons: Record<IndicatorCode, React.ReactNode> = {
   LO: <PartyPopper className="h-4 w-4 text-pink-400" />,
 };
 
+// Define which indicators are "lower is better" (clinical/negative outcomes)
+// For these, a decrease is positive (green) and an increase is negative (red)
+const lowerIsBetterIndicators: IndicatorCode[] = [
+  "PI",   // Pressure Injuries - fewer is better
+  "RP",   // Restrictive Practices - fewer is better
+  "UPWL", // Unplanned Weight Loss - fewer is better
+  "FALL", // Falls - fewer is better
+  "MM",   // Medication Management (polypharmacy) - fewer is better
+  "ADL",  // ADL Decline - fewer is better
+  "IC",   // Incontinence Care issues - fewer is better
+  "HP",   // Hospitalisation - fewer is better
+  "WF",   // Workforce turnover - lower is better
+];
+
+// These indicators are "higher is better" (positive outcomes)
+// For these, an increase is positive (green) and a decrease is negative (red)
+// CE, QOL, AH, EN, LO - all experience/quality metrics where higher is better
+
 // Map indicator codes to descriptive text
 const indicatorDescriptions: Record<IndicatorCode, string> = {
   PI: "of residents with ≥1 pressure injury",
@@ -335,7 +353,17 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onClick }: KpiTileCard
   };
   
   const deltaValue = kpi ? Math.abs(kpi.deltaPercent) : 0;
-  const isPositive = kpi ? kpi.delta < 0 : false; // Lower is often better for clinical indicators
+  const isLowerBetter = lowerIsBetterIndicators.includes(indicator.code);
+  
+  // Determine if the change is positive (good) for this specific indicator
+  // For "lower is better" indicators: negative delta (decrease) is good
+  // For "higher is better" indicators: positive delta (increase) is good
+  const isPositiveChange = kpi 
+    ? (isLowerBetter ? kpi.delta < 0 : kpi.delta > 0)
+    : false;
+  
+  // Determine if the value went up or down for the arrow icon
+  const isIncreasing = kpi ? kpi.delta > 0 : false;
   
   return (
     <div
@@ -371,17 +399,22 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onClick }: KpiTileCard
       </p>
       
       {/* Delta comparison */}
-      {kpi && (
+      {kpi && deltaValue > 0 && (
         <div className={cn(
           "flex items-center gap-1 text-xs",
-          isPositive ? "text-success" : "text-destructive"
+          isPositiveChange ? "text-success" : "text-destructive"
         )}>
-          {isPositive ? (
-            <TrendingDown className="h-3 w-3" />
-          ) : (
+          {isIncreasing ? (
             <TrendingUp className="h-3 w-3" />
+          ) : (
+            <TrendingDown className="h-3 w-3" />
           )}
-          <span>{deltaValue}% vs previous quarter</span>
+          <span>{deltaValue.toFixed(1)}% vs previous quarter</span>
+        </div>
+      )}
+      {kpi && deltaValue === 0 && (
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <span>No change vs previous quarter</span>
         </div>
       )}
       

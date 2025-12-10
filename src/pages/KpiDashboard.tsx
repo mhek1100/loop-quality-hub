@@ -147,75 +147,87 @@ const KpiDashboard = () => {
       </div>
 
       {/* Hero KPI Section */}
-      {heroKpi && heroIndicator && (
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-xl">Hero KPI — {heroIndicator.name}</CardTitle>
-                  <IndicatorChip category={heroIndicator.category} />
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {heroIndicator.description}
-                </p>
-              </div>
-              <div className="flex items-center gap-6">
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Current</p>
-                  <p className="text-3xl font-bold">{heroKpi.value}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Previous</p>
-                  <p className="text-2xl font-medium text-muted-foreground">{heroKpi.previousValue}</p>
-                </div>
-                <div className={cn(
-                  "px-3 py-2 rounded-lg",
-                  heroKpi.delta > 0 ? "bg-red-100 text-red-700" : heroKpi.delta < 0 ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
-                )}>
-                  <p className="text-xs">Change</p>
-                  <p className="text-lg font-semibold">
-                    {heroKpi.delta > 0 ? "+" : ""}{heroKpi.deltaPercent}%
+      {heroKpi && heroIndicator && (() => {
+        // Define which indicators are "lower is better"
+        const lowerIsBetterIndicators: IndicatorCode[] = ["PI", "RP", "UPWL", "FALL", "MM", "ADL", "IC", "HP", "WF"];
+        const isLowerBetter = lowerIsBetterIndicators.includes(selectedIndicator);
+        
+        // Determine if the change is positive (good) for this specific indicator
+        const isPositiveChange = isLowerBetter ? heroKpi.delta < 0 : heroKpi.delta > 0;
+        
+        // Choose line color based on whether the trend is good or bad
+        const lineColor = isPositiveChange ? "hsl(var(--success))" : "hsl(var(--destructive))";
+        
+        return (
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-xl">Hero KPI — {heroIndicator.name}</CardTitle>
+                    <IndicatorChip category={heroIndicator.category} />
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {heroIndicator.description}
                   </p>
                 </div>
+                <div className="flex items-center gap-6">
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">Current</p>
+                    <p className="text-3xl font-bold">{heroKpi.value}%</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">Previous</p>
+                    <p className="text-2xl font-medium text-muted-foreground">{heroKpi.previousValue}%</p>
+                  </div>
+                  <div className={cn(
+                    "px-3 py-2 rounded-lg",
+                    isPositiveChange ? "bg-green-100 text-green-700" : heroKpi.delta === 0 ? "bg-muted text-muted-foreground" : "bg-red-100 text-red-700"
+                  )}>
+                    <p className="text-xs">Change</p>
+                    <p className="text-lg font-semibold">
+                      {heroKpi.delta > 0 ? "+" : ""}{heroKpi.deltaPercent}%
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={trendChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis 
-                    dataKey="period" 
-                    tick={{ fontSize: 12 }}
-                    stroke="hsl(var(--muted-foreground))"
-                  />
-                  <YAxis 
-                    tick={{ fontSize: 12 }}
-                    stroke="hsl(var(--muted-foreground))"
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px"
-                    }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke="hsl(var(--primary))" 
-                    strokeWidth={3}
-                    dot={{ fill: "hsl(var(--primary))", strokeWidth: 2 }}
-                    activeDot={{ r: 6, fill: "hsl(var(--primary))" }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={trendChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis 
+                      dataKey="period" 
+                      tick={{ fontSize: 12 }}
+                      stroke="hsl(var(--muted-foreground))"
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12 }}
+                      stroke="hsl(var(--muted-foreground))"
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px"
+                      }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="value" 
+                      stroke={lineColor}
+                      strokeWidth={3}
+                      dot={{ fill: lineColor, strokeWidth: 2 }}
+                      activeDot={{ r: 6, fill: lineColor }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Facility Comparison */}
       {selectedFacility === "all" && facilityComparisonData.length > 0 && (

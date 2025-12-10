@@ -549,39 +549,58 @@ const generateStableKpiData = (): KpiData[] => {
     "LO": { "fac-001": 18.3, "fac-002": 15.7, "fac-003": 19.8 }
   };
 
+  // Trend data showing varied patterns - some improving, some worsening
   const trendData: Record<string, number[]> = {
-    "PI": [19.2, 20.1, 21.3, 22.0, 22.8, 23.4, 24.1, 24.8],
-    "RP": [10.5, 9.8, 9.2, 8.8, 8.5, 8.2, 7.9, 7.6],
-    "UPWL": [17.2, 16.8, 16.1, 15.9, 15.8, 15.6, 15.3, 15.1],
-    "FALLS": [35.2, 34.1, 33.5, 33.1, 32.9, 32.8, 32.5, 32.2],
-    "MED": [6.8, 6.2, 5.9, 5.7, 5.5, 5.3, 5.1, 4.9],
-    "ADL": [38.5, 39.2, 40.1, 40.8, 41.5, 42.1, 42.8, 43.5],
-    "INC": [31.2, 30.5, 29.8, 29.4, 29.1, 28.7, 28.3, 27.9],
-    "HOSP": [14.2, 13.5, 13.1, 12.8, 12.6, 12.4, 12.2, 12.0],
-    "WF": [82.1, 83.5, 84.8, 85.6, 86.4, 87.3, 88.1, 88.9],
-    "CE": [74.2, 75.5, 76.3, 77.2, 77.9, 78.5, 79.1, 79.8],
-    "QOL": [77.8, 78.5, 79.2, 79.9, 80.6, 81.2, 81.8, 82.4],
-    "AH": [30.2, 31.1, 32.0, 32.8, 33.6, 34.5, 35.3, 36.1],
-    "EN": [19.5, 20.2, 20.9, 21.5, 22.1, 22.8, 23.4, 24.0],
-    "LO": [15.2, 15.8, 16.5, 17.1, 17.7, 18.3, 18.9, 19.5]
+    "PI": [10.5, 9.8, 9.2, 8.8, 8.5, 8.2, 7.9, 8.2],      // Getting worse (increasing is bad)
+    "RP": [14.2, 13.5, 13.1, 12.8, 12.6, 12.5, 12.3, 12.5], // Getting worse (increasing is bad)
+    "UPWL": [17.2, 16.8, 16.1, 15.9, 15.8, 15.6, 15.3, 15.3], // Stable
+    "FALL": [28.2, 27.1, 26.5, 25.8, 25.2, 24.8, 24.6, 24.6], // Improving (decreasing is good)
+    "MM": [45.2, 44.5, 43.8, 43.1, 42.5, 42.1, 41.8, 42.1],  // Getting slightly worse
+    "ADL": [20.5, 19.8, 19.2, 18.8, 18.5, 18.2, 17.9, 18.4], // Getting worse (increasing is bad)
+    "IC": [24.2, 23.5, 22.8, 22.3, 21.8, 21.5, 22.1, 22.3],  // Getting slightly worse
+    "HP": [16.2, 15.8, 15.2, 14.8, 14.5, 14.2, 13.9, 14.8],  // Getting worse
+    "WF": [14.5, 15.2, 15.8, 16.1, 16.4, 16.2, 15.9, 16.2],  // Getting slightly worse (higher turnover is bad)
+    "CE": [82.1, 83.5, 84.8, 85.6, 86.4, 87.3, 87.5, 87.5],  // Improving (higher is good)
+    "QOL": [78.8, 79.5, 80.2, 81.2, 81.8, 82.3, 82.3, 82.3], // Stable/improving
+    "AH": [74.2, 75.1, 76.5, 77.8, 78.2, 78.6, 78.6, 78.6],  // Stable/improving
+    "EN": [72.5, 73.2, 74.1, 75.5, 76.1, 76.8, 77.2, 77.2],  // Improving
+    "LO": [68.2, 69.8, 71.5, 73.1, 74.7, 75.3, 75.8, 75.8]   // Improving
   };
 
-  const quarters = ["Q1 2024", "Q2 2024", "Q3 2024", "Q4 2024", "Q1 2025", "Q2 2025", "Q3 2025", "Q4 2025"];
+  // Previous quarter values for calculating real deltas
+  const previousValues: Record<string, Record<string, number>> = {
+    "PI": { "fac-001": 7.9, "fac-002": 8.4, "fac-003": 8.0 },
+    "RP": { "fac-001": 12.3, "fac-002": 12.8, "fac-003": 12.1 },
+    "UPWL": { "fac-001": 15.3, "fac-002": 15.5, "fac-003": 15.1 },
+    "FALL": { "fac-001": 25.2, "fac-002": 24.8, "fac-003": 23.9 },
+    "MM": { "fac-001": 41.8, "fac-002": 42.5, "fac-003": 41.5 },
+    "ADL": { "fac-001": 17.9, "fac-002": 18.8, "fac-003": 18.5 },
+    "IC": { "fac-001": 21.5, "fac-002": 22.8, "fac-003": 21.2 },
+    "HP": { "fac-001": 13.9, "fac-002": 15.2, "fac-003": 14.5 },
+    "WF": { "fac-001": 15.9, "fac-002": 16.8, "fac-003": 15.5 },
+    "CE": { "fac-001": 84.2, "fac-002": 82.5, "fac-003": 85.8 },
+    "QOL": { "fac-001": 80.1, "fac-002": 78.5, "fac-003": 81.2 },
+    "AH": { "fac-001": 76.2, "fac-002": 74.8, "fac-003": 77.5 },
+    "EN": { "fac-001": 74.5, "fac-002": 72.2, "fac-003": 75.8 },
+    "LO": { "fac-001": 72.8, "fac-002": 70.5, "fac-003": 73.2 }
+  };
+
+  const quarters = ["Q1 2024", "Q2 2024", "Q3 2024", "Q4 2024", "Q1 2025", "Q2 2025"];
   
   facilities.forEach(facility => {
     INDICATORS.forEach(indicator => {
-      const baseValue = seedValues[indicator.code]?.[facility.id] || 25;
-      const previousValue = baseValue * 0.95;
-      const delta = baseValue - previousValue;
-      const deltaPercent = (delta / previousValue) * 100;
-      const trend = trendData[indicator.code] || [20, 21, 22, 23, 24, 25, 26, 27];
+      const currentValue = seedValues[indicator.code]?.[facility.id] || 25;
+      const prevValue = previousValues[indicator.code]?.[facility.id] || currentValue * 0.95;
+      const delta = currentValue - prevValue;
+      const deltaPercent = (delta / prevValue) * 100;
+      const trend = trendData[indicator.code] || [20, 21, 22, 23, 24, 25];
       
       kpiData.push({
         indicatorCode: indicator.code,
         facilityId: facility.id,
         periodId: "rp-q2-2025",
-        value: Number(baseValue.toFixed(1)),
-        previousValue: Number(previousValue.toFixed(1)),
+        value: Number(currentValue.toFixed(1)),
+        previousValue: Number(prevValue.toFixed(1)),
         delta: Number(delta.toFixed(1)),
         deltaPercent: Number(deltaPercent.toFixed(1)),
         trend,

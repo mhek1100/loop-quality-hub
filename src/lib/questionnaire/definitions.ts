@@ -122,8 +122,8 @@ const unplannedWeightLossSection: SectionDefinition = {
 
 // Falls and Major Injury Section
 const fallsAndMajorInjurySection: SectionDefinition = {
-  code: "FMI",
-  linkId: "FMI",
+  code: "FALL",
+  linkId: "FALL",
   text: "Falls and Major Injury",
   category: "Clinical",
   description: "Falls experienced by care recipients and resulting injuries",
@@ -202,8 +202,8 @@ const activitiesOfDailyLivingSection: SectionDefinition = {
 
 // Incontinence Care Section
 const incontinenceCareSection: SectionDefinition = {
-  code: "IAD",
-  linkId: "IAD",
+  code: "IC",
+  linkId: "IC",
   text: "Incontinence Care",
   category: "Clinical",
   description: "Incontinence associated dermatitis",
@@ -317,8 +317,8 @@ const workforceSection: SectionDefinition = {
 
 // Consumer Experience Section
 const consumerExperienceSection: SectionDefinition = {
-  code: "CEI",
-  linkId: "CEI",
+  code: "CE",
+  linkId: "CE",
   text: "Consumer Experience",
   category: "Experience",
   description: "Consumer experience assessment results",

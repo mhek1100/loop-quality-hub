@@ -15,6 +15,7 @@ import Users from "./pages/Users";
 import AuditLog from "./pages/AuditLog";
 import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
+import QuestionnaireValidation from "./pages/QuestionnaireValidation";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/users" element={<Users />} />
             <Route path="/audit" element={<AuditLog />} />
             <Route path="/help" element={<Help />} />
+            <Route path="/dev/validation" element={<QuestionnaireValidation />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -526,51 +526,81 @@ export const syncJobs: SyncJob[] = [
   }
 ];
 
-// KPI Data - Mock aggregated data for dashboard
-export const generateKpiData = (indicatorCode: IndicatorCode, facilityId: string): KpiData => {
-  const baseValue = Math.random() * 50 + 10;
-  const previousValue = baseValue * (0.9 + Math.random() * 0.2);
-  const delta = baseValue - previousValue;
-  const deltaPercent = (delta / previousValue) * 100;
-  
-  // Generate trend data for past 8 quarters
-  const trend: number[] = [];
-  const trendPeriods: string[] = [];
-  let trendValue = baseValue * 0.7;
-  
-  const quarters = ["Q1 2024", "Q2 2024", "Q3 2024", "Q4 2024", "Q1 2025", "Q2 2025", "Q3 2025", "Q4 2025"];
-  quarters.forEach(q => {
-    trendValue = trendValue * (0.95 + Math.random() * 0.15);
-    trend.push(Number(trendValue.toFixed(1)));
-    trendPeriods.push(q);
-  });
-  
-  return {
-    indicatorCode,
-    facilityId,
-    periodId: "rp-q2-2025",
-    value: Number(baseValue.toFixed(1)),
-    previousValue: Number(previousValue.toFixed(1)),
-    delta: Number(delta.toFixed(1)),
-    deltaPercent: Number(deltaPercent.toFixed(1)),
-    trend,
-    trendPeriods,
-    unit: indicatorCode === "WF" ? "%" : "per 1,000 bed days",
-    isComplete: Math.random() > 0.2
-  };
-};
-
-// Get all KPI data for dashboard
-export const getAllKpiData = (): KpiData[] => {
+// KPI Data - Pre-generated stable mock data for dashboard
+// Using a seeded approach to ensure consistent values across renders
+const generateStableKpiData = (): KpiData[] => {
   const kpiData: KpiData[] = [];
+  
+  // Stable seed values for each indicator-facility combination
+  const seedValues: Record<string, Record<string, number>> = {
+    "PI": { "fac-001": 23.4, "fac-002": 18.7, "fac-003": 21.2 },
+    "RP": { "fac-001": 8.2, "fac-002": 12.5, "fac-003": 6.8 },
+    "UPWL": { "fac-001": 15.6, "fac-002": 11.3, "fac-003": 14.1 },
+    "FALLS": { "fac-001": 32.8, "fac-002": 28.4, "fac-003": 25.9 },
+    "MED": { "fac-001": 5.3, "fac-002": 7.1, "fac-003": 4.8 },
+    "ADL": { "fac-001": 42.1, "fac-002": 38.5, "fac-003": 45.2 },
+    "INC": { "fac-001": 28.7, "fac-002": 31.2, "fac-003": 26.4 },
+    "HOSP": { "fac-001": 12.4, "fac-002": 9.8, "fac-003": 11.6 },
+    "WF": { "fac-001": 87.3, "fac-002": 92.1, "fac-003": 85.6 },
+    "CE": { "fac-001": 78.5, "fac-002": 82.3, "fac-003": 76.8 },
+    "QOL": { "fac-001": 81.2, "fac-002": 79.6, "fac-003": 83.4 },
+    "AH": { "fac-001": 34.5, "fac-002": 38.2, "fac-003": 31.7 },
+    "EN": { "fac-001": 22.8, "fac-002": 25.4, "fac-003": 20.1 },
+    "LO": { "fac-001": 18.3, "fac-002": 15.7, "fac-003": 19.8 }
+  };
+
+  const trendData: Record<string, number[]> = {
+    "PI": [19.2, 20.1, 21.3, 22.0, 22.8, 23.4, 24.1, 24.8],
+    "RP": [10.5, 9.8, 9.2, 8.8, 8.5, 8.2, 7.9, 7.6],
+    "UPWL": [17.2, 16.8, 16.1, 15.9, 15.8, 15.6, 15.3, 15.1],
+    "FALLS": [35.2, 34.1, 33.5, 33.1, 32.9, 32.8, 32.5, 32.2],
+    "MED": [6.8, 6.2, 5.9, 5.7, 5.5, 5.3, 5.1, 4.9],
+    "ADL": [38.5, 39.2, 40.1, 40.8, 41.5, 42.1, 42.8, 43.5],
+    "INC": [31.2, 30.5, 29.8, 29.4, 29.1, 28.7, 28.3, 27.9],
+    "HOSP": [14.2, 13.5, 13.1, 12.8, 12.6, 12.4, 12.2, 12.0],
+    "WF": [82.1, 83.5, 84.8, 85.6, 86.4, 87.3, 88.1, 88.9],
+    "CE": [74.2, 75.5, 76.3, 77.2, 77.9, 78.5, 79.1, 79.8],
+    "QOL": [77.8, 78.5, 79.2, 79.9, 80.6, 81.2, 81.8, 82.4],
+    "AH": [30.2, 31.1, 32.0, 32.8, 33.6, 34.5, 35.3, 36.1],
+    "EN": [19.5, 20.2, 20.9, 21.5, 22.1, 22.8, 23.4, 24.0],
+    "LO": [15.2, 15.8, 16.5, 17.1, 17.7, 18.3, 18.9, 19.5]
+  };
+
+  const quarters = ["Q1 2024", "Q2 2024", "Q3 2024", "Q4 2024", "Q1 2025", "Q2 2025", "Q3 2025", "Q4 2025"];
   
   facilities.forEach(facility => {
     INDICATORS.forEach(indicator => {
-      kpiData.push(generateKpiData(indicator.code, facility.id));
+      const baseValue = seedValues[indicator.code]?.[facility.id] || 25;
+      const previousValue = baseValue * 0.95;
+      const delta = baseValue - previousValue;
+      const deltaPercent = (delta / previousValue) * 100;
+      const trend = trendData[indicator.code] || [20, 21, 22, 23, 24, 25, 26, 27];
+      
+      kpiData.push({
+        indicatorCode: indicator.code,
+        facilityId: facility.id,
+        periodId: "rp-q2-2025",
+        value: Number(baseValue.toFixed(1)),
+        previousValue: Number(previousValue.toFixed(1)),
+        delta: Number(delta.toFixed(1)),
+        deltaPercent: Number(deltaPercent.toFixed(1)),
+        trend,
+        trendPeriods: quarters,
+        unit: indicator.code === "WF" ? "%" : "per 1,000 bed days",
+        isComplete: facility.id !== "fac-002" || indicator.code !== "PI"
+      });
     });
   });
   
   return kpiData;
+};
+
+// Pre-generate the KPI data once
+const stableKpiData = generateStableKpiData();
+
+// Get all KPI data for dashboard (returns stable pre-generated data)
+export const getAllKpiData = (): KpiData[] => {
+  return stableKpiData;
 };
 
 // Helper functions

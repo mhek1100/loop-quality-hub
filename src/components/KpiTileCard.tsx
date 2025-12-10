@@ -73,14 +73,14 @@ const indicatorDescriptions: Record<IndicatorCode, string> = {
 };
 
 // Chart types for each indicator
-type ChartType = "gauge" | "bars" | "gradient-bar" | "donut" | "area" | "multi-bar" | "pills";
+type ChartType = "gauge" | "bars" | "gradient-bar" | "donut" | "area" | "multi-bar" | "pills" | "dual-gauge";
 
 const indicatorChartTypes: Record<IndicatorCode, ChartType> = {
   PI: "gauge",
   RP: "gauge",
   UPWL: "bars",
   FALL: "pills",
-  MM: "gauge",
+  MM: "dual-gauge",
   ADL: "area",
   IC: "gauge",
   HP: "multi-bar",
@@ -93,30 +93,46 @@ const indicatorChartTypes: Record<IndicatorCode, ChartType> = {
 };
 
 // Mini gauge chart
-const GaugeChart = ({ value, color = "hsl(var(--primary))" }: { value: number; color?: string }) => {
+const GaugeChart = ({ value, color = "hsl(var(--primary))", size = "normal" }: { value: number; color?: string; size?: "small" | "normal" }) => {
   const percentage = Math.min(value, 100);
-  const radius = 20;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (percentage / 100) * circumference * 0.75;
+  const dims = size === "small" ? { width: 40, height: 28, viewBox: "0 0 50 35" } : { width: 70, height: 50, viewBox: "0 0 50 35" };
   
   return (
-    <svg width="50" height="35" viewBox="0 0 50 35">
+    <svg width={dims.width} height={dims.height} viewBox={dims.viewBox}>
       <path
         d="M 5 30 A 20 20 0 0 1 45 30"
         fill="none"
         stroke="hsl(var(--muted))"
-        strokeWidth="5"
+        strokeWidth="6"
         strokeLinecap="round"
       />
       <path
         d="M 5 30 A 20 20 0 0 1 45 30"
         fill="none"
         stroke={color}
-        strokeWidth="5"
+        strokeWidth="6"
         strokeLinecap="round"
         strokeDasharray={`${(percentage / 100) * 63} 63`}
       />
     </svg>
+  );
+};
+
+// Dual gauge for Medication Management
+const DualGaugeChart = ({ value1, value2, label1, label2 }: { value1: number; value2: number; label1: string; label2: string }) => {
+  return (
+    <div className="flex items-center justify-center gap-4">
+      <div className="flex flex-col items-center">
+        <GaugeChart value={value1} color="#a78bfa" size="small" />
+        <span className="text-[10px] text-muted-foreground mt-1">{value1}%</span>
+        <span className="text-[9px] text-muted-foreground">{label1}</span>
+      </div>
+      <div className="flex flex-col items-center">
+        <GaugeChart value={value2} color="#c4b5fd" size="small" />
+        <span className="text-[10px] text-muted-foreground mt-1">{value2}%</span>
+        <span className="text-[9px] text-muted-foreground">{label2}</span>
+      </div>
+    </div>
   );
 };
 
@@ -128,7 +144,7 @@ const DonutChart = ({ value, color = "hsl(var(--primary))" }: { value: number; c
   ];
   
   return (
-    <div className="w-[50px] h-[50px]">
+    <div className="w-[70px] h-[70px] mx-auto">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
@@ -153,13 +169,13 @@ const DonutChart = ({ value, color = "hsl(var(--primary))" }: { value: number; c
 // Mini bar comparison chart
 const BarsChart = ({ values, colors }: { values: number[]; colors: string[] }) => {
   return (
-    <div className="flex gap-2 items-end h-[40px]">
+    <div className="flex gap-3 items-end justify-center h-[50px]">
       {values.map((v, i) => (
         <div 
           key={i}
-          className="w-[28px] rounded-t-sm" 
+          className="w-[36px] rounded-t-sm" 
           style={{ 
-            height: `${Math.max(v * 0.8, 15)}px`,
+            height: `${Math.max(v * 1, 20)}px`,
             backgroundColor: colors[i] || "hsl(var(--primary))"
           }} 
         />
@@ -171,11 +187,11 @@ const BarsChart = ({ values, colors }: { values: number[]; colors: string[] }) =
 // Pills/badges for split values
 const PillsChart = ({ items }: { items: { value: number; label: string; color: string }[] }) => {
   return (
-    <div className="flex gap-1.5 flex-wrap">
+    <div className="flex gap-2 flex-wrap justify-center">
       {items.map((item, i) => (
         <span 
           key={i}
-          className="text-xs px-2 py-0.5 rounded-full text-white font-medium"
+          className="text-xs px-3 py-1 rounded-full text-white font-medium"
           style={{ backgroundColor: item.color }}
         >
           {item.value}% {item.label}
@@ -186,22 +202,25 @@ const PillsChart = ({ items }: { items: { value: number; label: string; color: s
 };
 
 // Gradient progress bar
-const GradientBar = ({ value, variant = "green" }: { value: number; variant?: "green" | "rainbow" }) => {
+const GradientBar = ({ value, variant = "green", showPercentage = false }: { value: number; variant?: "green" | "rainbow"; showPercentage?: boolean }) => {
   const gradients = {
     green: "linear-gradient(to right, hsl(var(--success)), hsl(142, 76%, 36%))",
     rainbow: "linear-gradient(to right, #ef4444, #f97316, #eab308, #22c55e)"
   };
   
   return (
-    <div className="space-y-1">
-      <div className="h-2 bg-muted rounded-full overflow-hidden">
-        <div 
-          className="h-full rounded-full transition-all"
-          style={{ 
-            width: `${value}%`,
-            background: gradients[variant]
-          }} 
-        />
+    <div className="space-y-1.5 w-full">
+      <div className="flex items-center gap-2">
+        <div className="h-3 bg-muted rounded-full overflow-hidden flex-1">
+          <div 
+            className="h-full rounded-full transition-all"
+            style={{ 
+              width: `${value}%`,
+              background: gradients[variant]
+            }} 
+          />
+        </div>
+        {showPercentage && <span className="text-xs text-muted-foreground">{value}%</span>}
       </div>
       {variant === "rainbow" && (
         <div className="flex justify-between text-[10px] text-muted-foreground">
@@ -218,7 +237,7 @@ const MiniAreaChart = ({ trend }: { trend: number[] }) => {
   const data = trend.map((v, i) => ({ value: v, index: i }));
   
   return (
-    <div className="w-full h-[30px]">
+    <div className="w-full h-[45px]">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data}>
           <Area 
@@ -226,7 +245,7 @@ const MiniAreaChart = ({ trend }: { trend: number[] }) => {
             dataKey="value" 
             stroke="hsl(var(--success))"
             fill="hsl(var(--success)/0.2)"
-            strokeWidth={1.5}
+            strokeWidth={2}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -237,13 +256,13 @@ const MiniAreaChart = ({ trend }: { trend: number[] }) => {
 // Multi bar chart (side by side comparison)
 const MultiBarChart = ({ values, colors }: { values: number[]; colors: string[] }) => {
   return (
-    <div className="flex gap-3 items-end h-[40px]">
+    <div className="flex gap-4 items-end justify-center h-[50px]">
       {values.map((v, i) => (
         <div 
           key={i}
-          className="w-[24px] rounded-sm" 
+          className="w-[32px] rounded-sm" 
           style={{ 
-            height: `${Math.max(v * 0.8, 15)}px`,
+            height: `${Math.max(v * 1, 20)}px`,
             backgroundColor: colors[i]
           }} 
         />
@@ -265,10 +284,19 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onClick }: KpiTileCard
         const gaugeColors: Record<string, string> = {
           PI: "#fdba74",
           RP: "#fcd34d",
-          MM: "#c4b5fd",
           IC: "#93c5fd"
         };
-        return <GaugeChart value={kpi.value} color={gaugeColors[indicator.code] || "hsl(var(--primary))"} />;
+        return (
+          <div className="flex justify-center">
+            <GaugeChart value={kpi.value} color={gaugeColors[indicator.code] || "hsl(var(--primary))"} />
+          </div>
+        );
+      
+      case "dual-gauge":
+        // For Medication Management: Polypharmacy and Antipsychotics
+        const polyValue = Math.round(kpi.value * 0.95);
+        const antiValue = Math.round(kpi.value * 0.42);
+        return <DualGaugeChart value1={polyValue} value2={antiValue} label1="Polypharmacy" label2="Antipsychotics" />;
       
       case "donut":
         return <DonutChart value={kpi.value} color="#a78bfa" />;
@@ -288,13 +316,18 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onClick }: KpiTileCard
       
       case "gradient-bar":
         const variant = indicator.code === "QOL" ? "rainbow" : "green";
-        return <GradientBar value={kpi.value} variant={variant} />;
+        const showPercentage = indicator.code === "CE" || indicator.code === "AH";
+        return <GradientBar value={kpi.value} variant={variant} showPercentage={showPercentage} />;
       
       case "area":
         return <MiniAreaChart trend={kpi.trend || [kpi.previousValue, kpi.value]} />;
       
       case "multi-bar":
-        return <MultiBarChart values={[kpi.value, kpi.previousValue]} colors={["#fda4af", "#f472b6"]} />;
+        return (
+          <div className="flex justify-center">
+            <MultiBarChart values={[kpi.value, kpi.previousValue]} colors={["#fda4af", "#f472b6"]} />
+          </div>
+        );
       
       default:
         return null;
@@ -326,8 +359,10 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onClick }: KpiTileCard
       </p>
       
       {/* Mini chart */}
-      <div className="mb-3 min-h-[40px]">
-        {renderChart()}
+      <div className="mb-3 min-h-[55px] flex items-center justify-center">
+        <div className="w-full">
+          {renderChart()}
+        </div>
       </div>
       
       {/* Description text */}

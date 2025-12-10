@@ -8,8 +8,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IndicatorChip } from "@/components/ui/indicator-chip";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { TrendingUp, TrendingDown, Minus, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { 
   facilities, 
@@ -18,6 +17,7 @@ import {
 } from "@/lib/mock/data";
 import { INDICATORS, getIndicatorByCode } from "@/lib/mock/indicators";
 import { IndicatorCode, KpiData } from "@/lib/types";
+import { KpiTileCard } from "@/components/KpiTileCard";
 import { 
   LineChart, 
   Line, 
@@ -129,51 +129,19 @@ const KpiDashboard = () => {
       </Card>
 
       {/* Indicator Tiles Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {INDICATORS.map(indicator => {
           const kpi = getIndicatorKpi(indicator.code);
           const isSelected = selectedIndicator === indicator.code;
           
           return (
-            <div
+            <KpiTileCard
               key={indicator.code}
+              indicator={indicator}
+              kpi={kpi}
+              isSelected={isSelected}
               onClick={() => setSelectedIndicator(indicator.code)}
-              className={cn(
-                "kpi-card",
-                isSelected && "ring-2 ring-primary border-primary/30"
-              )}
-            >
-              <IndicatorChip category={indicator.category} />
-              <h3 className="font-medium text-sm mt-2 line-clamp-2 min-h-[40px]">
-                {indicator.shortName}
-              </h3>
-              <p className="text-2xl font-bold mt-1">
-                {kpi?.value || "—"}
-              </p>
-              {kpi && (
-                <div className={cn(
-                  "flex items-center gap-1 text-xs mt-1",
-                  kpi.delta > 0 ? "kpi-delta-negative" : kpi.delta < 0 ? "kpi-delta-positive" : "text-muted-foreground"
-                )}>
-                  {kpi.delta > 0 ? (
-                    <TrendingUp className="h-3 w-3" />
-                  ) : kpi.delta < 0 ? (
-                    <TrendingDown className="h-3 w-3" />
-                  ) : (
-                    <Minus className="h-3 w-3" />
-                  )}
-                  <span>{kpi.delta > 0 ? "+" : ""}{kpi.delta}</span>
-                </div>
-              )}
-              <div className="mt-2">
-                <span className={cn(
-                  "text-[10px] px-1.5 py-0.5 rounded",
-                  kpi?.isComplete ? "bg-success/20 text-success" : "bg-warning/20 text-warning"
-                )}>
-                  {kpi?.isComplete ? "Complete" : "Incomplete"}
-                </span>
-              </div>
-            </div>
+            />
           );
         })}
       </div>

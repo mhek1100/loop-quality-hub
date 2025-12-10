@@ -185,19 +185,28 @@ const DonutChart = ({ value, color = "hsl(var(--primary))" }: { value: number; c
 };
 
 // Mini bar comparison chart
-const BarsChart = ({ values, colors }: { values: number[]; colors: string[] }) => {
+const BarsChart = ({ values, colors, labels }: { values: number[]; colors: string[]; labels?: string[] }) => {
   return (
-    <div className="flex gap-3 items-end justify-center h-[50px]">
-      {values.map((v, i) => (
-        <div 
-          key={i}
-          className="w-[36px] rounded-t-sm" 
-          style={{ 
-            height: `${Math.max(v * 1, 20)}px`,
-            backgroundColor: colors[i] || "hsl(var(--primary))"
-          }} 
-        />
-      ))}
+    <div className="w-full">
+      <div className="flex gap-2 items-end justify-center h-[50px]">
+        {values.map((v, i) => (
+          <div 
+            key={i}
+            className="flex-1 max-w-[60px] rounded-t-sm" 
+            style={{ 
+              height: `${Math.max(v * 1.2, 25)}px`,
+              backgroundColor: colors[i] || "hsl(var(--primary))"
+            }} 
+          />
+        ))}
+      </div>
+      {labels && (
+        <div className="flex justify-center gap-2 mt-1">
+          {labels.map((label, i) => (
+            <span key={i} className="text-[10px]" style={{ color: colors[i] }}>{label}</span>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -272,19 +281,28 @@ const MiniAreaChart = ({ trend }: { trend: number[] }) => {
 };
 
 // Multi bar chart (side by side comparison)
-const MultiBarChart = ({ values, colors }: { values: number[]; colors: string[] }) => {
+const MultiBarChart = ({ values, colors, labels }: { values: number[]; colors: string[]; labels?: string[] }) => {
   return (
-    <div className="flex gap-4 items-end justify-center h-[50px]">
-      {values.map((v, i) => (
-        <div 
-          key={i}
-          className="w-[32px] rounded-sm" 
-          style={{ 
-            height: `${Math.max(v * 1, 20)}px`,
-            backgroundColor: colors[i]
-          }} 
-        />
-      ))}
+    <div className="w-full">
+      <div className="flex gap-2 items-end justify-center h-[50px]">
+        {values.map((v, i) => (
+          <div 
+            key={i}
+            className="flex-1 max-w-[55px] rounded-sm" 
+            style={{ 
+              height: `${Math.max(v * 1.2, 25)}px`,
+              backgroundColor: colors[i]
+            }} 
+          />
+        ))}
+      </div>
+      {labels && (
+        <div className="flex justify-center gap-4 mt-1">
+          {labels.map((label, i) => (
+            <span key={i} className="text-[10px] text-muted-foreground">{label}</span>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -374,11 +392,19 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onClick }: KpiTileCard
       )}
     >
       {/* Header with title and icon */}
-      <div className="flex items-start justify-between mb-2">
-        <h3 className="font-medium text-sm text-foreground leading-tight">
+      <div className="flex items-start justify-between mb-1">
+        <h3 className="font-medium text-sm text-foreground leading-tight pr-2">
           {indicator.name}
         </h3>
-        {icon}
+        <div className="flex items-center gap-2">
+          {icon}
+          <span className={cn(
+            "text-[9px] px-1.5 py-0.5 rounded shrink-0",
+            kpi?.isComplete ? "bg-success/20 text-success" : "bg-warning/20 text-warning"
+          )}>
+            {kpi?.isComplete ? "Complete" : "Incomplete"}
+          </span>
+        </div>
       </div>
       
       {/* Main value */}
@@ -392,6 +418,9 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onClick }: KpiTileCard
           {renderChart()}
         </div>
       </div>
+      
+      {/* Line separator */}
+      <div className="border-t border-border my-3" />
       
       {/* Description text */}
       <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
@@ -417,16 +446,6 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onClick }: KpiTileCard
           <span>No change vs previous quarter</span>
         </div>
       )}
-      
-      {/* Status badge */}
-      <div className="mt-2">
-        <span className={cn(
-          "text-[10px] px-1.5 py-0.5 rounded",
-          kpi?.isComplete ? "bg-success/20 text-success" : "bg-warning/20 text-warning"
-        )}>
-          {kpi?.isComplete ? "Complete" : "Incomplete"}
-        </span>
-      </div>
     </div>
   );
 };

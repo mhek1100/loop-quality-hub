@@ -124,18 +124,6 @@ const KpiDashboard = () => {
               </SelectContent>
             </Select>
 
-            <Select value={selectedIndicator} onValueChange={(v) => setSelectedIndicator(v as IndicatorCode)}>
-              <SelectTrigger className="w-[220px]">
-                <SelectValue placeholder="Select indicator" />
-              </SelectTrigger>
-              <SelectContent>
-                {INDICATORS.map(ind => (
-                  <SelectItem key={ind.code} value={ind.code}>
-                    {ind.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </CardContent>
       </Card>

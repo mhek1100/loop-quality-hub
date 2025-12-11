@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,18 +6,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { IndicatorChip } from "@/components/ui/indicator-chip";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   ArrowLeft, 
   Building2, 
-  Calendar, 
-  Clock, 
   AlertTriangle, 
   AlertCircle,
   CheckCircle,
   Send,
   Save,
   Eye,
-  FileJson
+  FileJson,
+  Download,
+  Upload,
+  Copy,
+  Shield,
+  Clock
 } from "lucide-react";
 import { 
   getSubmission, 
@@ -24,15 +29,27 @@ import {
   getReportingPeriodById, 
   getUserById,
   auditLogs,
-  currentUser,
-  roles
 } from "@/lib/mock/data";
 import { getIndicatorByCode } from "@/lib/mock/indicators";
 import { toast } from "@/hooks/use-toast";
+import { useUser } from "@/contexts/UserContext";
+import { ApiWorkflowStepper } from "@/components/submission/ApiWorkflowStepper";
+import { SubmissionAttestationDialog } from "@/components/submission/SubmissionAttestationDialog";
+import { AttestationType } from "@/lib/types";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const SubmissionDetail = () => {
   const { id } = useParams<{ id: string }>();
   const submission = getSubmission(id || "");
+  const { currentUser, userRoles, canEdit, canReview, canFinalSubmit, canPostInProgress, isAuthorizedSubmitter } = useUser();
+  
+  const [attestationOpen, setAttestationOpen] = useState(false);
+  const [attestationType, setAttestationType] = useState<AttestationType>("submission");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   if (!submission) {
     return (
@@ -52,18 +69,25 @@ const SubmissionDetail = () => {
   const period = getReportingPeriodById(submission.reportingPeriodId);
   const createdBy = getUserById(submission.createdByUserId);
   const submittedBy = submission.submittedByUserId ? getUserById(submission.submittedByUserId) : null;
-  
-  // User permissions
-  const userRoles = roles.filter(r => currentUser.roleIds.includes(r.id));
-  const canEdit = userRoles.some(r => r.permissions.includes("EDIT_QUESTIONNAIRE"));
-  const canReview = userRoles.some(r => r.permissions.includes("REVIEW_SUBMISSION"));
-  const canSubmit = userRoles.some(r => r.permissions.includes("FINAL_SUBMIT_GOVERNMENT"));
 
   // Get related audit logs
   const relatedLogs = auditLogs.filter(log => 
     log.entityId === submission.id || 
     submission.questionnaires.some(q => log.entityId === q.id)
   );
+
+  // Determine attestation type based on submission state
+  const determineAttestationType = (): AttestationType => {
+    const now = new Date();
+    const dueDate = period ? new Date(period.dueDate) : now;
+    const hasExistingSubmission = submission.lastSubmittedDate;
+    const isAfterDueDate = now > dueDate;
+    
+    if (!hasExistingSubmission && isAfterDueDate) return "late-submission";
+    if (hasExistingSubmission && isAfterDueDate) return "updated-after-due";
+    if (hasExistingSubmission) return "resubmission";
+    return "submission";
+  };
 
   const handleSaveDraft = () => {
     toast({
@@ -72,18 +96,42 @@ const SubmissionDetail = () => {
     });
   };
 
-  const handleMarkReady = () => {
+  const handlePostInProgress = () => {
     toast({
-      title: "Marked as Ready for Review",
-      description: "This submission is now ready for review."
+      title: "Submitted In-Progress to B2G",
+      description: `POST QuestionnaireResponse with status = in-progress. QR ID: ${submission.questionnaireResponseId || "New"}`,
     });
   };
 
-  const handleSubmitToGov = () => {
+  const handleGetForReview = () => {
     toast({
-      title: "Submitted to Government",
-      description: "Your NQIP data has been submitted successfully.",
+      title: "Retrieved from B2G Gateway",
+      description: `GET QuestionnaireResponse/${submission.questionnaireResponseId}`,
     });
+  };
+
+  const handleOpenSubmissionDialog = () => {
+    setAttestationType(determineAttestationType());
+    setAttestationOpen(true);
+  };
+
+  const handleFinalSubmit = async () => {
+    setIsSubmitting(true);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    setIsSubmitting(false);
+    setAttestationOpen(false);
+    toast({
+      title: "Successfully Submitted to Government",
+      description: `PATCH QuestionnaireResponse/${submission.questionnaireResponseId} – status changed to completed`,
+    });
+  };
+
+  const copyQrId = () => {
+    if (submission.questionnaireResponseId) {
+      navigator.clipboard.writeText(submission.questionnaireResponseId);
+      toast({ title: "Copied to clipboard" });
+    }
   };
 
   return (
@@ -113,36 +161,98 @@ const SubmissionDetail = () => {
                 Save Draft
               </Button>
             )}
-            {canReview && submission.status === "In Progress" && (
-              <Button variant="secondary" onClick={handleMarkReady}>
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Mark Ready for Review
-              </Button>
+            {canPostInProgress && submission.apiWorkflowStep === "data-collection" && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="secondary" onClick={handlePostInProgress}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    POST In-Progress
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Step 4: Initial POST with status = in-progress</TooltipContent>
+              </Tooltip>
             )}
-            {canSubmit && submission.status !== "Submitted" && (
-              <Button onClick={handleSubmitToGov}>
-                <Send className="mr-2 h-4 w-4" />
-                Submit to Government
-              </Button>
+            {canReview && submission.questionnaireResponseId && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" onClick={handleGetForReview}>
+                    <Download className="mr-2 h-4 w-4" />
+                    GET for Review
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Step 6: Retrieve submitted data for verification</TooltipContent>
+              </Tooltip>
+            )}
+            {canFinalSubmit && submission.status !== "Submitted" && submission.questionnaireResponseId && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Button 
+                      onClick={handleOpenSubmissionDialog}
+                      disabled={!isAuthorizedSubmitter}
+                    >
+                      <Send className="mr-2 h-4 w-4" />
+                      Submit to Government
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {isAuthorizedSubmitter 
+                    ? "Step 8: PATCH to set final status" 
+                    : "Requires authorized GPMS user with X-User-Email or X-Federated-Id"}
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
         </div>
         
-        {/* Prefill indicator */}
-        <div className="mt-3 flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">
-            Prefill source: 
-          </span>
+        {/* QuestionnaireResponse ID Banner */}
+        <div className="mt-3 flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">QuestionnaireResponse ID:</span>
+            {submission.questionnaireResponseId ? (
+              <div className="flex items-center gap-1">
+                <code className="text-sm bg-primary/10 text-primary px-2 py-1 rounded font-mono">
+                  {submission.questionnaireResponseId}
+                </code>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={copyQrId}>
+                  <Copy className="h-3 w-3" />
+                </Button>
+              </div>
+            ) : (
+              <Badge variant="secondary">Not yet created</Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">FHIR Status:</span>
+            <code className="text-sm bg-muted px-2 py-1 rounded">{submission.fhirStatus}</code>
+          </div>
           <Badge variant={submission.questionnaires.some(q => q.prefillAvailable) ? "default" : "secondary"}>
             CIS pipeline {submission.questionnaires.some(q => q.prefillAvailable) ? "enabled" : "disabled"}
           </Badge>
         </div>
       </div>
 
+      {/* Awaiting Approval Banner */}
+      {submission.apiWorkflowStep === "in-progress-posted" && submission.fhirStatus === "in-progress" && (
+        <Alert className="bg-warning/10 border-warning/30">
+          <Clock className="h-4 w-4 text-warning" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>Awaiting authorised submitter review. Only users with QI Submitter role can proceed to final submission.</span>
+            {!canFinalSubmit && (
+              <Badge variant="outline" className="text-warning border-warning">
+                Current user cannot submit
+              </Badge>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Tabs */}
       <Tabs defaultValue="indicators-overview" className="space-y-6">
         <TabsList>
           <TabsTrigger value="indicators-overview">Indicators Overview</TabsTrigger>
+          <TabsTrigger value="api-workflow">API Workflow</TabsTrigger>
           <TabsTrigger value="validation">Validation & Warnings</TabsTrigger>
           <TabsTrigger value="history">Submission History</TabsTrigger>
           <TabsTrigger value="fhir">Raw FHIR Payload</TabsTrigger>
@@ -253,6 +363,61 @@ const SubmissionDetail = () => {
           </Card>
         </TabsContent>
 
+        <TabsContent value="api-workflow" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  API Workflow Progress
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ApiWorkflowStepper currentStep={submission.apiWorkflowStep} />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Submission Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Questionnaire ID</p>
+                    <code className="text-sm font-mono">{submission.questionnaireId || "—"}</code>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">QuestionnaireResponse ID</p>
+                    <code className="text-sm font-mono">{submission.questionnaireResponseId || "Not created"}</code>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">HealthcareService Reference</p>
+                    <code className="text-sm font-mono">{submission.healthcareServiceReference || "—"}</code>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">FHIR Status</p>
+                    <code className="text-sm font-mono">{submission.fhirStatus}</code>
+                  </div>
+                </div>
+
+                {submittedBy && (
+                  <div className="pt-4 border-t border-border">
+                    <p className="text-sm text-muted-foreground mb-2">Last Submitted By</p>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{submittedBy.name}</span>
+                      <Badge variant="secondary">{submittedBy.email}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {submission.lastSubmittedDate && new Date(submission.lastSubmittedDate).toLocaleString()}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
         <TabsContent value="validation">
           <div className="space-y-4">
             {submission.questionnaires.filter(q => q.validationStatus !== "OK").map(q => {
@@ -290,6 +455,13 @@ const SubmissionDetail = () => {
                                 {warn}
                               </p>
                             ))}
+                          </div>
+                          <div className="mt-2">
+                            <Button variant="ghost" size="sm" asChild>
+                              <Link to={`/submissions/${submission.id}/indicator/${q.indicatorCode}`}>
+                                View & Fix
+                              </Link>
+                            </Button>
                           </div>
                         </div>
                       ))}
@@ -355,10 +527,11 @@ const SubmissionDetail = () => {
               <pre className="p-4 rounded-lg bg-muted/50 overflow-auto text-xs font-mono max-h-[500px]">
                 {JSON.stringify({
                   resourceType: "QuestionnaireResponse",
-                  id: submission.id,
+                  id: submission.questionnaireResponseId,
                   status: submission.fhirStatus,
+                  questionnaire: submission.questionnaireId,
                   subject: {
-                    reference: `HealthcareService/${facility?.serviceId}`
+                    reference: submission.healthcareServiceReference
                   },
                   authored: submission.updatedAt,
                   author: {
@@ -379,6 +552,17 @@ const SubmissionDetail = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Attestation Dialog */}
+      <SubmissionAttestationDialog
+        open={attestationOpen}
+        onOpenChange={setAttestationOpen}
+        attestationType={attestationType}
+        onConfirm={handleFinalSubmit}
+        isLoading={isSubmitting}
+        facilityName={facility?.name || ""}
+        quarter={period?.quarter || ""}
+      />
     </div>
   );
 };

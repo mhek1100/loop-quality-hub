@@ -8,7 +8,8 @@ import {
   History, 
   HelpCircle,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Shield
 } from "lucide-react";
 import { NavLink as RouterNavLink } from "react-router-dom";
 import {
@@ -33,6 +34,7 @@ const navItems = [
   { title: "CIS Data Pipeline", url: "/pipeline", icon: Database },
   { title: "Users & Roles", url: "/users", icon: Users },
   { title: "Audit Log", url: "/audit", icon: History },
+  { title: "Conformance", url: "/conformance", icon: Shield },
   { title: "Help & Resources", url: "/help", icon: HelpCircle },
 ];
 

@@ -139,14 +139,14 @@ export const roles: Role[] = [
   {
     id: "role-reviewer",
     name: "Data Reviewer",
-    description: "Reviews submissions before final approval",
-    permissions: ["VIEW_SUBMISSIONS", "EDIT_QUESTIONNAIRE", "REVIEW_SUBMISSION", "VIEW_AUDIT_LOGS"]
+    description: "Reviews submissions before final approval, can POST in-progress",
+    permissions: ["VIEW_SUBMISSIONS", "EDIT_QUESTIONNAIRE", "REVIEW_SUBMISSION", "POST_IN_PROGRESS", "VIEW_AUDIT_LOGS"]
   },
   {
     id: "role-submitter",
     name: "QI Submitter",
     description: "Authorised to submit data to government",
-    permissions: ["VIEW_SUBMISSIONS", "EDIT_QUESTIONNAIRE", "REVIEW_SUBMISSION", "FINAL_SUBMIT_GOVERNMENT", "VIEW_AUDIT_LOGS"]
+    permissions: ["VIEW_SUBMISSIONS", "EDIT_QUESTIONNAIRE", "REVIEW_SUBMISSION", "POST_IN_PROGRESS", "FINAL_SUBMIT_GOVERNMENT", "VIEW_AUDIT_LOGS"]
   },
   {
     id: "role-compliance",
@@ -168,6 +168,7 @@ export const users: User[] = [
     id: "user-001",
     name: "Admin Alice",
     email: "alice.admin@loop.health",
+    federatedId: "alice.admin@digitalid.gov.au",
     roleIds: ["role-sys-admin"],
     isActive: true
   },
@@ -175,6 +176,7 @@ export const users: User[] = [
     id: "user-002",
     name: "Dana",
     email: "dana@loop.health",
+    federatedId: "dana@digitalid.gov.au",
     roleIds: ["role-data-admin"],
     isActive: true
   },
@@ -189,6 +191,7 @@ export const users: User[] = [
     id: "user-004",
     name: "Riley",
     email: "riley@loop.health",
+    federatedId: "riley@digitalid.gov.au",
     roleIds: ["role-reviewer"],
     isActive: true
   },
@@ -196,6 +199,7 @@ export const users: User[] = [
     id: "user-005",
     name: "Morgan",
     email: "morgan@loop.health",
+    federatedId: "morgan@digitalid.gov.au",
     roleIds: ["role-submitter"],
     isActive: true
   },
@@ -295,7 +299,11 @@ export const submissions: Submission[] = [
     hasWarnings: true,
     hasErrors: false,
     submissionVersionNumber: 2,
-    questionnaires: generateQuestionnaireResponses("sub-001", true)
+    questionnaires: generateQuestionnaireResponses("sub-001", true),
+    questionnaireResponseId: "QIQR-2025-RB001",
+    questionnaireId: "QI-020",
+    healthcareServiceReference: "HealthcareService/HS-001",
+    apiWorkflowStep: "in-progress-posted"
   },
   // Coastal View - Q2 2025 - Not Started
   {
@@ -310,7 +318,10 @@ export const submissions: Submission[] = [
     hasWarnings: false,
     hasErrors: false,
     submissionVersionNumber: 1,
-    questionnaires: generateQuestionnaireResponses("sub-002", false)
+    questionnaires: generateQuestionnaireResponses("sub-002", false),
+    questionnaireId: "QI-020",
+    healthcareServiceReference: "HealthcareService/HS-002",
+    apiWorkflowStep: "data-collection"
   },
   // Harbour Heights - Q2 2025 - Submitted
   {
@@ -327,7 +338,11 @@ export const submissions: Submission[] = [
     hasWarnings: false,
     hasErrors: false,
     submissionVersionNumber: 3,
-    questionnaires: generateQuestionnaireResponses("sub-003", false)
+    questionnaires: generateQuestionnaireResponses("sub-003", false),
+    questionnaireResponseId: "QIQR-2025-HH003",
+    questionnaireId: "QI-020",
+    healthcareServiceReference: "HealthcareService/HS-003",
+    apiWorkflowStep: "submitted"
   },
   // Riverbend - Q1 2025 - Submitted
   {
@@ -344,7 +359,11 @@ export const submissions: Submission[] = [
     hasWarnings: false,
     hasErrors: false,
     submissionVersionNumber: 4,
-    questionnaires: generateQuestionnaireResponses("sub-004", false)
+    questionnaires: generateQuestionnaireResponses("sub-004", false),
+    questionnaireResponseId: "QIQR-2025-RB004",
+    questionnaireId: "QI-020",
+    healthcareServiceReference: "HealthcareService/HS-001",
+    apiWorkflowStep: "submitted"
   },
   // Coastal View - Q1 2025 - Late Submission
   {
@@ -361,7 +380,11 @@ export const submissions: Submission[] = [
     hasWarnings: false,
     hasErrors: false,
     submissionVersionNumber: 2,
-    questionnaires: generateQuestionnaireResponses("sub-005", false)
+    questionnaires: generateQuestionnaireResponses("sub-005", false),
+    questionnaireResponseId: "QIQR-2025-CV005",
+    questionnaireId: "QI-020",
+    healthcareServiceReference: "HealthcareService/HS-002",
+    apiWorkflowStep: "submitted"
   },
   // Harbour Heights - Q1 2025 - Submitted - Updated after Due Date
   {
@@ -378,7 +401,11 @@ export const submissions: Submission[] = [
     hasWarnings: false,
     hasErrors: false,
     submissionVersionNumber: 5,
-    questionnaires: generateQuestionnaireResponses("sub-006", false)
+    questionnaires: generateQuestionnaireResponses("sub-006", false),
+    questionnaireResponseId: "QIQR-2025-HH006",
+    questionnaireId: "QI-020",
+    healthcareServiceReference: "HealthcareService/HS-003",
+    apiWorkflowStep: "submitted"
   }
 ];
 

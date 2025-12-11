@@ -1,9 +1,22 @@
-import { Bell, Search } from "lucide-react";
+import { Bell, Search, User, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { UserSelector } from "./UserSelector";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { currentUser, roles } from "@/lib/mock/data";
 
 export function AppHeader() {
+  const userRoles = roles.filter(r => currentUser.roleIds.includes(r.id));
+  const initials = currentUser.name.split(" ").map(n => n[0]).join("");
+
   return (
     <header className="h-16 border-b border-border bg-card px-6 flex items-center justify-between shrink-0">
       <div className="flex items-center gap-4 flex-1">
@@ -22,7 +35,48 @@ export function AppHeader() {
           <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-destructive rounded-full" />
         </Button>
         
-        <UserSelector />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="gap-3 h-auto py-2 px-3">
+              <Avatar className="h-8 w-8 bg-primary">
+                <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="text-left hidden sm:block">
+                <p className="text-sm font-medium">{currentUser.name}</p>
+                <p className="text-xs text-muted-foreground">{userRoles[0]?.name}</p>
+              </div>
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <User className="mr-2 h-4 w-4" />
+              Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <div className="px-2 py-1.5">
+              <p className="text-xs text-muted-foreground mb-1">Roles</p>
+              <div className="flex flex-wrap gap-1">
+                {userRoles.map(role => (
+                  <Badge key={role.id} variant="secondary" className="text-xs">
+                    {role.name}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-destructive">
+              Log out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

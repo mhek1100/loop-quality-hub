@@ -1,41 +1,22 @@
-import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { IndicatorChip } from "@/components/ui/indicator-chip";
 import { Badge } from "@/components/ui/badge";
-import { WorkflowStepper, WorkflowStep } from "@/components/ui/workflow-stepper";
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { 
   ArrowLeft, 
   Building2, 
+  Calendar, 
+  Clock, 
   AlertTriangle, 
   AlertCircle,
   CheckCircle,
   Send,
   Save,
   Eye,
-  FileJson,
-  Download,
-  Upload,
-  RefreshCw,
-  Copy,
-  ExternalLink,
-  Shield
+  FileJson
 } from "lucide-react";
 import { 
   getSubmission, 
@@ -43,34 +24,15 @@ import {
   getReportingPeriodById, 
   getUserById,
   auditLogs,
+  currentUser,
+  roles
 } from "@/lib/mock/data";
 import { getIndicatorByCode } from "@/lib/mock/indicators";
 import { toast } from "@/hooks/use-toast";
-import { useUser } from "@/contexts/UserContext";
-import { SubmissionApiCall } from "@/lib/types/api";
-import {
-  simulateGetQuestionnaires,
-  simulateGetQuestionnaire,
-  simulatePostQuestionnaireResponse,
-  simulateGetQuestionnaireResponse,
-  simulatePatchQuestionnaireResponse,
-} from "@/lib/api/mockB2G";
 
 const SubmissionDetail = () => {
   const { id } = useParams<{ id: string }>();
   const submission = getSubmission(id || "");
-  const { currentUser, canEdit, canReview, canSubmit } = useUser();
-  
-  const [apiCalls, setApiCalls] = useState<SubmissionApiCall[]>([]);
-  const [showSubmitDialog, setShowSubmitDialog] = useState(false);
-  const [showApiPreview, setShowApiPreview] = useState(false);
-  const [governmentCopy, setGovernmentCopy] = useState<any>(null);
-  
-  // Local state for simulating workflow changes
-  const [localQuestionnaireId, setLocalQuestionnaireId] = useState(submission?.questionnaireId || null);
-  const [localQrId, setLocalQrId] = useState(submission?.questionnaireResponseId || null);
-  const [localFhirStatus, setLocalFhirStatus] = useState(submission?.fhirStatus || "in-progress");
-  const [localTransportStatus, setLocalTransportStatus] = useState(submission?.transportStatus || "Not Sent");
   
   if (!submission) {
     return (
@@ -90,136 +52,18 @@ const SubmissionDetail = () => {
   const period = getReportingPeriodById(submission.reportingPeriodId);
   const createdBy = getUserById(submission.createdByUserId);
   const submittedBy = submission.submittedByUserId ? getUserById(submission.submittedByUserId) : null;
+  
+  // User permissions
+  const userRoles = roles.filter(r => currentUser.roleIds.includes(r.id));
+  const canEdit = userRoles.some(r => r.permissions.includes("EDIT_QUESTIONNAIRE"));
+  const canReview = userRoles.some(r => r.permissions.includes("REVIEW_SUBMISSION"));
+  const canSubmit = userRoles.some(r => r.permissions.includes("FINAL_SUBMIT_GOVERNMENT"));
 
   // Get related audit logs
   const relatedLogs = auditLogs.filter(log => 
     log.entityId === submission.id || 
     submission.questionnaires.some(q => log.entityId === q.id)
   );
-
-  // Calculate workflow steps
-  const getWorkflowSteps = (): WorkflowStep[] => {
-    const hasData = submission.questionnaires.some(q => q.questions.some(qu => qu.finalValue !== null));
-    const hasQuestionnaire = !!localQuestionnaireId;
-    const hasDraftQr = !!localQrId && localFhirStatus === "in-progress";
-    const hasCompletedQr = localFhirStatus === "completed" || localFhirStatus === "amended";
-    const hasErrors = submission.hasErrors;
-
-    return [
-      {
-        id: 1,
-        label: "Collect & Validate Data",
-        description: "Enter questionnaire data via CIS pipeline or manual entry",
-        status: hasData ? "completed" : "current"
-      },
-      {
-        id: 2,
-        label: "Retrieve Questionnaire",
-        description: "Get QI Questionnaire structure from B2G API",
-        status: hasQuestionnaire ? "completed" : hasData ? "current" : "pending"
-      },
-      {
-        id: 3,
-        label: "Build Draft Response",
-        description: "Generate QuestionnaireResponse payload",
-        status: hasQuestionnaire && !hasDraftQr && !hasCompletedQr ? "current" : hasDraftQr || hasCompletedQr ? "completed" : "pending"
-      },
-      {
-        id: 4,
-        label: "POST Draft (in-progress)",
-        description: "Send draft QuestionnaireResponse to Government",
-        status: hasDraftQr ? "completed" : hasQuestionnaire && !hasCompletedQr ? "current" : hasCompletedQr ? "completed" : "pending"
-      },
-      {
-        id: 5,
-        label: "Review & Approve",
-        description: "Internal review before formal submission",
-        status: hasDraftQr && !hasCompletedQr ? "current" : hasCompletedQr ? "completed" : "pending"
-      },
-      {
-        id: 6,
-        label: "GET Government Copy",
-        description: "Retrieve and verify Government-stored data",
-        status: hasDraftQr ? "current" : hasCompletedQr ? "completed" : "pending"
-      },
-      {
-        id: 7,
-        label: "PATCH Formal Submission",
-        description: "Submit final data (status: completed/amended)",
-        status: hasCompletedQr ? "completed" : hasDraftQr && !hasErrors ? "current" : "disabled"
-      }
-    ];
-  };
-
-  const handleRetrieveQuestionnaire = () => {
-    const { questionnaireIds, apiCall: listCall } = simulateGetQuestionnaires();
-    setApiCalls(prev => [...prev, { ...listCall, submissionId: submission.id }]);
-    
-    const { questionnaire, apiCall: getCall } = simulateGetQuestionnaire(questionnaireIds[0]);
-    setApiCalls(prev => [...prev, { ...getCall, submissionId: submission.id }]);
-    setLocalQuestionnaireId(questionnaireIds[0]);
-    
-    toast({
-      title: "Questionnaire Retrieved",
-      description: `Questionnaire ID: ${questionnaireIds[0]}`
-    });
-  };
-
-  const handleGenerateDraft = () => {
-    toast({
-      title: "Draft Generated",
-      description: "QuestionnaireResponse payload ready for transmission"
-    });
-  };
-
-  const handlePostDraft = () => {
-    const payload = {
-      resourceType: "QuestionnaireResponse",
-      questionnaire: localQuestionnaireId,
-      status: "in-progress",
-      subject: { reference: submission.programPaymentEntityRef || `HealthcareService/${facility?.serviceId}` }
-    };
-    
-    const { questionnaireResponseId, apiCall } = simulatePostQuestionnaireResponse(submission.id, payload);
-    setApiCalls(prev => [...prev, apiCall]);
-    setLocalQrId(questionnaireResponseId);
-    setLocalFhirStatus("in-progress");
-    setLocalTransportStatus("Draft Sent (in-progress)");
-    
-    toast({
-      title: "Draft Sent to Government",
-      description: `QuestionnaireResponse ID: ${questionnaireResponseId}`
-    });
-  };
-
-  const handleGetGovernmentCopy = () => {
-    if (!localQrId) return;
-    
-    const { response, apiCall } = simulateGetQuestionnaireResponse(localQrId);
-    setApiCalls(prev => [...prev, { ...apiCall, submissionId: submission.id }]);
-    setGovernmentCopy(response);
-    
-    toast({
-      title: "Government Copy Retrieved",
-      description: "Review the data stored in the Government system"
-    });
-  };
-
-  const handleFormalSubmission = () => {
-    if (!localQrId || !canSubmit) return;
-    
-    const newStatus = localFhirStatus === "completed" ? "amended" : "completed";
-    const { apiCall } = simulatePatchQuestionnaireResponse(submission.id, localQrId, newStatus);
-    setApiCalls(prev => [...prev, apiCall]);
-    setLocalFhirStatus(newStatus);
-    setLocalTransportStatus(newStatus === "completed" ? "Submitted (completed)" : "Amended");
-    setShowSubmitDialog(false);
-    
-    toast({
-      title: "Formal Submission Complete",
-      description: `QuestionnaireResponse ${localQrId} status: ${newStatus}`
-    });
-  };
 
   const handleSaveDraft = () => {
     toast({
@@ -235,9 +79,11 @@ const SubmissionDetail = () => {
     });
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({ title: "Copied to clipboard" });
+  const handleSubmitToGov = () => {
+    toast({
+      title: "Submitted to Government",
+      description: "Your NQIP data has been submitted successfully.",
+    });
   };
 
   return (
@@ -273,8 +119,8 @@ const SubmissionDetail = () => {
                 Mark Ready for Review
               </Button>
             )}
-            {canSubmit && localQrId && localFhirStatus === "in-progress" && (
-              <Button onClick={() => setShowSubmitDialog(true)}>
+            {canSubmit && submission.status !== "Submitted" && (
+              <Button onClick={handleSubmitToGov}>
                 <Send className="mr-2 h-4 w-4" />
                 Submit to Government
               </Button>
@@ -282,227 +128,25 @@ const SubmissionDetail = () => {
           </div>
         </div>
         
-        {/* QuestionnaireResponse ID and Transport Status */}
-        <div className="mt-3 flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">QR ID:</span>
-            {localQrId ? (
-              <div className="flex items-center gap-1">
-                <code className="text-xs bg-primary/10 text-primary px-2 py-1 rounded font-mono">
-                  {localQrId}
-                </code>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(localQrId)}>
-                  <Copy className="h-3 w-3" />
-                </Button>
-              </div>
-            ) : (
-              <span className="text-sm text-muted-foreground italic">Not yet created</span>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">FHIR Status:</span>
-            <code className="text-xs bg-muted px-2 py-1 rounded">{localFhirStatus}</code>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Transport:</span>
-            <Badge variant={localTransportStatus === "Submitted (completed)" ? "default" : "secondary"}>
-              {localTransportStatus}
-            </Badge>
-          </div>
-          
-          {submission.programPaymentEntityName && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">PPE:</span>
-              <span className="text-sm">{submission.programPaymentEntityName}</span>
-            </div>
-          )}
+        {/* Prefill indicator */}
+        <div className="mt-3 flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">
+            Prefill source: 
+          </span>
+          <Badge variant={submission.questionnaires.some(q => q.prefillAvailable) ? "default" : "secondary"}>
+            CIS pipeline {submission.questionnaires.some(q => q.prefillAvailable) ? "enabled" : "disabled"}
+          </Badge>
         </div>
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="workflow" className="space-y-6">
+      <Tabs defaultValue="indicators-overview" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="workflow">Workflow</TabsTrigger>
-          <TabsTrigger value="indicators-overview">Indicators</TabsTrigger>
-          <TabsTrigger value="validation">Validation</TabsTrigger>
-          <TabsTrigger value="api-calls">API Calls</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
-          <TabsTrigger value="fhir">Raw FHIR</TabsTrigger>
+          <TabsTrigger value="indicators-overview">Indicators Overview</TabsTrigger>
+          <TabsTrigger value="validation">Validation & Warnings</TabsTrigger>
+          <TabsTrigger value="history">Submission History</TabsTrigger>
+          <TabsTrigger value="fhir">Raw FHIR Payload</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="workflow" className="space-y-6">
-          <div className="grid lg:grid-cols-3 gap-6">
-            {/* Workflow Stepper */}
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle className="text-lg">B2G Submission Workflow</CardTitle>
-                <CardDescription>
-                  Follow these steps to submit QI data to the Government
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <WorkflowStepper steps={getWorkflowSteps()} />
-              </CardContent>
-            </Card>
-
-            {/* Actions Panel */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="text-lg">Workflow Actions</CardTitle>
-                <CardDescription>
-                  Execute each step of the B2G API workflow
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Step 2: Retrieve Questionnaire */}
-                <div className="p-4 rounded-lg border border-border bg-muted/30">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Step 2: Retrieve QI Questionnaire</p>
-                      <p className="text-sm text-muted-foreground">
-                        GET /Questionnaire - Fetch current questionnaire structure
-                      </p>
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      onClick={handleRetrieveQuestionnaire}
-                      disabled={!!localQuestionnaireId}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      {localQuestionnaireId ? "Retrieved" : "Retrieve"}
-                    </Button>
-                  </div>
-                  {localQuestionnaireId && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Questionnaire ID: <code className="bg-muted px-1 rounded">{localQuestionnaireId}</code>
-                    </p>
-                  )}
-                </div>
-
-                {/* Step 3: Generate Draft */}
-                <div className="p-4 rounded-lg border border-border bg-muted/30">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Step 3: Generate Draft QuestionnaireResponse</p>
-                      <p className="text-sm text-muted-foreground">
-                        Build FHIR payload from current answers
-                      </p>
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      onClick={handleGenerateDraft}
-                      disabled={!localQuestionnaireId}
-                    >
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Generate
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Step 4: POST Draft */}
-                <div className="p-4 rounded-lg border border-border bg-muted/30">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Step 4: Send Draft to Government</p>
-                      <p className="text-sm text-muted-foreground">
-                        POST /QuestionnaireResponse (status: in-progress)
-                      </p>
-                    </div>
-                    <Button 
-                      onClick={handlePostDraft}
-                      disabled={!localQuestionnaireId || !!localQrId}
-                    >
-                      <Upload className="mr-2 h-4 w-4" />
-                      {localQrId ? "Sent" : "Send Draft"}
-                    </Button>
-                  </div>
-                  {localQrId && localFhirStatus === "in-progress" && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      QuestionnaireResponse ID: <code className="bg-muted px-1 rounded">{localQrId}</code>
-                    </p>
-                  )}
-                </div>
-
-                {/* Step 6: GET Government Copy */}
-                <div className="p-4 rounded-lg border border-border bg-muted/30">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Step 6: View Government Copy</p>
-                      <p className="text-sm text-muted-foreground">
-                        GET /QuestionnaireResponse/{"{id}"} - Verify stored data
-                      </p>
-                    </div>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span>
-                          <Button 
-                            variant="outline"
-                            onClick={handleGetGovernmentCopy}
-                            disabled={!localQrId}
-                          >
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Copy
-                          </Button>
-                        </span>
-                      </TooltipTrigger>
-                      {!localQrId && (
-                        <TooltipContent>
-                          <p>QuestionnaireResponse must be created first</p>
-                        </TooltipContent>
-                      )}
-                    </Tooltip>
-                  </div>
-                  {governmentCopy && (
-                    <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto max-h-32">
-                      {JSON.stringify(governmentCopy, null, 2)}
-                    </pre>
-                  )}
-                </div>
-
-                {/* Step 7: PATCH Formal Submission */}
-                <div className="p-4 rounded-lg border border-primary/30 bg-primary/5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium flex items-center gap-2">
-                        <Shield className="h-4 w-4 text-primary" />
-                        Step 7: Formal Submission
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        PATCH /QuestionnaireResponse/{"{id}"} (status: completed/amended)
-                      </p>
-                    </div>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span>
-                          <Button 
-                            onClick={() => setShowSubmitDialog(true)}
-                            disabled={!localQrId || localFhirStatus === "completed" || !canSubmit}
-                          >
-                            <Send className="mr-2 h-4 w-4" />
-                            {localFhirStatus === "completed" ? "Submitted" : "Submit"}
-                          </Button>
-                        </span>
-                      </TooltipTrigger>
-                      {!canSubmit && (
-                        <TooltipContent>
-                          <p>Only QI Submitter role can perform formal submission</p>
-                        </TooltipContent>
-                      )}
-                    </Tooltip>
-                  </div>
-                  {!canSubmit && (
-                    <p className="text-xs text-warning mt-2 flex items-center gap-1">
-                      <AlertTriangle className="h-3 w-3" />
-                      Requires QI Submitter role
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
 
         <TabsContent value="indicators-overview" className="space-y-6">
           {/* Summary Cards */}
@@ -516,7 +160,7 @@ const SubmissionDetail = () => {
             <Card>
               <CardContent className="p-4">
                 <p className="text-sm text-muted-foreground">FHIR Status</p>
-                <code className="text-lg font-medium">{localFhirStatus}</code>
+                <code className="text-lg font-medium">{submission.fhirStatus}</code>
               </CardContent>
             </Card>
             <Card>
@@ -666,51 +310,6 @@ const SubmissionDetail = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="api-calls">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">API Call History</CardTitle>
-              <CardDescription>
-                Record of B2G API interactions for this submission
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {apiCalls.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  No API calls recorded yet. Use the Workflow tab to interact with the B2G API.
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {apiCalls.map(call => (
-                    <div key={call.id} className="p-3 rounded-lg border border-border bg-muted/30">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Badge variant={call.success ? "default" : "destructive"}>
-                            {call.method}
-                          </Badge>
-                          <code className="text-xs">{call.statusCode}</code>
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(call.timestamp).toLocaleString()}
-                        </span>
-                      </div>
-                      <p className="text-sm font-mono mt-2 text-muted-foreground break-all">
-                        {call.endpoint}
-                      </p>
-                      <p className="text-sm mt-1">{call.responseSummary}</p>
-                      {call.questionnaireResponseId && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          QR ID: <code className="bg-muted px-1 rounded">{call.questionnaireResponseId}</code>
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         <TabsContent value="history">
           <Card>
             <CardContent className="p-4">
@@ -719,22 +318,15 @@ const SubmissionDetail = () => {
                   <div>
                     <p className="font-medium">Version {submission.submissionVersionNumber}</p>
                     <p className="text-sm text-muted-foreground">Current version</p>
-                    {localQrId && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        QR ID: {localQrId}
-                      </p>
-                    )}
                   </div>
                   <div className="text-right">
                     <StatusBadge status={submission.status} />
                     <p className="text-xs text-muted-foreground mt-1">
-                      FHIR: {localFhirStatus}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
                       {new Date(submission.updatedAt).toLocaleString()}
                     </p>
                   </div>
                 </div>
+                {/* Mock previous versions */}
                 {submission.submissionVersionNumber > 1 && (
                   <div className="flex items-center justify-between p-4 rounded-lg border border-border/50">
                     <div>
@@ -758,29 +350,15 @@ const SubmissionDetail = () => {
                 <FileJson className="h-5 w-5" />
                 FHIR QuestionnaireResponse Payload
               </CardTitle>
-              <CardDescription>
-                {localQrId ? (
-                  <span className="flex items-center gap-2">
-                    Current QuestionnaireResponse ID: 
-                    <code className="bg-muted px-2 py-0.5 rounded">{localQrId}</code>
-                    <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => copyToClipboard(localQrId)}>
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                  </span>
-                ) : (
-                  "QuestionnaireResponse not yet created"
-                )}
-              </CardDescription>
             </CardHeader>
             <CardContent>
               <pre className="p-4 rounded-lg bg-muted/50 overflow-auto text-xs font-mono max-h-[500px]">
                 {JSON.stringify({
                   resourceType: "QuestionnaireResponse",
-                  id: localQrId || "[will be assigned on POST]",
-                  questionnaire: localQuestionnaireId || "[retrieve questionnaire first]",
-                  status: localFhirStatus,
+                  id: submission.id,
+                  status: submission.fhirStatus,
                   subject: {
-                    reference: submission.programPaymentEntityRef || `HealthcareService/${facility?.serviceId}`
+                    reference: `HealthcareService/${facility?.serviceId}`
                   },
                   authored: submission.updatedAt,
                   author: {
@@ -801,67 +379,6 @@ const SubmissionDetail = () => {
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Submit to Government Dialog */}
-      <Dialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-primary" />
-              Confirm Formal Submission
-            </DialogTitle>
-            <DialogDescription>
-              You are about to submit this QuestionnaireResponse to the Government B2G API.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="p-4 rounded-lg bg-muted/50 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Facility:</span>
-                <span className="font-medium">{facility?.name}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Period:</span>
-                <span className="font-medium">{period?.quarter}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">QR ID:</span>
-                <code className="text-xs bg-muted px-2 py-0.5 rounded">{localQrId}</code>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Status Change:</span>
-                <span>{localFhirStatus} → <strong>{localFhirStatus === "completed" ? "amended" : "completed"}</strong></span>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-lg border border-border">
-              <p className="text-sm font-medium mb-2">API Request Headers Preview:</p>
-              <div className="space-y-1 text-xs font-mono">
-                <p>Authorization: Bearer mock-bearer-token-***</p>
-                <p className="text-primary">X-User-Email: {currentUser.email}</p>
-              </div>
-            </div>
-
-            <div className="p-3 rounded-lg bg-warning/10 border border-warning/30">
-              <p className="text-sm text-warning flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4" />
-                This action will formally submit data to the Government system.
-              </p>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowSubmitDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleFormalSubmission}>
-              <Send className="mr-2 h-4 w-4" />
-              Confirm Submission
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

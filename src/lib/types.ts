@@ -43,21 +43,7 @@ export interface Submission {
   hasErrors: boolean;
   submissionVersionNumber: number;
   questionnaires: QuestionnaireResponse[];
-  // B2G API workflow fields
-  questionnaireResponseId: string | null;
-  questionnaireId: string | null;
-  transportStatus: TransportStatus;
-  programPaymentEntityRef: string | null;
-  programPaymentEntityName: string | null;
-  lastTransportActionAt: string | null;
-  lastTransportActionByUserId: string | null;
 }
-
-export type TransportStatus = 
-  | "Not Sent" 
-  | "Draft Sent (in-progress)" 
-  | "Submitted (completed)" 
-  | "Amended";
 
 export type SubmissionStatus = 
   | "Not Started"

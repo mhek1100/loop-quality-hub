@@ -13,18 +13,12 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { 
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { 
   Building2, 
   Search, 
   AlertTriangle, 
   AlertCircle,
   Eye,
-  Edit,
-  Copy
+  Edit
 } from "lucide-react";
 import { 
   facilities, 
@@ -32,10 +26,10 @@ import {
   reportingPeriods, 
   getFacilityById, 
   getReportingPeriodById,
+  currentUser,
+  roles
 } from "@/lib/mock/data";
 import { INDICATORS } from "@/lib/mock/indicators";
-import { useUser } from "@/contexts/UserContext";
-import { toast } from "@/hooks/use-toast";
 
 const Submissions = () => {
   const [selectedQuarter, setSelectedQuarter] = useState("all");
@@ -46,7 +40,9 @@ const Submissions = () => {
   const [hasErrorsFilter, setHasErrorsFilter] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { canEdit } = useUser();
+  // Check user permissions
+  const userRoles = roles.filter(r => currentUser.roleIds.includes(r.id));
+  const canEdit = userRoles.some(r => r.permissions.includes("EDIT_QUESTIONNAIRE"));
 
   // Filter submissions
   const filteredSubmissions = submissions.filter(sub => {
@@ -77,11 +73,6 @@ const Submissions = () => {
     "Submitted - Updated after Due Date",
     "Not Submitted"
   ];
-
-  const copyQrId = (qrId: string) => {
-    navigator.clipboard.writeText(qrId);
-    toast({ title: "Copied", description: "QuestionnaireResponse ID copied to clipboard" });
-  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -213,7 +204,6 @@ const Submissions = () => {
                   <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Facility</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Quarter</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">QuestionnaireResponse ID</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">FHIR Status</th>
                   <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">Issues</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Last Updated</th>
@@ -249,39 +239,9 @@ const Submissions = () => {
                         <StatusBadge status={sub.status} />
                       </td>
                       <td className="py-3 px-4">
-                        {sub.questionnaireResponseId ? (
-                          <div className="flex items-center gap-1">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <code className="text-xs bg-muted px-2 py-1 rounded font-mono max-w-[140px] truncate block">
-                                  {sub.questionnaireResponseId}
-                                </code>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{sub.questionnaireResponseId}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-6 w-6"
-                              onClick={() => copyQrId(sub.questionnaireResponseId!)}
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground italic">Not yet created</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        {sub.questionnaireResponseId ? (
-                          <code className="text-xs bg-muted px-2 py-1 rounded">
-                            {sub.fhirStatus}
-                          </code>
-                        ) : (
-                          <span className="text-xs text-muted-foreground italic">Not sent</span>
-                        )}
+                        <code className="text-xs bg-muted px-2 py-1 rounded">
+                          {sub.fhirStatus}
+                        </code>
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center justify-center gap-2">
@@ -329,7 +289,7 @@ const Submissions = () => {
                 })}
                 {filteredSubmissions.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-muted-foreground">
+                    <td colSpan={7} className="py-12 text-center text-muted-foreground">
                       No submissions found matching your filters
                     </td>
                   </tr>

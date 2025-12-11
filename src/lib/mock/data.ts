@@ -295,7 +295,15 @@ export const submissions: Submission[] = [
     hasWarnings: true,
     hasErrors: false,
     submissionVersionNumber: 2,
-    questionnaires: generateQuestionnaireResponses("sub-001", true)
+    questionnaires: generateQuestionnaireResponses("sub-001", true),
+    // B2G API workflow fields
+    questionnaireResponseId: "qr-2025-sub001-draft",
+    questionnaireId: "qi-questionnaire-2025-v1",
+    transportStatus: "Draft Sent (in-progress)",
+    programPaymentEntityRef: "HealthcareService/HS-RIVERBEND-001",
+    programPaymentEntityName: "Riverbend Aged Care - PPE",
+    lastTransportActionAt: "2025-06-15T14:00:00Z",
+    lastTransportActionByUserId: "user-005"
   },
   // Coastal View - Q2 2025 - Not Started
   {
@@ -310,7 +318,15 @@ export const submissions: Submission[] = [
     hasWarnings: false,
     hasErrors: false,
     submissionVersionNumber: 1,
-    questionnaires: generateQuestionnaireResponses("sub-002", false)
+    questionnaires: generateQuestionnaireResponses("sub-002", false),
+    // B2G API workflow fields - not yet sent
+    questionnaireResponseId: null,
+    questionnaireId: null,
+    transportStatus: "Not Sent",
+    programPaymentEntityRef: null,
+    programPaymentEntityName: null,
+    lastTransportActionAt: null,
+    lastTransportActionByUserId: null
   },
   // Harbour Heights - Q2 2025 - Submitted
   {
@@ -327,7 +343,15 @@ export const submissions: Submission[] = [
     hasWarnings: false,
     hasErrors: false,
     submissionVersionNumber: 3,
-    questionnaires: generateQuestionnaireResponses("sub-003", false)
+    questionnaires: generateQuestionnaireResponses("sub-003", false),
+    // B2G API workflow fields
+    questionnaireResponseId: "qr-2025-sub003-final",
+    questionnaireId: "qi-questionnaire-2025-v1",
+    transportStatus: "Submitted (completed)",
+    programPaymentEntityRef: "HealthcareService/HS-HARBOUR-003",
+    programPaymentEntityName: "Harbour Heights Home - PPE",
+    lastTransportActionAt: "2025-06-20T09:00:00Z",
+    lastTransportActionByUserId: "user-005"
   },
   // Riverbend - Q1 2025 - Submitted
   {
@@ -344,7 +368,15 @@ export const submissions: Submission[] = [
     hasWarnings: false,
     hasErrors: false,
     submissionVersionNumber: 4,
-    questionnaires: generateQuestionnaireResponses("sub-004", false)
+    questionnaires: generateQuestionnaireResponses("sub-004", false),
+    // B2G API workflow fields
+    questionnaireResponseId: "qr-2025-sub004-final",
+    questionnaireId: "qi-questionnaire-2025-v1",
+    transportStatus: "Submitted (completed)",
+    programPaymentEntityRef: "HealthcareService/HS-RIVERBEND-001",
+    programPaymentEntityName: "Riverbend Aged Care - PPE",
+    lastTransportActionAt: "2025-04-15T10:00:00Z",
+    lastTransportActionByUserId: "user-005"
   },
   // Coastal View - Q1 2025 - Late Submission
   {
@@ -361,7 +393,15 @@ export const submissions: Submission[] = [
     hasWarnings: false,
     hasErrors: false,
     submissionVersionNumber: 2,
-    questionnaires: generateQuestionnaireResponses("sub-005", false)
+    questionnaires: generateQuestionnaireResponses("sub-005", false),
+    // B2G API workflow fields
+    questionnaireResponseId: "qr-2025-sub005-final",
+    questionnaireId: "qi-questionnaire-2025-v1",
+    transportStatus: "Submitted (completed)",
+    programPaymentEntityRef: "HealthcareService/HS-COASTAL-002",
+    programPaymentEntityName: "Coastal View Lodge - PPE",
+    lastTransportActionAt: "2025-04-25T11:00:00Z",
+    lastTransportActionByUserId: "user-005"
   },
   // Harbour Heights - Q1 2025 - Submitted - Updated after Due Date
   {
@@ -378,7 +418,15 @@ export const submissions: Submission[] = [
     hasWarnings: false,
     hasErrors: false,
     submissionVersionNumber: 5,
-    questionnaires: generateQuestionnaireResponses("sub-006", false)
+    questionnaires: generateQuestionnaireResponses("sub-006", false),
+    // B2G API workflow fields
+    questionnaireResponseId: "qr-2025-sub006-amended",
+    questionnaireId: "qi-questionnaire-2025-v1",
+    transportStatus: "Amended",
+    programPaymentEntityRef: "HealthcareService/HS-HARBOUR-003",
+    programPaymentEntityName: "Harbour Heights Home - PPE",
+    lastTransportActionAt: "2025-05-01T08:00:00Z",
+    lastTransportActionByUserId: "user-005"
   }
 ];
 

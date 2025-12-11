@@ -341,12 +341,12 @@ const QuestionnaireEditor = () => {
           <CardTitle className="text-lg">Comments</CardTitle>
         </CardHeader>
         <CardContent>
-          <Alert className="mb-4 bg-warning/10 border-warning/30">
-            <AlertTriangle className="h-4 w-4 text-warning" />
-            <AlertDescription>
-              Please do not include personal information in free-text fields.
-            </AlertDescription>
-          </Alert>
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/20 mb-4">
+            <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+            <p className="text-sm text-warning-foreground">
+              Please do not include names or information that might identify an individual.
+            </p>
+          </div>
           <Textarea
             value={comments}
             onChange={(e) => setComments(e.target.value)}

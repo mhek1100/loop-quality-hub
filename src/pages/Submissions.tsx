@@ -203,6 +203,7 @@ const Submissions = () => {
                 <tr className="border-b border-border">
                   <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Facility</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Quarter</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">QR ID</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">FHIR Status</th>
                   <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">Issues</th>
@@ -235,6 +236,11 @@ const Submissions = () => {
                         </div>
                       </td>
                       <td className="py-3 px-4 text-muted-foreground">{period?.quarter}</td>
+                      <td className="py-3 px-4">
+                        <code className="text-xs bg-muted px-2 py-1 rounded truncate max-w-[120px] block" title={sub.questionnaireResponseId}>
+                          {sub.questionnaireResponseId || "Not yet submitted"}
+                        </code>
+                      </td>
                       <td className="py-3 px-4">
                         <StatusBadge status={sub.status} />
                       </td>
@@ -289,7 +295,7 @@ const Submissions = () => {
                 })}
                 {filteredSubmissions.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-muted-foreground">
+                    <td colSpan={8} className="py-12 text-center text-muted-foreground">
                       No submissions found matching your filters
                     </td>
                   </tr>

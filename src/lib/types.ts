@@ -9,6 +9,9 @@ export interface Facility {
   abn: string;
   gpmsProviderId: string;
   cisSystemName: string;
+  // B2G API integration fields
+  organizationId?: string;
+  healthcareServiceId?: string;
 }
 
 export interface ReportingPeriod {
@@ -43,6 +46,36 @@ export interface Submission {
   hasErrors: boolean;
   submissionVersionNumber: number;
   questionnaires: QuestionnaireResponse[];
+  // B2G API integration fields
+  questionnaireResponseId?: string;
+  questionnaireId?: string;
+  healthcareServiceReference?: string;
+  apiWorkflowStep: ApiWorkflowStep;
+  lastApiOperation?: ApiOperationRecord;
+}
+
+export type ApiWorkflowStep = 
+  | "data-collection"
+  | "questionnaire-retrieved"
+  | "data-mapped"
+  | "in-progress-posted"
+  | "awaiting-approval"
+  | "data-retrieved"
+  | "review-complete"
+  | "submitted";
+
+export interface ApiOperationRecord {
+  timestamp: string;
+  method: "GET" | "POST" | "PATCH";
+  endpoint: string;
+  httpStatus: number;
+  questionnaireResponseId?: string;
+  warningsCount: number;
+  errorsCount: number;
+  performedByUserId: string;
+  performedByEmail: string;
+  roles: string[];
+  headers?: Record<string, string>;
 }
 
 export type SubmissionStatus = 
@@ -119,6 +152,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  federatedId?: string; // Digital ID for GPMS
   roleIds: string[];
   isActive: boolean;
   avatar?: string;
@@ -136,6 +170,7 @@ export type Permission =
   | "VIEW_SUBMISSIONS"
   | "EDIT_QUESTIONNAIRE"
   | "REVIEW_SUBMISSION"
+  | "POST_IN_PROGRESS"
   | "FINAL_SUBMIT_GOVERNMENT"
   | "VIEW_AUDIT_LOGS"
   | "MANAGE_USERS";
@@ -144,10 +179,13 @@ export interface AuditLogEntry {
   id: string;
   timestamp: string;
   userId: string;
+  userEmail?: string;
   actionType: AuditActionType;
   entityType: EntityType;
   entityId: string;
   details: string;
+  questionnaireResponseId?: string;
+  apiHeaders?: Record<string, string>;
 }
 
 export type AuditActionType = 
@@ -159,9 +197,14 @@ export type AuditActionType =
   | "USER_CREATED"
   | "USER_UPDATED"
   | "PIPELINE_CONFIGURED"
-  | "PIPELINE_SYNC";
+  | "PIPELINE_SYNC"
+  | "API_POST_IN_PROGRESS"
+  | "API_GET_RESPONSE"
+  | "API_PATCH_COMPLETED"
+  | "API_PATCH_AMENDED"
+  | "API_AUTHENTICATION";
 
-export type EntityType = "Submission" | "Questionnaire" | "Question" | "PipelineConfig" | "User";
+export type EntityType = "Submission" | "Questionnaire" | "Question" | "PipelineConfig" | "User" | "ApiOperation";
 
 export interface IndicatorDefinition {
   code: IndicatorCode;
@@ -215,3 +258,64 @@ export interface SyncJob {
 }
 
 export type SyncJobStatus = "Success" | "Failed" | "Partial";
+
+// B2G API Types
+export interface B2GAuthToken {
+  accessToken: string;
+  expiresAt: string;
+  tokenType: string;
+}
+
+export interface B2GOrganization {
+  id: string;
+  name: string;
+  identifier: string;
+  active: boolean;
+}
+
+export interface B2GHealthcareService {
+  id: string;
+  organizationId: string;
+  name: string;
+  identifier: string;
+  programPaymentEntityId: string;
+}
+
+export interface B2GQuestionnaire {
+  id: string;
+  name: string;
+  version: string;
+  status: string;
+  date: string;
+}
+
+export interface OperationOutcome {
+  severity: "error" | "warning" | "information";
+  code: string;
+  diagnostics: string;
+  location?: string;
+  indicatorCode?: string;
+  questionLinkId?: string;
+}
+
+export interface ApiActivityLogEntry {
+  id: string;
+  timestamp: string;
+  method: "GET" | "POST" | "PATCH";
+  url: string;
+  questionnaireResponseId?: string;
+  httpStatus: number;
+  warningsCount: number;
+  errorsCount: number;
+  performedByUserId: string;
+  performedByEmail: string;
+  requestHeaders?: Record<string, string>;
+  responsePreview?: string;
+}
+
+// Submission Attestation Types
+export type AttestationType = 
+  | "submission"        // Case A - First submission within reporting period
+  | "resubmission"      // Case B - Resubmission within reporting period
+  | "updated-after-due" // Case C - Resubmission after due date
+  | "late-submission";  // Case D - Late submission

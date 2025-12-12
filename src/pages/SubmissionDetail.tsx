@@ -188,7 +188,7 @@ const SubmissionDetail = () => {
             ...qu,
             finalValue: null,
             userValue: null,
-            isOverridden: false,
+            isOverridden: true, // Mark as manually edited since user explicitly cleared values
           })),
         })),
       };

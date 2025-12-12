@@ -16,13 +16,14 @@ interface IndicatorAccordionProps {
   section: SectionDefinition;
   questions: QuestionAnswer[];
   onQuestionChange: (linkId: string, value: string | number | null) => void;
+  onQuestionRevert: (linkId: string) => void;
   isExpanded: boolean;
   onToggle: () => void;
   id?: string;
 }
 
 export const IndicatorAccordion = forwardRef<HTMLDivElement, IndicatorAccordionProps>(
-  ({ section, questions, onQuestionChange, isExpanded, onToggle, id }, ref) => {
+  ({ section, questions, onQuestionChange, onQuestionRevert, isExpanded, onToggle, id }, ref) => {
     const errorCount = questions.filter((q) => q.errors.length > 0).length;
     const warningCount = questions.filter((q) => q.warnings.length > 0).length;
     const completedCount = questions.filter((q) => q.finalValue !== null && q.finalValue !== "").length;
@@ -109,10 +110,11 @@ export const IndicatorAccordion = forwardRef<HTMLDivElement, IndicatorAccordionP
                               required={def?.required || question.required}
                               value={question.finalValue}
                               autoValue={question.autoValue}
-                              isAutoFilled={!question.isOverridden && question.autoValue !== null}
+                              isAutoFilled={!question.isOverridden}
                               errors={question.errors}
                               warnings={question.warnings}
                               onChange={(value) => onQuestionChange(question.linkId, value)}
+                              onRevert={() => onQuestionRevert(question.linkId)}
                             />
                           );
                         })}

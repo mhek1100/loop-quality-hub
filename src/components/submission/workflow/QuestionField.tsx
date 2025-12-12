@@ -15,6 +15,7 @@ interface QuestionFieldProps {
   errors: string[];
   warnings: string[];
   onChange: (value: string | number | null) => void;
+  onRevert?: () => void;
 }
 
 export function QuestionField({
@@ -28,10 +29,11 @@ export function QuestionField({
   errors,
   warnings,
   onChange,
+  onRevert,
 }: QuestionFieldProps) {
   const hasErrors = errors.length > 0;
   const hasWarnings = warnings.length > 0;
-  const isEdited = !isAutoFilled && autoValue !== null && autoValue !== undefined;
+  const canRevert = !isAutoFilled && autoValue !== null && autoValue !== undefined;
 
   const handleChange = (newValue: string) => {
     if (responseType === "integer") {
@@ -39,14 +41,6 @@ export function QuestionField({
       onChange(isNaN(parsed) ? null : parsed);
     } else {
       onChange(newValue || null);
-    }
-  };
-
-  const handleRevert = () => {
-    if (responseType === "integer") {
-      onChange(autoValue as number | null);
-    } else {
-      onChange(autoValue as string | null);
     }
   };
 
@@ -89,10 +83,10 @@ export function QuestionField({
                 </>
               )}
             </Badge>
-            {isEdited && (
+            {canRevert && onRevert && (
               <button
                 type="button"
-                onClick={handleRevert}
+                onClick={onRevert}
                 className="text-xs text-primary hover:text-primary/80 hover:underline flex items-center gap-1 transition-colors"
               >
                 <RotateCcw className="h-3 w-3" />

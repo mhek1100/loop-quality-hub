@@ -12,9 +12,10 @@ interface StepPreviewProps {
   submission: Submission;
   onBack: () => void;
   onContinue: () => void;
+  canProceed?: boolean;
 }
 
-export function StepPreview({ submission, onBack, onContinue }: StepPreviewProps) {
+export function StepPreview({ submission, onBack, onContinue, canProceed }: StepPreviewProps) {
   const [showPayloadModal, setShowPayloadModal] = useState(false);
   const [hasBuiltPreview, setHasBuiltPreview] = useState(false);
 
@@ -246,7 +247,7 @@ export function StepPreview({ submission, onBack, onContinue }: StepPreviewProps
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Data Entry
         </Button>
-        <Button onClick={onContinue} disabled={!validationSummary.canContinue}>
+        <Button onClick={onContinue} disabled={canProceed === false || !validationSummary.canContinue}>
           Continue to Step 3
           <ArrowRight className="h-4 w-4 ml-2" />
         </Button>

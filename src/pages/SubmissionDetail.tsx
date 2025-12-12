@@ -356,22 +356,24 @@ const SubmissionDetail = () => {
         )}
       </div>
 
-      {/* Workflow Stepper */}
-      <Card>
-        <CardContent className="p-4">
-          <WorkflowStepper
-            currentStep={currentStep}
-            completedSteps={completedSteps}
-            lockedSteps={lockedSteps}
-            onStepClick={handleStepClick}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Compact Progress & Version Row */}
-      <div className="flex items-center justify-between gap-4 px-1">
-        <ProgressIndicator submission={submission} className="flex-1" />
-        <VersionHistory submission={submission} />
+      {/* Workflow Stepper with Progress & Version */}
+      <div className="flex items-start gap-4">
+        <Card className="flex-1">
+          <CardContent className="p-4">
+            <WorkflowStepper
+              currentStep={currentStep}
+              completedSteps={completedSteps}
+              lockedSteps={lockedSteps}
+              onStepClick={handleStepClick}
+            />
+          </CardContent>
+        </Card>
+        <Card className="shrink-0 w-56">
+          <CardContent className="p-3 space-y-3">
+            <ProgressIndicator submission={submission} />
+            <VersionHistory submission={submission} />
+          </CardContent>
+        </Card>
       </div>
 
       {/* Step Content */}

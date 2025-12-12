@@ -26,12 +26,14 @@ interface StepFinalSubmissionProps {
   submission: Submission;
   onBack: () => void;
   onSubmitComplete: () => void;
+  canProceed?: boolean;
 }
 
 export function StepFinalSubmission({
   submission,
   onBack,
   onSubmitComplete,
+  canProceed: externalCanProceed,
 }: StepFinalSubmissionProps) {
   const facility = getFacilityById(submission.facilityId);
   const period = getReportingPeriodById(submission.reportingPeriodId);
@@ -55,6 +57,7 @@ export function StepFinalSubmission({
   const headers = getGpmsHeaders();
 
   const canProceed =
+    (externalCanProceed !== false) &&
     submission.questionnaireResponseId &&
     submission.fhirStatus === "in-progress" &&
     isAuthorizedSubmitter &&

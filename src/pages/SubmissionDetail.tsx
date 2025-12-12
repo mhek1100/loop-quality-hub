@@ -90,6 +90,12 @@ const SubmissionDetail = () => {
   // Calculate locked steps - stricter validation
   const lockedSteps = useMemo((): WorkflowStepId[] => {
     if (!submission) return ["preview", "post-in-progress", "final-submission"];
+    
+    // If already completed/amended, no steps are locked (read-only view)
+    if (submission.fhirStatus === "completed" || submission.fhirStatus === "amended") {
+      return [];
+    }
+    
     const locked: WorkflowStepId[] = [];
 
     // Can't proceed to preview if there are errors

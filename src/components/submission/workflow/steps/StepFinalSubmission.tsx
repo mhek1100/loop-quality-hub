@@ -8,7 +8,7 @@ import { FhirPayloadModal } from "../FhirPayloadModal";
 import { Submission } from "@/lib/types";
 import { getFacilityById, getReportingPeriodById } from "@/lib/mock/data";
 import { useUser } from "@/contexts/UserContext";
-import { Send, ArrowLeft, Info, Shield, AlertTriangle, FileText } from "lucide-react";
+import { Send, ArrowLeft, Info, Shield, AlertTriangle, FileText, CheckCircle2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { 
   SUBMISSION_SCENARIO_CONFIG, 
@@ -39,6 +39,9 @@ export function StepFinalSubmission({
   const period = getReportingPeriodById(submission.reportingPeriodId);
   const { currentUser, getGpmsHeaders, canFinalSubmit, isAuthorizedSubmitter } = useUser();
 
+  // Check if already completed/amended (read-only state)
+  const isAlreadySubmitted = submission.fhirStatus === "completed" || submission.fhirStatus === "amended";
+
   // Auto-determine the submission scenario based on submission history and timing
   const periodDueDate = period ? new Date(period.dueDate) : new Date();
   const submissionScenario = useMemo(
@@ -57,11 +60,13 @@ export function StepFinalSubmission({
   const headers = getGpmsHeaders();
 
   const canProceed =
-    (externalCanProceed !== false) &&
-    submission.questionnaireResponseId &&
-    submission.fhirStatus === "in-progress" &&
-    isAuthorizedSubmitter &&
-    canFinalSubmit;
+    isAlreadySubmitted || (
+      (externalCanProceed !== false) &&
+      submission.questionnaireResponseId &&
+      submission.fhirStatus === "in-progress" &&
+      isAuthorizedSubmitter &&
+      canFinalSubmit
+    );
 
   // Generate FHIR PATCH payload
   const patchPayload = useMemo(() => ({
@@ -151,6 +156,78 @@ export function StepFinalSubmission({
     setShowResultModal(false);
     onSubmitComplete();
   };
+
+  // Already submitted - show read-only completion state
+  if (isAlreadySubmitted) {
+    return (
+      <div className="space-y-6">
+        <Alert className="bg-success/10 border-success/30">
+          <CheckCircle2 className="h-4 w-4 text-success" />
+          <AlertDescription>
+            This submission has been successfully completed. FHIR status: <Badge variant="secondary">{submission.fhirStatus}</Badge>
+          </AlertDescription>
+        </Alert>
+
+        {/* Submission Summary */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Submission Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">QuestionnaireResponse ID</p>
+                <code className="text-sm font-mono">{submission.questionnaireResponseId}</code>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">FHIR Status</p>
+                <Badge variant="default" className="bg-success">{submission.fhirStatus}</Badge>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Submission Status</p>
+                <Badge variant="outline">{submission.status}</Badge>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Last Updated</p>
+                <span className="text-sm">{new Date(submission.updatedAt).toLocaleString()}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* GPMS Headers used */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Submitted By</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="p-3 bg-muted/30 rounded-lg font-mono text-sm space-y-2">
+              {headers["X-User-Email"] && (
+                <p>
+                  X-User-Email: <Badge variant="secondary">{headers["X-User-Email"]}</Badge>
+                </p>
+              )}
+              {headers["X-Federated-Id"] && (
+                <p>
+                  X-Federated-Id: <Badge variant="secondary">{headers["X-Federated-Id"]}</Badge>
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-start pt-4 border-t">
+          <Button variant="outline" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (!canProceed) {
     return (

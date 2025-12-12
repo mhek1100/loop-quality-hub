@@ -11,7 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Send, Shield } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertTriangle, Send, Shield, FileJson } from "lucide-react";
 import { AttestationType } from "@/lib/types";
 import { useUser } from "@/contexts/UserContext";
 
@@ -23,6 +25,7 @@ interface SubmissionAttestationDialogProps {
   isLoading?: boolean;
   facilityName: string;
   quarter: string;
+  fhirPayload?: object;
 }
 
 const ATTESTATION_CONFIG: Record<
@@ -66,9 +69,10 @@ export function SubmissionAttestationDialog({
   isLoading,
   facilityName,
   quarter,
+  fhirPayload,
 }: SubmissionAttestationDialogProps) {
   const [confirmed, setConfirmed] = useState(false);
-  const { currentUser, getGpmsHeaders, isAuthorizedSubmitter } = useUser();
+  const { getGpmsHeaders, isAuthorizedSubmitter } = useUser();
   
   const config = ATTESTATION_CONFIG[attestationType];
   const headers = getGpmsHeaders();
@@ -89,7 +93,7 @@ export function SubmissionAttestationDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
@@ -100,63 +104,90 @@ export function SubmissionAttestationDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {!isAuthorizedSubmitter && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                A valid authorised GPMS user (with X-User-Email or X-Federated-Id) must
-                be selected to perform a formal submission.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <div className="p-4 bg-muted/50 rounded-lg space-y-3">
-            <p className="text-sm font-medium">By submitting Quality Indicators data you:</p>
-            <ul className="space-y-3">
-              {ATTESTATION_BULLETS.map((bullet, index) => (
-                <li key={index} className="flex gap-2 text-sm text-muted-foreground">
-                  <span className="text-primary mt-0.5">•</span>
-                  <span>{bullet}</span>
-                </li>
-              ))}
-            </ul>
-            {config.extraMessage && (
-              <p className="text-sm text-muted-foreground italic pt-2 border-t border-border">
-                {config.extraMessage}
-              </p>
+        <Tabs defaultValue="confirmation" className="flex-1 overflow-hidden flex flex-col">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="confirmation">Confirmation</TabsTrigger>
+            <TabsTrigger value="payload" className="flex items-center gap-1">
+              <FileJson className="h-3 w-3" />
+              FHIR Payload
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="confirmation" className="flex-1 overflow-auto space-y-4 mt-4">
+            {!isAuthorizedSubmitter && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  A valid authorised GPMS user (with X-User-Email or X-Federated-Id) must
+                  be selected to perform a formal submission.
+                </AlertDescription>
+              </Alert>
             )}
-          </div>
 
-          <div className="p-3 bg-muted/30 rounded-lg space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">
-              Submitted by (GPMS Headers):
-            </p>
-            <div className="font-mono text-xs space-y-1">
-              {headers["X-User-Email"] && (
-                <p>
-                  X-User-Email: <Badge variant="secondary">{headers["X-User-Email"]}</Badge>
-                </p>
-              )}
-              {headers["X-Federated-Id"] && (
-                <p>
-                  X-Federated-Id: <Badge variant="secondary">{headers["X-Federated-Id"]}</Badge>
+            <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+              <p className="text-sm font-medium">By submitting Quality Indicators data you:</p>
+              <ul className="space-y-3">
+                {ATTESTATION_BULLETS.map((bullet, index) => (
+                  <li key={index} className="flex gap-2 text-sm text-muted-foreground">
+                    <span className="text-primary mt-0.5">•</span>
+                    <span>{bullet}</span>
+                  </li>
+                ))}
+              </ul>
+              {config.extraMessage && (
+                <p className="text-sm text-muted-foreground italic pt-2 border-t border-border">
+                  {config.extraMessage}
                 </p>
               )}
             </div>
-          </div>
 
-          <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
-            <Checkbox
-              checked={confirmed}
-              onCheckedChange={(checked) => setConfirmed(checked === true)}
-              disabled={!isAuthorizedSubmitter}
-            />
-            <span className="text-sm font-medium">I confirm the above statements.</span>
-          </label>
-        </div>
+            <div className="p-3 bg-muted/30 rounded-lg space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">
+                Submitted by (GPMS Headers):
+              </p>
+              <div className="font-mono text-xs space-y-1">
+                {headers["X-User-Email"] && (
+                  <p>
+                    X-User-Email: <Badge variant="secondary">{headers["X-User-Email"]}</Badge>
+                  </p>
+                )}
+                {headers["X-Federated-Id"] && (
+                  <p>
+                    X-Federated-Id: <Badge variant="secondary">{headers["X-Federated-Id"]}</Badge>
+                  </p>
+                )}
+              </div>
+            </div>
 
-        <DialogFooter>
+            <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
+              <Checkbox
+                checked={confirmed}
+                onCheckedChange={(checked) => setConfirmed(checked === true)}
+                disabled={!isAuthorizedSubmitter}
+              />
+              <span className="text-sm font-medium">I confirm the above statements.</span>
+            </label>
+          </TabsContent>
+          
+          <TabsContent value="payload" className="flex-1 overflow-hidden mt-4">
+            <div className="h-full flex flex-col">
+              <p className="text-sm text-muted-foreground mb-2">
+                This is the FHIR QuestionnaireResponse that will be sent via PATCH request:
+              </p>
+              <ScrollArea className="flex-1 border border-border rounded-lg">
+                <pre className="p-4 text-xs font-mono">
+                  {JSON.stringify(
+                    fhirPayload ? { ...fhirPayload, status: "completed" } : {},
+                    null,
+                    2
+                  )}
+                </pre>
+              </ScrollArea>
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        <DialogFooter className="mt-4">
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
             Cancel
           </Button>

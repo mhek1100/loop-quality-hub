@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Building2 } from "lucide-react";
+import { ArrowLeft, Building2, Copy } from "lucide-react";
 import { getSubmission, getFacilityById, getReportingPeriodById } from "@/lib/mock/data";
 import { toast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/UserContext";
@@ -11,6 +11,8 @@ import { StepDataEntry } from "@/components/submission/workflow/steps/StepDataEn
 import { StepPreview } from "@/components/submission/workflow/steps/StepPreview";
 import { StepPostInProgress } from "@/components/submission/workflow/steps/StepPostInProgress";
 import { StepFinalSubmission } from "@/components/submission/workflow/steps/StepFinalSubmission";
+import { ProgressIndicator } from "@/components/submission/workflow/ProgressIndicator";
+import { VersionHistory } from "@/components/submission/workflow/VersionHistory";
 import { Submission } from "@/lib/types";
 
 const SubmissionDetail = () => {
@@ -226,6 +228,13 @@ const SubmissionDetail = () => {
     toast({ title: "Submission complete!" });
   };
 
+  const handleCopyQrId = () => {
+    if (submission.questionnaireResponseId) {
+      navigator.clipboard.writeText(submission.questionnaireResponseId);
+      toast({ title: "Copied to clipboard", description: submission.questionnaireResponseId });
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
@@ -246,6 +255,25 @@ const SubmissionDetail = () => {
             </div>
           </div>
         </div>
+        {submission.questionnaireResponseId && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">QR ID:</span>
+            <code className="text-sm bg-muted px-2 py-1 rounded">{submission.questionnaireResponseId}</code>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopyQrId}>
+              <Copy className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Progress Indicator and Version History Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="lg:col-span-2">
+          <CardContent className="p-4">
+            <ProgressIndicator submission={submission} />
+          </CardContent>
+        </Card>
+        <VersionHistory submission={submission} />
       </div>
 
       {/* Workflow Stepper */}

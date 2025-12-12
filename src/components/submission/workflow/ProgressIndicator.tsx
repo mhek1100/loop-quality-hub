@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Progress } from "@/components/ui/progress";
 import { Submission } from "@/lib/types";
 import { Check, AlertCircle, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ProgressIndicatorProps {
   submission: Submission;
@@ -24,30 +25,32 @@ export function ProgressIndicator({ submission, className }: ProgressIndicatorPr
   }, [submission.questionnaires]);
 
   return (
-    <div className={className}>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium">Overall Progress</span>
-        <span className="text-sm text-muted-foreground">
-          {stats.complete}/{stats.total} questions ({stats.percentage}%)
+    <div className={cn("flex items-center gap-4", className)}>
+      <div className="flex items-center gap-2 text-sm">
+        <span className="text-muted-foreground">Progress:</span>
+        <span className="font-medium">
+          {stats.complete}/{stats.total}
         </span>
       </div>
-      <Progress value={stats.percentage} className="h-2" />
-      <div className="flex items-center gap-4 mt-2 text-xs">
+      <Progress value={stats.percentage} className="h-2 w-32 flex-shrink-0" />
+      <span className="text-sm text-muted-foreground">{stats.percentage}%</span>
+      
+      <div className="flex items-center gap-3 text-xs">
         {stats.percentage === 100 && stats.errors === 0 && (
           <span className="flex items-center gap-1 text-success">
-            <Check className="h-3 w-3" />
+            <Check className="h-3.5 w-3.5" />
             Complete
           </span>
         )}
         {stats.errors > 0 && (
           <span className="flex items-center gap-1 text-destructive">
-            <AlertCircle className="h-3 w-3" />
+            <AlertCircle className="h-3.5 w-3.5" />
             {stats.errors} error{stats.errors !== 1 ? "s" : ""}
           </span>
         )}
         {stats.warnings > 0 && (
           <span className="flex items-center gap-1 text-warning">
-            <AlertTriangle className="h-3 w-3" />
+            <AlertTriangle className="h-3.5 w-3.5" />
             {stats.warnings} warning{stats.warnings !== 1 ? "s" : ""}
           </span>
         )}

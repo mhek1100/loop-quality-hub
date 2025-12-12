@@ -1,15 +1,13 @@
 import { 
   BarChart3, 
   FileText, 
-  Database, 
-  Users, 
   History, 
   HelpCircle,
   ChevronLeft,
   ChevronRight,
-  Shield
+  Settings
 } from "lucide-react";
-import { NavLink as RouterNavLink } from "react-router-dom";
+import { NavLink as RouterNavLink, useLocation } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -27,16 +25,22 @@ import loopLogo from "@/assets/loop-logo.png";
 const navItems = [
   { title: "Submissions", url: "/", icon: FileText },
   { title: "KPI Dashboard", url: "/kpi", icon: BarChart3 },
-  { title: "CIS Data Pipeline", url: "/pipeline", icon: Database },
-  { title: "Users & Roles", url: "/users", icon: Users },
   { title: "Audit Log", url: "/audit", icon: History },
-  { title: "Conformance", url: "/conformance", icon: Shield },
+  { title: "Settings", url: "/settings", icon: Settings },
   { title: "Help & Resources", url: "/help", icon: HelpCircle },
 ];
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
+  const location = useLocation();
+
+  const isActive = (url: string) => {
+    if (url === "/settings") {
+      return location.pathname.startsWith("/settings");
+    }
+    return url === "/" ? location.pathname === "/" : location.pathname.startsWith(url);
+  };
 
   return (
     <Sidebar 
@@ -66,14 +70,12 @@ export function AppSidebar() {
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild className="h-11">
                 <RouterNavLink
-                  to={item.url}
+                  to={item.url === "/settings" ? "/settings/api-variables" : item.url}
                   end={item.url === "/"}
-                  className={({ isActive }) =>
-                    cn(
-                      "sidebar-nav-item w-full",
-                      isActive && "sidebar-nav-item-active"
-                    )
-                  }
+                  className={cn(
+                    "sidebar-nav-item w-full",
+                    isActive(item.url) && "sidebar-nav-item-active"
+                  )}
                 >
                   <item.icon className="h-5 w-5 shrink-0" />
                   {!isCollapsed && <span>{item.title}</span>}

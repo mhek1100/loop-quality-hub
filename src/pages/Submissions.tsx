@@ -327,23 +327,12 @@ const Submissions = () => {
                         {new Date(sub.updatedAt).toLocaleDateString()}
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {canEdit && (sub.status === "Not Started" || sub.status === "In Progress") ? (
-                            <Button variant="outline" size="sm" asChild>
-                              <Link to={`/submissions/${sub.id}`}>
-                                <Edit className="mr-1 h-3 w-3" />
-                                Edit
-                              </Link>
-                            </Button>
-                          ) : (
-                            <Button variant="ghost" size="sm" asChild>
-                              <Link to={`/submissions/${sub.id}`}>
-                                <Eye className="mr-1 h-3 w-3" />
-                                View
-                              </Link>
-                            </Button>
-                          )}
-                        </div>
+                        <Button variant="outline" size="sm" asChild>
+                          <Link to={`/submissions/${sub.id}`}>
+                            <Eye className="mr-1 h-3 w-3" />
+                            Open Workflow
+                          </Link>
+                        </Button>
                       </td>
                     </tr>
                   );

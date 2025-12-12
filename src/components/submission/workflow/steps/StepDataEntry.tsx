@@ -35,7 +35,7 @@ export function StepDataEntry({
   onRevertAllToPipeline,
 }: StepDataEntryProps) {
   const [activeIndicator, setActiveIndicator] = useState<string>(QI_QUESTIONNAIRE.sections[0].code);
-  const [expandedIndicators, setExpandedIndicators] = useState<string[]>([QI_QUESTIONNAIRE.sections[0].code]);
+  const [expandedIndicators, setExpandedIndicators] = useState<string[]>([]);
   const [showRevertDialog, setShowRevertDialog] = useState(false);
   const indicatorRefs = useRef<Record<string, HTMLDivElement | null>>({});
 

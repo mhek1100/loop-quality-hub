@@ -4,24 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { FhirPayloadModal } from "../FhirPayloadModal";
 import { Submission } from "@/lib/types";
 import { getFacilityById, getReportingPeriodById } from "@/lib/mock/data";
 import { useUser } from "@/contexts/UserContext";
-import { Send, ArrowLeft, Info, Shield, AlertTriangle } from "lucide-react";
+import { Send, ArrowLeft, Info, Shield, AlertTriangle, FileText } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { 
-  SubmissionScenario, 
   SUBMISSION_SCENARIO_CONFIG, 
   getSubmissionScenario 
 } from "@/lib/submission-utils";
+import { ServerDataPanel } from "./ServerDataPanel";
 
 const ATTESTATION_BULLETS = [
   "Confirm that you have collected, and are reporting, the quality indicator data in accordance with National Aged Care Mandatory Quality Indicator Program Manual 3.0 and all applicable laws, in accordance with the Aged Care Act 1997, Records Principles 2014 and Accountability Principles 2014.",
@@ -43,19 +36,21 @@ export function StepFinalSubmission({
   const period = getReportingPeriodById(submission.reportingPeriodId);
   const { currentUser, getGpmsHeaders, canFinalSubmit, isAuthorizedSubmitter } = useUser();
 
-  // Determine the submission scenario based on submission history and timing
-  const isFirstSubmission = submission.status === "Not Started" || submission.status === "In Progress" || !submission.lastSubmittedDate;
-  const periodEndDate = period ? new Date(period.dueDate) : new Date();
-  const initialScenario = getSubmissionScenario(isFirstSubmission, periodEndDate);
+  // Auto-determine the submission scenario based on submission history and timing
+  const periodDueDate = period ? new Date(period.dueDate) : new Date();
+  const submissionScenario = useMemo(
+    () => getSubmissionScenario(submission, periodDueDate),
+    [submission, periodDueDate]
+  );
+  const scenarioConfig = SUBMISSION_SCENARIO_CONFIG[submissionScenario];
 
   const [confirmed, setConfirmed] = useState(false);
-  const [submissionType, setSubmissionType] = useState<SubmissionScenario>(initialScenario);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showResultModal, setShowResultModal] = useState(false);
   const [patchResponse, setPatchResponse] = useState<object | null>(null);
+  const [serverDataVerified, setServerDataVerified] = useState(false);
 
   const headers = getGpmsHeaders();
-  const scenarioConfig = SUBMISSION_SCENARIO_CONFIG[submissionType];
 
   const canProceed =
     submission.questionnaireResponseId &&
@@ -67,7 +62,7 @@ export function StepFinalSubmission({
   const patchPayload = useMemo(() => ({
     resourceType: "QuestionnaireResponse",
     id: submission.questionnaireResponseId,
-    status: "completed",
+    status: scenarioConfig.fhirTargetStatus,
     questionnaire: `Questionnaire/${submission.questionnaireId}`,
     subject: {
       reference: submission.healthcareServiceReference,
@@ -80,7 +75,7 @@ export function StepFinalSubmission({
       tag: [
         {
           system: "submission-type",
-          code: submissionType,
+          code: submissionScenario,
           display: scenarioConfig.label,
         },
       ],
@@ -104,7 +99,7 @@ export function StepFinalSubmission({
           ],
         })),
     })),
-  }), [submission, currentUser.id, submissionType, scenarioConfig]);
+  }), [submission, currentUser.id, submissionScenario, scenarioConfig]);
 
   const handleSubmit = async () => {
     if (!confirmed) return;
@@ -118,7 +113,7 @@ export function StepFinalSubmission({
     const mockResponse = {
       resourceType: "QuestionnaireResponse",
       id: submission.questionnaireResponseId,
-      status: "completed",
+      status: scenarioConfig.fhirTargetStatus,
       questionnaire: `Questionnaire/${submission.questionnaireId}`,
       subject: {
         reference: submission.healthcareServiceReference,
@@ -130,7 +125,7 @@ export function StepFinalSubmission({
         tag: [
           {
             system: "submission-type",
-            code: submissionType,
+            code: submissionScenario,
             display: scenarioConfig.label,
           },
         ],
@@ -143,7 +138,7 @@ export function StepFinalSubmission({
 
     toast({
       title: "Successfully submitted to Government",
-      description: `${scenarioConfig.label} - QuestionnaireResponse status changed to completed`,
+      description: `${scenarioConfig.label} - QuestionnaireResponse status changed to ${scenarioConfig.fhirTargetStatus}`,
     });
   };
 
@@ -182,24 +177,23 @@ export function StepFinalSubmission({
         </AlertDescription>
       </Alert>
 
-      {/* Submission Type */}
+      {/* Submission Type - Auto-determined */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Submission Type</CardTitle>
+          <CardTitle className="text-base flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Submission Type
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Select value={submissionType} onValueChange={(val) => setSubmissionType(val as SubmissionScenario)}>
-            <SelectTrigger className="max-w-sm">
-              <SelectValue placeholder="Select submission type" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.values(SUBMISSION_SCENARIO_CONFIG).map((config) => (
-                <SelectItem key={config.value} value={config.value}>
-                  {config.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+            <Badge variant="outline" className="text-sm font-medium">
+              {scenarioConfig.label}
+            </Badge>
+            <span className="text-sm text-muted-foreground">
+              {scenarioConfig.description}
+            </span>
+          </div>
           {scenarioConfig.additionalMessage && (
             <Alert className="bg-warning/10 border-warning/30">
               <AlertTriangle className="h-4 w-4 text-warning" />
@@ -210,6 +204,12 @@ export function StepFinalSubmission({
           )}
         </CardContent>
       </Card>
+
+      {/* Server Data Verification - GET Operation */}
+      <ServerDataPanel 
+        submission={submission} 
+        onDataRetrieved={() => setServerDataVerified(true)} 
+      />
 
       {/* Attestation */}
       <Card>

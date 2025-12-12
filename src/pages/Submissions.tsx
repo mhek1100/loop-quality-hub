@@ -45,6 +45,7 @@ import {
 import { INDICATORS } from "@/lib/mock/indicators";
 import { toast } from "@/hooks/use-toast";
 import { Submission } from "@/lib/types";
+import { DemoScenariosPanel } from "@/components/submissions/DemoScenariosPanel";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -146,6 +147,9 @@ const Submissions = () => {
           Manage and review NQIP submissions across all facilities
         </p>
       </div>
+
+      {/* Demo Scenarios Panel */}
+      <DemoScenariosPanel />
 
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

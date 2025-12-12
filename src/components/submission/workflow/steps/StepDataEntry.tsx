@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { IndicatorNavBar } from "../IndicatorNavBar";
+
 import { IndicatorAccordion } from "../IndicatorAccordion";
 import { QI_QUESTIONNAIRE } from "@/lib/questionnaire/definitions";
 import { Submission, QuestionAnswer } from "@/lib/types";
@@ -141,13 +141,6 @@ export function StepDataEntry({
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Indicator Navigation */}
-          <IndicatorNavBar
-            activeIndicator={activeIndicator}
-            onIndicatorClick={handleIndicatorClick}
-            indicatorStatus={indicatorStatus}
-          />
-
           {/* Indicator Accordions */}
           <div className="space-y-4">
             {QI_QUESTIONNAIRE.sections.map((section) => {

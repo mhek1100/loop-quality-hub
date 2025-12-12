@@ -10,7 +10,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Pagination,
@@ -42,7 +42,7 @@ import {
   currentUser,
   roles
 } from "@/lib/mock/data";
-import { INDICATORS } from "@/lib/mock/indicators";
+
 import { toast } from "@/hooks/use-toast";
 import { Submission } from "@/lib/types";
 import { DemoScenariosPanel } from "@/components/submissions/DemoScenariosPanel";
@@ -55,7 +55,7 @@ const Submissions = () => {
   const [selectedQuarter, setSelectedQuarter] = useState(latestPeriod.id);
   const [selectedFacility, setSelectedFacility] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
-  const [selectedIndicator, setSelectedIndicator] = useState("all");
+  
   const [hasWarningsFilter, setHasWarningsFilter] = useState(false);
   const [hasErrorsFilter, setHasErrorsFilter] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -82,12 +82,6 @@ const Submissions = () => {
     if (hasErrorsFilter && !sub.hasErrors) return false;
     if (searchQuery && !facility?.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     
-    if (selectedIndicator !== "all") {
-      const hasIndicator = sub.questionnaires.some(q => 
-        q.indicatorCode === selectedIndicator && q.validationStatus !== "OK"
-      );
-      if (!hasIndicator) return false;
-    }
     
     return true;
   });
@@ -258,42 +252,25 @@ const Submissions = () => {
               </Select>
             </div>
 
-            <div>
-              <label className="text-sm text-muted-foreground mb-1 block">Indicator</label>
-              <Select value={selectedIndicator} onValueChange={setSelectedIndicator}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="All indicators" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Indicators</SelectItem>
-                  {INDICATORS.map(ind => (
-                    <SelectItem key={ind.code} value={ind.code}>{ind.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox 
-                  checked={hasWarningsFilter} 
-                  onCheckedChange={(checked) => setHasWarningsFilter(checked === true)}
-                />
-                <span className="text-sm flex items-center gap-1">
-                  <AlertTriangle className="h-3 w-3 text-warning" />
-                  Warnings
-                </span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox 
-                  checked={hasErrorsFilter} 
-                  onCheckedChange={(checked) => setHasErrorsFilter(checked === true)}
-                />
-                <span className="text-sm flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3 text-destructive" />
-                  Errors
-                </span>
-              </label>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={hasWarningsFilter ? "default" : "outline"}
+                size="sm"
+                onClick={() => setHasWarningsFilter(!hasWarningsFilter)}
+                className={hasWarningsFilter ? "bg-warning hover:bg-warning/90 text-warning-foreground" : ""}
+              >
+                <AlertTriangle className="h-3 w-3 mr-1" />
+                Warnings
+              </Button>
+              <Button
+                variant={hasErrorsFilter ? "default" : "outline"}
+                size="sm"
+                onClick={() => setHasErrorsFilter(!hasErrorsFilter)}
+                className={hasErrorsFilter ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : ""}
+              >
+                <AlertCircle className="h-3 w-3 mr-1" />
+                Errors
+              </Button>
             </div>
           </div>
         </CardContent>

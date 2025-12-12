@@ -3,6 +3,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Check, AlertCircle, Zap, Pencil, RotateCcw } from "lucide-react";
+import { PrivacyWarning } from "@/components/submission/PrivacyWarning";
+import { isCommentField } from "@/lib/submission-utils";
 
 interface QuestionFieldProps {
   linkId: string;
@@ -34,6 +36,7 @@ export function QuestionField({
   const hasErrors = errors.length > 0;
   const hasWarnings = warnings.length > 0;
   const canRevert = !isAutoFilled && autoValue !== null && autoValue !== undefined;
+  const showPrivacyWarning = isCommentField(linkId, text) && responseType === "string";
 
   const handleChange = (newValue: string) => {
     if (responseType === "integer") {
@@ -103,15 +106,18 @@ export function QuestionField({
 
           {/* Input field */}
           {responseType === "string" && text.toLowerCase().includes("comment") ? (
-            <Textarea
-              value={displayValue}
-              onChange={(e) => handleChange(e.target.value)}
-              placeholder="Enter comments..."
-              className={cn(
-                "mt-2",
-                hasErrors && "border-destructive focus-visible:ring-destructive"
-              )}
-            />
+            <div className="space-y-2">
+              <Textarea
+                value={displayValue}
+                onChange={(e) => handleChange(e.target.value)}
+                placeholder="Enter comments..."
+                className={cn(
+                  "mt-2",
+                  hasErrors && "border-destructive focus-visible:ring-destructive"
+                )}
+              />
+              {showPrivacyWarning && <PrivacyWarning compact />}
+            </div>
           ) : (
             <Input
               type={responseType === "integer" ? "number" : responseType === "date" ? "date" : "text"}

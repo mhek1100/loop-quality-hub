@@ -356,19 +356,9 @@ const SubmissionDetail = () => {
         )}
       </div>
 
-      {/* Progress Indicator and Version History Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2">
-          <CardContent className="p-4">
-            <ProgressIndicator submission={submission} />
-          </CardContent>
-        </Card>
-        <VersionHistory submission={submission} />
-      </div>
-
       {/* Workflow Stepper */}
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-4">
           <WorkflowStepper
             currentStep={currentStep}
             completedSteps={completedSteps}
@@ -377,6 +367,12 @@ const SubmissionDetail = () => {
           />
         </CardContent>
       </Card>
+
+      {/* Compact Progress & Version Row */}
+      <div className="flex items-center justify-between gap-4 px-1">
+        <ProgressIndicator submission={submission} className="flex-1" />
+        <VersionHistory submission={submission} />
+      </div>
 
       {/* Step Content */}
       <div className="min-h-[60vh]">

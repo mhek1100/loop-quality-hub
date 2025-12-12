@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Clock, User, FileCheck, FileEdit, FilePlus, ChevronDown } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Submission } from "@/lib/types";
 import { users, getReportingPeriodById } from "@/lib/mock/data";
 import { cn } from "@/lib/utils";
@@ -69,11 +69,11 @@ export function VersionHistory({ submission, className }: VersionHistoryProps) {
   const getActionIcon = (action: string) => {
     switch (action) {
       case "created":
-        return <FilePlus className="h-4 w-4" />;
+        return <FilePlus className="h-3 w-3" />;
       case "submitted":
-        return <FileCheck className="h-4 w-4" />;
+        return <FileCheck className="h-3 w-3" />;
       default:
-        return <FileEdit className="h-4 w-4" />;
+        return <FileEdit className="h-3 w-3" />;
     }
   };
 
@@ -103,23 +103,31 @@ export function VersionHistory({ submission, className }: VersionHistoryProps) {
   const olderVersions = versions.slice(0, -1).reverse();
 
   return (
-    <Card className={cn("", className)}>
-      <CardHeader className="p-4 pb-0">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          Version History
-          <Badge variant="secondary" className="ml-auto text-xs">
-            v{submission.submissionVersionNumber}
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          className={cn(
+            "flex items-center gap-2 px-3 py-1.5 rounded-md border border-border bg-card hover:bg-accent/50 transition-colors text-sm",
+            className
+          )}
+        >
+          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-muted-foreground">v{submission.submissionVersionNumber}</span>
+          <Badge variant="outline" className="text-xs h-5 px-1.5">
+            {getActionLabel(latestVersion.action)}
           </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-4">
-        <div className="space-y-0">
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 p-0" align="end">
+        <div className="p-3 border-b border-border">
+          <h4 className="font-medium text-sm">Version History</h4>
+        </div>
+        <div className="max-h-64 overflow-y-auto">
           {/* Latest version - always visible */}
-          <div className="flex items-start gap-3 py-3 border-b border-border">
+          <div className="flex items-start gap-2 p-3 border-b border-border">
             <div
               className={cn(
-                "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
+                "flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
                 getActionColor(latestVersion.action)
               )}
             >
@@ -127,27 +135,16 @@ export function VersionHistory({ submission, className }: VersionHistoryProps) {
             </div>
             
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-medium text-sm">
-                  Version {latestVersion.version}
-                </span>
-                <Badge variant="outline" className="text-xs h-5">
-                  {getActionLabel(latestVersion.action)}
-                </Badge>
-                {latestVersion.fhirStatus && (
-                  <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
-                    {latestVersion.fhirStatus}
-                  </code>
-                )}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-medium text-xs">v{latestVersion.version}</span>
+                <code className="text-xs bg-muted px-1 py-0.5 rounded font-mono">
+                  {latestVersion.fhirStatus}
+                </code>
               </div>
-              <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
-                <User className="h-3 w-3" />
+              <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
                 <span>{getUserName(latestVersion.userId)}</span>
                 <span>•</span>
-                <span>
-                  {new Date(latestVersion.timestamp).toLocaleDateString()}{" "}
-                  {new Date(latestVersion.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                </span>
+                <span>{new Date(latestVersion.timestamp).toLocaleDateString()}</span>
               </div>
             </div>
           </div>
@@ -155,62 +152,49 @@ export function VersionHistory({ submission, className }: VersionHistoryProps) {
           {/* Older versions - collapsible */}
           {olderVersions.length > 0 && (
             <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-              <CollapsibleTrigger className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full py-2">
+              <CollapsibleTrigger className="flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full py-2 border-b border-border">
                 <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} />
-                {isOpen ? "Hide" : "Show"} {olderVersions.length} older version{olderVersions.length !== 1 ? "s" : ""}
+                {olderVersions.length} older version{olderVersions.length !== 1 ? "s" : ""}
               </CollapsibleTrigger>
               
               <CollapsibleContent>
-                <div className="space-y-0 border-t border-border">
-                  {olderVersions.map((entry, index) => (
-                    <div 
-                      key={entry.version} 
+                {olderVersions.map((entry, index) => (
+                  <div 
+                    key={entry.version} 
+                    className={cn(
+                      "flex items-start gap-2 p-3",
+                      index < olderVersions.length - 1 && "border-b border-border"
+                    )}
+                  >
+                    <div
                       className={cn(
-                        "flex items-start gap-3 py-3",
-                        index < olderVersions.length - 1 && "border-b border-border"
+                        "flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
+                        getActionColor(entry.action)
                       )}
                     >
-                      <div
-                        className={cn(
-                          "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
-                          getActionColor(entry.action)
-                        )}
-                      >
-                        {getActionIcon(entry.action)}
+                      {getActionIcon(entry.action)}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-medium text-xs">v{entry.version}</span>
+                        <code className="text-xs bg-muted px-1 py-0.5 rounded font-mono">
+                          {entry.fhirStatus}
+                        </code>
                       </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium text-sm">
-                            Version {entry.version}
-                          </span>
-                          <Badge variant="outline" className="text-xs h-5">
-                            {getActionLabel(entry.action)}
-                          </Badge>
-                          {entry.fhirStatus && (
-                            <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
-                              {entry.fhirStatus}
-                            </code>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
-                          <User className="h-3 w-3" />
-                          <span>{getUserName(entry.userId)}</span>
-                          <span>•</span>
-                          <span>
-                            {new Date(entry.timestamp).toLocaleDateString()}{" "}
-                            {new Date(entry.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                          </span>
-                        </div>
+                      <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
+                        <span>{getUserName(entry.userId)}</span>
+                        <span>•</span>
+                        <span>{new Date(entry.timestamp).toLocaleDateString()}</span>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </CollapsibleContent>
             </Collapsible>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </PopoverContent>
+    </Popover>
   );
 }

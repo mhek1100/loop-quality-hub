@@ -10,11 +10,14 @@ import { useUser } from "@/contexts/UserContext";
 import { Upload, ArrowLeft, ArrowRight, Info, Shield } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
+import { OperationOutcome } from "@/lib/types";
+
 interface StepPostInProgressProps {
   submission: Submission;
   onBack: () => void;
   onContinue: () => void;
   onPostComplete: (questionnaireResponseId: string) => void;
+  onGovernmentErrors?: (errors: OperationOutcome[]) => void;
 }
 
 export function StepPostInProgress({
@@ -22,6 +25,7 @@ export function StepPostInProgress({
   onBack,
   onContinue,
   onPostComplete,
+  onGovernmentErrors,
 }: StepPostInProgressProps) {
   const [isPosting, setIsPosting] = useState(false);
   const [showResultModal, setShowResultModal] = useState(false);

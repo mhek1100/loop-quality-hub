@@ -38,6 +38,7 @@ import {
   reportingPeriods, 
   getFacilityById, 
   getReportingPeriodById,
+  getLatestReportingPeriod,
   currentUser,
   roles
 } from "@/lib/mock/data";
@@ -48,7 +49,9 @@ import { Submission } from "@/lib/types";
 const ITEMS_PER_PAGE = 5;
 
 const Submissions = () => {
-  const [selectedQuarter, setSelectedQuarter] = useState("all");
+  // Default to latest reporting period
+  const latestPeriod = getLatestReportingPeriod();
+  const [selectedQuarter, setSelectedQuarter] = useState(latestPeriod.id);
   const [selectedFacility, setSelectedFacility] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedIndicator, setSelectedIndicator] = useState("all");

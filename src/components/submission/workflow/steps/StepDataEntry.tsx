@@ -11,6 +11,8 @@ import { Submission } from "@/lib/types";
 import { Zap, RotateCcw, Save, ArrowRight, Info, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
+import { OperationOutcome } from "@/lib/types";
+
 interface StepDataEntryProps {
   submission: Submission;
   onSaveProgress: () => void;
@@ -21,6 +23,8 @@ interface StepDataEntryProps {
   onPrefillMissing: () => void;
   onResetAll: () => void;
   onRevertAllToPipeline: () => void;
+  canProceed?: boolean;
+  governmentErrors?: OperationOutcome[];
 }
 
 export function StepDataEntry({
@@ -33,6 +37,8 @@ export function StepDataEntry({
   onPrefillMissing,
   onResetAll,
   onRevertAllToPipeline,
+  canProceed = true,
+  governmentErrors = [],
 }: StepDataEntryProps) {
   const [activeIndicator, setActiveIndicator] = useState<string>(QI_QUESTIONNAIRE.sections[0].code);
   const [expandedIndicators, setExpandedIndicators] = useState<string[]>([]);
@@ -229,7 +235,7 @@ export function StepDataEntry({
           <Save className="h-4 w-4 mr-2" />
           Save Progress
         </Button>
-        <Button onClick={onContinue}>
+        <Button onClick={onContinue} disabled={!canProceed}>
           Continue to Step 2
           <ArrowRight className="h-4 w-4 ml-2" />
         </Button>

@@ -48,22 +48,14 @@ export const facilities: Facility[] = [
   }
 ];
 
-// Reporting Periods
+// Reporting Periods - sorted by date descending (latest first)
 export const reportingPeriods: ReportingPeriod[] = [
   {
-    id: "rp-q1-2025",
-    quarter: "Q1 2025",
-    startDate: "2025-01-01",
-    endDate: "2025-03-31",
-    dueDate: "2025-04-21",
-    status: "Submitted"
-  },
-  {
-    id: "rp-q2-2025",
-    quarter: "Q2 2025",
-    startDate: "2025-04-01",
-    endDate: "2025-06-30",
-    dueDate: "2025-07-21",
+    id: "rp-q4-2025",
+    quarter: "Q4 2025",
+    startDate: "2025-10-01",
+    endDate: "2025-12-31",
+    dueDate: "2026-01-21",
     status: "In Progress"
   },
   {
@@ -72,15 +64,23 @@ export const reportingPeriods: ReportingPeriod[] = [
     startDate: "2025-07-01",
     endDate: "2025-09-30",
     dueDate: "2025-10-21",
-    status: "Not Started"
+    status: "Submitted"
   },
   {
-    id: "rp-q4-2025",
-    quarter: "Q4 2025",
-    startDate: "2025-10-01",
-    endDate: "2025-12-31",
-    dueDate: "2026-01-21",
-    status: "Not Started"
+    id: "rp-q2-2025",
+    quarter: "Q2 2025",
+    startDate: "2025-04-01",
+    endDate: "2025-06-30",
+    dueDate: "2025-07-21",
+    status: "Submitted"
+  },
+  {
+    id: "rp-q1-2025",
+    quarter: "Q1 2025",
+    startDate: "2025-01-01",
+    endDate: "2025-03-31",
+    dueDate: "2025-04-21",
+    status: "Submitted"
   },
   {
     id: "rp-q4-2024",
@@ -115,6 +115,9 @@ export const reportingPeriods: ReportingPeriod[] = [
     status: "Submitted"
   }
 ];
+
+// Get latest reporting period (first in list)
+export const getLatestReportingPeriod = (): ReportingPeriod => reportingPeriods[0];
 
 // Roles
 export const roles: Role[] = [
@@ -222,36 +225,179 @@ export const users: User[] = [
 // Current user (simulated logged in user)
 export const currentUser = users[4]; // Morgan - QI Submitter
 
-// Helper to generate mock question data
-const generateQuestionAnswers = (indicatorCode: IndicatorCode, hasErrors = false, hasWarnings = false): QuestionAnswer[] => {
+// Demo Scenario Types for documentation
+export interface DemoScenario {
+  id: string;
+  name: string;
+  description: string;
+  submissionId: string;
+  workflowSteps: string[];
+  expectedBehavior: string;
+}
+
+// Demo scenarios for testing and showcasing
+export const demoScenarios: DemoScenario[] = [
+  {
+    id: "scenario-happy-path",
+    name: "Happy Path - Clean Submission",
+    description: "Complete submission workflow with no errors or warnings. All data is valid.",
+    submissionId: "sub-003",
+    workflowSteps: [
+      "1. Open workflow from Submissions page",
+      "2. Review pre-filled data in Data Entry",
+      "3. Preview the QuestionnaireResponse",
+      "4. Submit In-Progress - receives QR ID",
+      "5. Final Submission - status changes to 'completed'"
+    ],
+    expectedBehavior: "All steps complete successfully, green checkmarks throughout."
+  },
+  {
+    id: "scenario-govt-validation-errors",
+    name: "Government Validation Errors",
+    description: "Submission has data issues that Government API rejects. Shows error mapping back to questions.",
+    submissionId: "sub-007",
+    workflowSteps: [
+      "1. Open workflow - see validation errors in Data Entry",
+      "2. Attempt to proceed - blocked due to errors",
+      "3. Fix PI-01 (Total residents) - was 0, change to valid number",
+      "4. Submit In-Progress - Government returns additional error on PI-02",
+      "5. Workflow reverts to Data Entry with mapped errors",
+      "6. Fix PI-02 and re-submit"
+    ],
+    expectedBehavior: "Shows error blocking, government validation response, error mapping."
+  },
+  {
+    id: "scenario-warnings-only",
+    name: "Warnings Only - Can Proceed",
+    description: "Submission has warnings but no blocking errors. User can acknowledge and proceed.",
+    submissionId: "sub-001",
+    workflowSteps: [
+      "1. Open workflow - see warning indicators",
+      "2. Preview shows warnings in yellow",
+      "3. Submit In-Progress - succeeds with warnings",
+      "4. Final Submission - user acknowledges warnings"
+    ],
+    expectedBehavior: "Warnings displayed but don't block progression. Yellow indicators shown."
+  },
+  {
+    id: "scenario-empty-questionnaire",
+    name: "Fresh Start - Empty Questionnaire",
+    description: "New submission with no data. Shows pre-fill functionality.",
+    submissionId: "sub-008",
+    workflowSteps: [
+      "1. Open workflow - all fields empty",
+      "2. Click 'Pre-fill Entire Questionnaire'",
+      "3. Data populates from CIS pipeline",
+      "4. Make manual edits - shows 'Manually Edited' badge",
+      "5. Proceed through workflow"
+    ],
+    expectedBehavior: "Demonstrates pre-fill, manual editing, and data source tracking."
+  },
+  {
+    id: "scenario-post-in-progress-rejected",
+    name: "Government Rejection on POST",
+    description: "Step 3 POST is rejected by Government with validation errors.",
+    submissionId: "sub-009",
+    workflowSteps: [
+      "1. Complete Data Entry with some borderline values",
+      "2. Preview looks okay locally",
+      "3. Submit In-Progress - Government API returns 422",
+      "4. Errors displayed in modal",
+      "5. Workflow reverts to Data Entry with Government errors mapped",
+      "6. Fix issues and re-attempt"
+    ],
+    expectedBehavior: "Shows POST rejection handling and error recovery flow."
+  },
+  {
+    id: "scenario-late-amendment",
+    name: "Late Amendment After Submission",
+    description: "Previously submitted data needs correction after due date.",
+    submissionId: "sub-010",
+    workflowSteps: [
+      "1. Open already-submitted workflow",
+      "2. Make corrections to submitted data",
+      "3. Submit as 'amended'",
+      "4. Status shows 'Submitted - Updated after Due Date'"
+    ],
+    expectedBehavior: "Shows amendment workflow for previously completed submissions."
+  }
+];
+
+// Helper to generate mock question data with configurable scenarios
+type ValidationScenario = "clean" | "errors" | "warnings" | "govt-errors" | "empty";
+
+const generateQuestionAnswers = (
+  indicatorCode: IndicatorCode, 
+  scenario: ValidationScenario = "clean"
+): QuestionAnswer[] => {
   const questions = INDICATOR_QUESTIONS[indicatorCode];
+  
   return questions.map((q, idx) => {
-    const autoValue = q.responseType === "integer" ? Math.floor(Math.random() * 100) : 
-                      q.responseType === "boolean" ? Math.random() > 0.5 :
-                      q.responseType === "date" ? "2025-01-01" :
-                      q.responseType === "string" ? (q.linkId.includes("Comment") ? "" : "Sample response") : "";
+    // Base auto values
+    let autoValue: string | number | boolean | null = 
+      q.responseType === "integer" ? Math.floor(Math.random() * 50) + 10 : 
+      q.responseType === "boolean" ? Math.random() > 0.3 :
+      q.responseType === "date" ? "2025-01-01" :
+      q.responseType === "string" ? (q.linkId.includes("Comment") ? "" : "Sample response") : "";
     
-    const isOverridden = Math.random() > 0.7;
-    const userValue = isOverridden ? (q.responseType === "integer" ? Math.floor(Math.random() * 100) : autoValue) : null;
+    const isOverridden = scenario !== "empty" && Math.random() > 0.7;
+    let userValue: string | number | boolean | null = isOverridden 
+      ? (q.responseType === "integer" ? Math.floor(Math.random() * 50) + 10 : autoValue) 
+      : null;
     
-    // Special handling for UPWL comment logic
     const errors: string[] = [];
     const warnings: string[] = [];
     
-    if (hasErrors && idx === 0 && q.required) {
-      errors.push("This field is required");
-    }
-    
-    if (hasWarnings && q.linkId === "UPWL-04") {
-      // Only show warning if UPWL-06 is empty
-      warnings.push("Comment required - Please provide additional context");
+    // Apply scenario-specific validation
+    switch (scenario) {
+      case "errors":
+        // Add errors to first required field
+        if (idx === 0 && q.required) {
+          autoValue = 0;
+          userValue = null;
+          errors.push("Value cannot be zero for required field");
+        }
+        if (indicatorCode === "PI" && q.linkId === "PI-02") {
+          errors.push("Stage 2+ count exceeds total count - please verify");
+        }
+        break;
+        
+      case "warnings":
+        if (q.linkId === "UPWL-04" || q.linkId === "FALL-03") {
+          warnings.push("Value is higher than industry average - please confirm");
+        }
+        if (q.linkId.includes("Comment") && !userValue && !autoValue) {
+          warnings.push("Comment recommended for context");
+        }
+        break;
+        
+      case "govt-errors":
+        // These are errors that Government API would return
+        if (indicatorCode === "PI" && q.linkId === "PI-01") {
+          autoValue = -5; // Invalid value
+          errors.push("[GOVT] Value must be a non-negative integer");
+        }
+        if (indicatorCode === "RP" && q.linkId === "RP-02") {
+          errors.push("[GOVT] Percentage cannot exceed 100%");
+        }
+        break;
+        
+      case "empty":
+        autoValue = null;
+        userValue = null;
+        break;
+        
+      case "clean":
+      default:
+        // No issues
+        break;
     }
     
     return {
       ...q,
       autoValue,
       userValue,
-      finalValue: userValue ?? autoValue,
+      finalValue: scenario === "empty" ? null : (userValue ?? autoValue),
       isOverridden,
       warnings,
       errors
@@ -259,12 +405,20 @@ const generateQuestionAnswers = (indicatorCode: IndicatorCode, hasErrors = false
   });
 };
 
-// Generate questionnaire responses for a submission
-const generateQuestionnaireResponses = (submissionId: string, hasIssues = false): QuestionnaireResponse[] => {
+// Generate questionnaire responses for a submission with scenario
+const generateQuestionnaireResponses = (
+  submissionId: string, 
+  scenario: ValidationScenario = "clean"
+): QuestionnaireResponse[] => {
   return INDICATORS.map((indicator, idx) => {
-    const hasErrors = hasIssues && idx === 0;
-    const hasWarnings = hasIssues && idx === 2;
-    const questions = generateQuestionAnswers(indicator.code, hasErrors, hasWarnings);
+    // Apply different scenarios to different indicators for variety
+    let indicatorScenario = scenario;
+    if (scenario === "warnings" && idx > 2) indicatorScenario = "clean";
+    if (scenario === "errors" && idx > 1) indicatorScenario = "clean";
+    
+    const questions = generateQuestionAnswers(indicator.code, indicatorScenario);
+    const hasErrors = questions.some(q => q.errors.length > 0);
+    const hasWarnings = questions.some(q => q.warnings.length > 0);
     
     return {
       id: `qr-${submissionId}-${indicator.code}`,
@@ -284,11 +438,138 @@ const generateQuestionnaireResponses = (submissionId: string, hasIssues = false)
   });
 };
 
-// Submissions
+// Submissions - comprehensive scenarios for Q1-Q4 2025
 export const submissions: Submission[] = [
-  // Riverbend - Q2 2025 - In Progress with warnings
+  // ===== Q4 2025 - CURRENT PERIOD (In Progress) =====
+  
+  // Scenario: Warnings Only - Can Proceed
   {
     id: "sub-001",
+    facilityId: "fac-001",
+    reportingPeriodId: "rp-q4-2025",
+    status: "In Progress",
+    fhirStatus: "in-progress",
+    createdAt: "2025-10-01T00:00:00Z",
+    updatedAt: "2025-12-10T14:30:00Z",
+    createdByUserId: "user-003",
+    hasWarnings: true,
+    hasErrors: false,
+    submissionVersionNumber: 2,
+    questionnaires: generateQuestionnaireResponses("sub-001", "warnings"),
+    questionnaireResponseId: "QIQR-2025-Q4-RB001",
+    questionnaireId: "QI-020",
+    healthcareServiceReference: "HealthcareService/HS-001",
+    apiWorkflowStep: "in-progress-posted"
+  },
+  
+  // Scenario: Not Started - Empty
+  {
+    id: "sub-002",
+    facilityId: "fac-002",
+    reportingPeriodId: "rp-q4-2025",
+    status: "Not Started",
+    fhirStatus: "in-progress",
+    createdAt: "2025-10-01T00:00:00Z",
+    updatedAt: "2025-10-01T00:00:00Z",
+    createdByUserId: "user-002",
+    hasWarnings: false,
+    hasErrors: false,
+    submissionVersionNumber: 1,
+    questionnaires: generateQuestionnaireResponses("sub-002", "empty"),
+    questionnaireId: "QI-020",
+    healthcareServiceReference: "HealthcareService/HS-002",
+    apiWorkflowStep: "data-collection"
+  },
+  
+  // Scenario: Happy Path - Clean Submission (just submitted)
+  {
+    id: "sub-003",
+    facilityId: "fac-003",
+    reportingPeriodId: "rp-q4-2025",
+    status: "Submitted",
+    fhirStatus: "completed",
+    createdAt: "2025-10-01T00:00:00Z",
+    updatedAt: "2025-12-08T09:00:00Z",
+    createdByUserId: "user-003",
+    submittedByUserId: "user-005",
+    lastSubmittedDate: "2025-12-08T09:00:00Z",
+    hasWarnings: false,
+    hasErrors: false,
+    submissionVersionNumber: 3,
+    questionnaires: generateQuestionnaireResponses("sub-003", "clean"),
+    questionnaireResponseId: "QIQR-2025-Q4-HH003",
+    questionnaireId: "QI-020",
+    healthcareServiceReference: "HealthcareService/HS-003",
+    apiWorkflowStep: "submitted"
+  },
+  
+  // ===== Q3 2025 - All Submitted =====
+  {
+    id: "sub-004",
+    facilityId: "fac-001",
+    reportingPeriodId: "rp-q3-2025",
+    status: "Submitted",
+    fhirStatus: "completed",
+    createdAt: "2025-07-01T00:00:00Z",
+    updatedAt: "2025-10-15T10:00:00Z",
+    createdByUserId: "user-003",
+    submittedByUserId: "user-005",
+    lastSubmittedDate: "2025-10-15T10:00:00Z",
+    hasWarnings: false,
+    hasErrors: false,
+    submissionVersionNumber: 4,
+    questionnaires: generateQuestionnaireResponses("sub-004", "clean"),
+    questionnaireResponseId: "QIQR-2025-Q3-RB004",
+    questionnaireId: "QI-020",
+    healthcareServiceReference: "HealthcareService/HS-001",
+    apiWorkflowStep: "submitted"
+  },
+  {
+    id: "sub-005",
+    facilityId: "fac-002",
+    reportingPeriodId: "rp-q3-2025",
+    status: "Submitted",
+    fhirStatus: "completed",
+    createdAt: "2025-07-01T00:00:00Z",
+    updatedAt: "2025-10-18T11:00:00Z",
+    createdByUserId: "user-003",
+    submittedByUserId: "user-005",
+    lastSubmittedDate: "2025-10-18T11:00:00Z",
+    hasWarnings: false,
+    hasErrors: false,
+    submissionVersionNumber: 2,
+    questionnaires: generateQuestionnaireResponses("sub-005", "clean"),
+    questionnaireResponseId: "QIQR-2025-Q3-CV005",
+    questionnaireId: "QI-020",
+    healthcareServiceReference: "HealthcareService/HS-002",
+    apiWorkflowStep: "submitted"
+  },
+  {
+    id: "sub-006",
+    facilityId: "fac-003",
+    reportingPeriodId: "rp-q3-2025",
+    status: "Late Submission",
+    fhirStatus: "completed",
+    createdAt: "2025-07-01T00:00:00Z",
+    updatedAt: "2025-10-25T08:00:00Z",
+    createdByUserId: "user-003",
+    submittedByUserId: "user-005",
+    lastSubmittedDate: "2025-10-25T08:00:00Z",
+    hasWarnings: false,
+    hasErrors: false,
+    submissionVersionNumber: 5,
+    questionnaires: generateQuestionnaireResponses("sub-006", "clean"),
+    questionnaireResponseId: "QIQR-2025-Q3-HH006",
+    questionnaireId: "QI-020",
+    healthcareServiceReference: "HealthcareService/HS-003",
+    apiWorkflowStep: "submitted"
+  },
+  
+  // ===== SPECIAL DEMO SCENARIOS =====
+  
+  // Scenario: Government Validation Errors - for demo
+  {
+    id: "sub-007",
     facilityId: "fac-001",
     reportingPeriodId: "rp-q2-2025",
     status: "In Progress",
@@ -296,18 +577,19 @@ export const submissions: Submission[] = [
     createdAt: "2025-04-01T00:00:00Z",
     updatedAt: "2025-06-15T14:30:00Z",
     createdByUserId: "user-003",
-    hasWarnings: true,
-    hasErrors: false,
-    submissionVersionNumber: 2,
-    questionnaires: generateQuestionnaireResponses("sub-001", true),
-    questionnaireResponseId: "QIQR-2025-RB001",
+    hasWarnings: false,
+    hasErrors: true,
+    submissionVersionNumber: 3,
+    questionnaires: generateQuestionnaireResponses("sub-007", "govt-errors"),
+    questionnaireResponseId: "QIQR-2025-Q2-RB007",
     questionnaireId: "QI-020",
     healthcareServiceReference: "HealthcareService/HS-001",
     apiWorkflowStep: "in-progress-posted"
   },
-  // Coastal View - Q2 2025 - Not Started
+  
+  // Scenario: Fresh Start - Empty Questionnaire
   {
-    id: "sub-002",
+    id: "sub-008",
     facilityId: "fac-002",
     reportingPeriodId: "rp-q2-2025",
     status: "Not Started",
@@ -318,92 +600,153 @@ export const submissions: Submission[] = [
     hasWarnings: false,
     hasErrors: false,
     submissionVersionNumber: 1,
-    questionnaires: generateQuestionnaireResponses("sub-002", false),
+    questionnaires: generateQuestionnaireResponses("sub-008", "empty"),
     questionnaireId: "QI-020",
     healthcareServiceReference: "HealthcareService/HS-002",
     apiWorkflowStep: "data-collection"
   },
-  // Harbour Heights - Q2 2025 - Submitted
+  
+  // Scenario: POST Rejection Demo
   {
-    id: "sub-003",
+    id: "sub-009",
     facilityId: "fac-003",
     reportingPeriodId: "rp-q2-2025",
-    status: "Submitted",
-    fhirStatus: "completed",
+    status: "In Progress",
+    fhirStatus: "in-progress",
     createdAt: "2025-04-01T00:00:00Z",
-    updatedAt: "2025-06-20T09:00:00Z",
+    updatedAt: "2025-06-18T09:00:00Z",
     createdByUserId: "user-003",
-    submittedByUserId: "user-005",
-    lastSubmittedDate: "2025-06-20T09:00:00Z",
-    hasWarnings: false,
-    hasErrors: false,
-    submissionVersionNumber: 3,
-    questionnaires: generateQuestionnaireResponses("sub-003", false),
-    questionnaireResponseId: "QIQR-2025-HH003",
+    hasWarnings: true,
+    hasErrors: true,
+    submissionVersionNumber: 2,
+    questionnaires: generateQuestionnaireResponses("sub-009", "errors"),
     questionnaireId: "QI-020",
     healthcareServiceReference: "HealthcareService/HS-003",
-    apiWorkflowStep: "submitted"
+    apiWorkflowStep: "data-collection"
   },
-  // Riverbend - Q1 2025 - Submitted
+  
+  // Scenario: Late Amendment
   {
-    id: "sub-004",
+    id: "sub-010",
     facilityId: "fac-001",
-    reportingPeriodId: "rp-q1-2025",
-    status: "Submitted",
-    fhirStatus: "completed",
-    createdAt: "2025-01-01T00:00:00Z",
-    updatedAt: "2025-04-15T10:00:00Z",
-    createdByUserId: "user-003",
-    submittedByUserId: "user-005",
-    lastSubmittedDate: "2025-04-15T10:00:00Z",
-    hasWarnings: false,
-    hasErrors: false,
-    submissionVersionNumber: 4,
-    questionnaires: generateQuestionnaireResponses("sub-004", false),
-    questionnaireResponseId: "QIQR-2025-RB004",
-    questionnaireId: "QI-020",
-    healthcareServiceReference: "HealthcareService/HS-001",
-    apiWorkflowStep: "submitted"
-  },
-  // Coastal View - Q1 2025 - Late Submission
-  {
-    id: "sub-005",
-    facilityId: "fac-002",
-    reportingPeriodId: "rp-q1-2025",
-    status: "Late Submission",
-    fhirStatus: "completed",
-    createdAt: "2025-01-01T00:00:00Z",
-    updatedAt: "2025-04-25T11:00:00Z",
-    createdByUserId: "user-003",
-    submittedByUserId: "user-005",
-    lastSubmittedDate: "2025-04-25T11:00:00Z",
-    hasWarnings: false,
-    hasErrors: false,
-    submissionVersionNumber: 2,
-    questionnaires: generateQuestionnaireResponses("sub-005", false),
-    questionnaireResponseId: "QIQR-2025-CV005",
-    questionnaireId: "QI-020",
-    healthcareServiceReference: "HealthcareService/HS-002",
-    apiWorkflowStep: "submitted"
-  },
-  // Harbour Heights - Q1 2025 - Submitted - Updated after Due Date
-  {
-    id: "sub-006",
-    facilityId: "fac-003",
     reportingPeriodId: "rp-q1-2025",
     status: "Submitted - Updated after Due Date",
     fhirStatus: "amended",
     createdAt: "2025-01-01T00:00:00Z",
-    updatedAt: "2025-05-01T08:00:00Z",
+    updatedAt: "2025-05-15T08:00:00Z",
     createdByUserId: "user-003",
     submittedByUserId: "user-005",
-    lastSubmittedDate: "2025-05-01T08:00:00Z",
+    lastSubmittedDate: "2025-05-15T08:00:00Z",
     hasWarnings: false,
     hasErrors: false,
-    submissionVersionNumber: 5,
-    questionnaires: generateQuestionnaireResponses("sub-006", false),
-    questionnaireResponseId: "QIQR-2025-HH006",
+    submissionVersionNumber: 6,
+    questionnaires: generateQuestionnaireResponses("sub-010", "clean"),
+    questionnaireResponseId: "QIQR-2025-Q1-RB010",
     questionnaireId: "QI-020",
+    healthcareServiceReference: "HealthcareService/HS-001",
+    apiWorkflowStep: "submitted"
+  },
+  
+  // ===== Q1 2025 - Historical =====
+  {
+    id: "sub-011",
+    facilityId: "fac-002",
+    reportingPeriodId: "rp-q1-2025",
+    status: "Submitted",
+    fhirStatus: "completed",
+    createdAt: "2025-01-01T00:00:00Z",
+    updatedAt: "2025-04-18T11:00:00Z",
+    createdByUserId: "user-003",
+    submittedByUserId: "user-005",
+    lastSubmittedDate: "2025-04-18T11:00:00Z",
+    hasWarnings: false,
+    hasErrors: false,
+    submissionVersionNumber: 2,
+    questionnaires: generateQuestionnaireResponses("sub-011", "clean"),
+    questionnaireResponseId: "QIQR-2025-Q1-CV011",
+    questionnaireId: "QI-020",
+    healthcareServiceReference: "HealthcareService/HS-002",
+    apiWorkflowStep: "submitted"
+  },
+  {
+    id: "sub-012",
+    facilityId: "fac-003",
+    reportingPeriodId: "rp-q1-2025",
+    status: "Submitted",
+    fhirStatus: "completed",
+    createdAt: "2025-01-01T00:00:00Z",
+    updatedAt: "2025-04-20T09:00:00Z",
+    createdByUserId: "user-003",
+    submittedByUserId: "user-005",
+    lastSubmittedDate: "2025-04-20T09:00:00Z",
+    hasWarnings: false,
+    hasErrors: false,
+    submissionVersionNumber: 3,
+    questionnaires: generateQuestionnaireResponses("sub-012", "clean"),
+    questionnaireResponseId: "QIQR-2025-Q1-HH012",
+    questionnaireId: "QI-020",
+    healthcareServiceReference: "HealthcareService/HS-003",
+    apiWorkflowStep: "submitted"
+  },
+  
+  // ===== Q4 2024 - Historical =====
+  {
+    id: "sub-013",
+    facilityId: "fac-001",
+    reportingPeriodId: "rp-q4-2024",
+    status: "Submitted",
+    fhirStatus: "completed",
+    createdAt: "2024-10-01T00:00:00Z",
+    updatedAt: "2025-01-15T10:00:00Z",
+    createdByUserId: "user-003",
+    submittedByUserId: "user-005",
+    lastSubmittedDate: "2025-01-15T10:00:00Z",
+    hasWarnings: false,
+    hasErrors: false,
+    submissionVersionNumber: 2,
+    questionnaires: generateQuestionnaireResponses("sub-013", "clean"),
+    questionnaireResponseId: "QIQR-2024-Q4-RB013",
+    questionnaireId: "QI-019",
+    healthcareServiceReference: "HealthcareService/HS-001",
+    apiWorkflowStep: "submitted"
+  },
+  {
+    id: "sub-014",
+    facilityId: "fac-002",
+    reportingPeriodId: "rp-q4-2024",
+    status: "Submitted",
+    fhirStatus: "completed",
+    createdAt: "2024-10-01T00:00:00Z",
+    updatedAt: "2025-01-18T11:00:00Z",
+    createdByUserId: "user-003",
+    submittedByUserId: "user-005",
+    lastSubmittedDate: "2025-01-18T11:00:00Z",
+    hasWarnings: false,
+    hasErrors: false,
+    submissionVersionNumber: 2,
+    questionnaires: generateQuestionnaireResponses("sub-014", "clean"),
+    questionnaireResponseId: "QIQR-2024-Q4-CV014",
+    questionnaireId: "QI-019",
+    healthcareServiceReference: "HealthcareService/HS-002",
+    apiWorkflowStep: "submitted"
+  },
+  {
+    id: "sub-015",
+    facilityId: "fac-003",
+    reportingPeriodId: "rp-q4-2024",
+    status: "Submitted",
+    fhirStatus: "completed",
+    createdAt: "2024-10-01T00:00:00Z",
+    updatedAt: "2025-01-20T09:00:00Z",
+    createdByUserId: "user-003",
+    submittedByUserId: "user-005",
+    lastSubmittedDate: "2025-01-20T09:00:00Z",
+    hasWarnings: false,
+    hasErrors: false,
+    submissionVersionNumber: 3,
+    questionnaires: generateQuestionnaireResponses("sub-015", "clean"),
+    questionnaireResponseId: "QIQR-2024-Q4-HH015",
+    questionnaireId: "QI-019",
     healthcareServiceReference: "HealthcareService/HS-003",
     apiWorkflowStep: "submitted"
   }
@@ -413,34 +756,34 @@ export const submissions: Submission[] = [
 export const auditLogs: AuditLogEntry[] = [
   {
     id: "audit-001",
-    timestamp: "2025-06-20T09:00:00Z",
+    timestamp: "2025-12-08T09:00:00Z",
     userId: "user-005",
     actionType: "SUBMISSION_SENT_TO_GOV",
     entityType: "Submission",
     entityId: "sub-003",
-    details: "Submitted Q2 2025 data for Harbour Heights Home to government with status 'completed'"
+    details: "Submitted Q4 2025 data for Harbour Heights Home to government with status 'completed'"
   },
   {
     id: "audit-002",
-    timestamp: "2025-06-19T16:30:00Z",
+    timestamp: "2025-12-07T16:30:00Z",
     userId: "user-004",
     actionType: "QUESTIONNAIRE_REVIEWED",
     entityType: "Questionnaire",
     entityId: "qr-sub-003-PI",
-    details: "Reviewed Pressure Injuries questionnaire for Harbour Heights Home Q2 2025"
+    details: "Reviewed Pressure Injuries questionnaire for Harbour Heights Home Q4 2025"
   },
   {
     id: "audit-003",
-    timestamp: "2025-06-15T14:30:00Z",
+    timestamp: "2025-12-10T14:30:00Z",
     userId: "user-003",
     actionType: "QUESTION_EDITED",
     entityType: "Question",
     entityId: "PI-04",
-    details: "Changed PI-04 from 12 to 14 in Q2 2025 submission for Riverbend Aged Care"
+    details: "Changed PI-04 from 12 to 14 in Q4 2025 submission for Riverbend Aged Care"
   },
   {
     id: "audit-004",
-    timestamp: "2025-06-10T10:00:00Z",
+    timestamp: "2025-12-05T10:00:00Z",
     userId: "user-002",
     actionType: "PIPELINE_SYNC",
     entityType: "PipelineConfig",
@@ -449,30 +792,30 @@ export const auditLogs: AuditLogEntry[] = [
   },
   {
     id: "audit-005",
-    timestamp: "2025-06-01T08:00:00Z",
+    timestamp: "2025-10-01T08:00:00Z",
     userId: "user-002",
     actionType: "PREFILL_APPLIED",
     entityType: "Submission",
     entityId: "sub-001",
-    details: "Applied CIS pipeline prefill data to Riverbend Aged Care Q2 2025 submission"
+    details: "Applied CIS pipeline prefill data to Riverbend Aged Care Q4 2025 submission"
   },
   {
     id: "audit-006",
-    timestamp: "2025-05-01T08:00:00Z",
+    timestamp: "2025-05-15T08:00:00Z",
     userId: "user-005",
     actionType: "SUBMISSION_STATUS_CHANGED",
     entityType: "Submission",
-    entityId: "sub-006",
-    details: "Updated Harbour Heights Home Q1 2025 submission after due date. Status changed to 'Submitted - Updated after Due Date'"
+    entityId: "sub-010",
+    details: "Updated Riverbend Aged Care Q1 2025 submission after due date. Status changed to 'Submitted - Updated after Due Date'"
   },
   {
     id: "audit-007",
-    timestamp: "2025-04-25T11:00:00Z",
+    timestamp: "2025-10-25T08:00:00Z",
     userId: "user-005",
     actionType: "SUBMISSION_SENT_TO_GOV",
     entityType: "Submission",
-    entityId: "sub-005",
-    details: "Late submission for Coastal View Lodge Q1 2025 submitted to government"
+    entityId: "sub-006",
+    details: "Late submission for Harbour Heights Home Q3 2025 submitted to government"
   }
 ];
 
@@ -483,7 +826,7 @@ export const pipelineConfigs: PipelineConfig[] = [
     facilityId: "fac-001",
     cisBaseUrl: "https://api.telstrahealth.com/cis/v2",
     apiKeyMasked: "****-****-****-7890",
-    lastSyncDate: "2025-06-10T10:00:00Z",
+    lastSyncDate: "2025-12-05T10:00:00Z",
     status: "Connected",
     facilityMappings: [
       { internalFacilityId: "fac-001", cisIdentifier: "CIS-RB-001" }
@@ -494,7 +837,7 @@ export const pipelineConfigs: PipelineConfig[] = [
     facilityId: "fac-002",
     cisBaseUrl: "https://api.telstrahealth.com/cis/v2",
     apiKeyMasked: "****-****-****-4567",
-    lastSyncDate: "2025-06-10T10:00:00Z",
+    lastSyncDate: "2025-12-05T10:00:00Z",
     status: "Connected",
     facilityMappings: [
       { internalFacilityId: "fac-002", cisIdentifier: "CIS-CV-002" }
@@ -505,7 +848,7 @@ export const pipelineConfigs: PipelineConfig[] = [
     facilityId: "fac-003",
     cisBaseUrl: "https://api.telstrahealth.com/cis/v2",
     apiKeyMasked: "****-****-****-1234",
-    lastSyncDate: "2025-06-09T22:00:00Z",
+    lastSyncDate: "2025-12-04T22:00:00Z",
     status: "Error",
     facilityMappings: [
       { internalFacilityId: "fac-003", cisIdentifier: "CIS-HH-003" }
@@ -518,7 +861,7 @@ export const syncJobs: SyncJob[] = [
   {
     id: "sync-001",
     facilityId: "fac-001",
-    timestamp: "2025-06-10T10:00:00Z",
+    timestamp: "2025-12-05T10:00:00Z",
     status: "Success",
     recordsImported: 312,
     errors: [],
@@ -527,7 +870,7 @@ export const syncJobs: SyncJob[] = [
   {
     id: "sync-002",
     facilityId: "fac-002",
-    timestamp: "2025-06-10T10:00:00Z",
+    timestamp: "2025-12-05T10:00:00Z",
     status: "Success",
     recordsImported: 287,
     errors: [],
@@ -536,7 +879,7 @@ export const syncJobs: SyncJob[] = [
   {
     id: "sync-003",
     facilityId: "fac-003",
-    timestamp: "2025-06-09T22:00:00Z",
+    timestamp: "2025-12-04T22:00:00Z",
     status: "Failed",
     recordsImported: 0,
     errors: ["Connection timeout after 30s", "Unable to authenticate with CIS endpoint"],
@@ -545,7 +888,7 @@ export const syncJobs: SyncJob[] = [
   {
     id: "sync-004",
     facilityId: "fac-001",
-    timestamp: "2025-06-03T10:00:00Z",
+    timestamp: "2025-11-28T10:00:00Z",
     status: "Partial",
     recordsImported: 248,
     errors: [],
@@ -554,11 +897,9 @@ export const syncJobs: SyncJob[] = [
 ];
 
 // KPI Data - Pre-generated stable mock data for dashboard
-// Using a seeded approach to ensure consistent values across renders
 const generateStableKpiData = (): KpiData[] => {
   const kpiData: KpiData[] = [];
   
-  // All quarters we want to generate data for
   const allPeriods = [
     { id: "rp-q1-2024", label: "Q1 2024" },
     { id: "rp-q2-2024", label: "Q2 2024" },
@@ -572,8 +913,6 @@ const generateStableKpiData = (): KpiData[] => {
   
   const quarterLabels = allPeriods.map(p => p.label);
   
-  // Historical data for each indicator across all 8 quarters
-  // Format: [Q1-2024, Q2-2024, Q3-2024, Q4-2024, Q1-2025, Q2-2025, Q3-2025, Q4-2025]
   const historicalData: Record<string, Record<string, number[]>> = {
     "PI": { 
       "fac-001": [10.5, 9.8, 9.2, 8.8, 8.5, 8.2, 7.9, 8.2],
@@ -647,7 +986,6 @@ const generateStableKpiData = (): KpiData[] => {
     }
   };
   
-  // Generate data for each period, facility, and indicator
   allPeriods.forEach((period, periodIndex) => {
     facilities.forEach(facility => {
       INDICATORS.forEach(indicator => {
@@ -657,7 +995,6 @@ const generateStableKpiData = (): KpiData[] => {
         const delta = currentValue - prevValue;
         const deltaPercent = prevValue !== 0 ? (delta / prevValue) * 100 : 0;
         
-        // For trend, show all historical values up to current period
         const trendValues = facilityHistory?.slice(0, periodIndex + 1) || [currentValue];
         const trendLabels = quarterLabels.slice(0, periodIndex + 1);
         
@@ -681,10 +1018,8 @@ const generateStableKpiData = (): KpiData[] => {
   return kpiData;
 };
 
-// Pre-generate the KPI data once
 const stableKpiData = generateStableKpiData();
 
-// Get all KPI data for dashboard (returns stable pre-generated data)
 export const getAllKpiData = (): KpiData[] => {
   return stableKpiData;
 };
@@ -712,4 +1047,8 @@ export const getSubmissionsByPeriod = (periodId: string): Submission[] => {
 
 export const getSubmission = (submissionId: string): Submission | undefined => {
   return submissions.find(s => s.id === submissionId);
+};
+
+export const getDemoScenarios = (): DemoScenario[] => {
+  return demoScenarios;
 };

@@ -10,7 +10,8 @@ import {
   IndicatorCode,
   PipelineConfig,
   SyncJob,
-  KpiData
+  KpiData,
+  DataSource
 } from "../types";
 import { INDICATORS, INDICATOR_QUESTIONS, getIndicatorCategory } from "./indicators";
 
@@ -324,26 +325,65 @@ export const demoScenarios: DemoScenario[] = [
 ];
 
 // Helper to generate mock question data with configurable scenarios
-type ValidationScenario = "clean" | "errors" | "warnings" | "govt-errors" | "empty";
+type ValidationScenario = "clean" | "errors" | "warnings" | "govt-errors" | "empty" | "partial";
+
+// Deterministic pseudo-random based on seed
+const seededRandom = (seed: number) => {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+};
 
 const generateQuestionAnswers = (
   indicatorCode: IndicatorCode, 
-  scenario: ValidationScenario = "clean"
+  scenario: ValidationScenario = "clean",
+  seed: number = 1
 ): QuestionAnswer[] => {
   const questions = INDICATOR_QUESTIONS[indicatorCode];
   
   return questions.map((q, idx) => {
-    // Base auto values
-    let autoValue: string | number | boolean | null = 
-      q.responseType === "integer" ? Math.floor(Math.random() * 50) + 10 : 
-      q.responseType === "boolean" ? Math.random() > 0.3 :
-      q.responseType === "date" ? "2025-01-01" :
-      q.responseType === "string" ? (q.linkId.includes("Comment") ? "" : "Sample response") : "";
+    const questionSeed = seed + idx + indicatorCode.charCodeAt(0);
+    const rand = seededRandom(questionSeed);
     
-    const isOverridden = scenario !== "empty" && Math.random() > 0.7;
-    let userValue: string | number | boolean | null = isOverridden 
-      ? (q.responseType === "integer" ? Math.floor(Math.random() * 50) + 10 : autoValue) 
-      : null;
+    // Generate realistic auto values based on question type
+    let autoValue: string | number | boolean | null = null;
+    
+    if (scenario !== "empty") {
+      if (q.responseType === "integer") {
+        // Generate realistic values based on linkId patterns
+        if (q.linkId.includes("01")) autoValue = Math.floor(rand * 100) + 50; // Total residents: 50-150
+        else if (q.linkId.includes("02")) autoValue = Math.floor(rand * 20) + 5; // Subset counts: 5-25
+        else if (q.linkId.includes("03")) autoValue = Math.floor(rand * 10); // Smaller counts: 0-10
+        else if (q.linkId.includes("04")) autoValue = Math.floor(rand * 5); // Very small: 0-5
+        else autoValue = Math.floor(rand * 30) + 10;
+      } else if (q.responseType === "boolean") {
+        autoValue = rand > 0.3;
+      } else if (q.responseType === "date") {
+        autoValue = "2025-01-15";
+      } else if (q.responseType === "string") {
+        if (q.linkId.includes("Comment")) {
+          autoValue = rand > 0.6 ? "Verified by clinical team during quarterly review." : "";
+        } else {
+          autoValue = "Standard procedure followed";
+        }
+      }
+    }
+    
+    // For partial scenario, randomly make some fields empty
+    if (scenario === "partial" && rand > 0.5) {
+      autoValue = null;
+    }
+    
+    // Determine if user manually overrode
+    const isOverridden = scenario !== "empty" && scenario !== "partial" && rand > 0.7;
+    let userValue: string | number | boolean | null = null;
+    
+    if (isOverridden && autoValue !== null) {
+      if (q.responseType === "integer" && typeof autoValue === "number") {
+        userValue = autoValue + Math.floor(seededRandom(questionSeed + 100) * 10) - 5; // ±5 adjustment
+      } else {
+        userValue = autoValue;
+      }
+    }
     
     const errors: string[] = [];
     const warnings: string[] = [];
@@ -351,7 +391,7 @@ const generateQuestionAnswers = (
     // Apply scenario-specific validation
     switch (scenario) {
       case "errors":
-        // Add errors to first required field
+        // Add errors to specific fields
         if (idx === 0 && q.required) {
           autoValue = 0;
           userValue = null;
@@ -360,11 +400,17 @@ const generateQuestionAnswers = (
         if (indicatorCode === "PI" && q.linkId === "PI-02") {
           errors.push("Stage 2+ count exceeds total count - please verify");
         }
+        if (indicatorCode === "FALL" && q.linkId === "FALL-01" && rand > 0.5) {
+          errors.push("Total falls count missing - required field");
+        }
         break;
         
       case "warnings":
         if (q.linkId === "UPWL-04" || q.linkId === "FALL-03") {
           warnings.push("Value is higher than industry average - please confirm");
+        }
+        if (indicatorCode === "PI" && q.linkId === "PI-03" && rand > 0.5) {
+          warnings.push("Stage 3 count seems elevated compared to previous quarters");
         }
         if (q.linkId.includes("Comment") && !userValue && !autoValue) {
           warnings.push("Comment recommended for context");
@@ -377,8 +423,21 @@ const generateQuestionAnswers = (
           autoValue = -5; // Invalid value
           errors.push("[GOVT] Value must be a non-negative integer");
         }
+        if (indicatorCode === "PI" && q.linkId === "PI-02") {
+          errors.push("[GOVT] Stage 2+ count cannot exceed total residents assessed");
+        }
         if (indicatorCode === "RP" && q.linkId === "RP-02") {
           errors.push("[GOVT] Percentage cannot exceed 100%");
+        }
+        if (indicatorCode === "FALL" && q.linkId === "FALL-02") {
+          errors.push("[GOVT] Falls with injury count exceeds total falls");
+        }
+        break;
+        
+      case "partial":
+        // Some fields filled, some empty - good for showing pre-fill
+        if (autoValue === null && q.required) {
+          warnings.push("Required field not yet completed");
         }
         break;
         
@@ -389,7 +448,7 @@ const generateQuestionAnswers = (
         
       case "clean":
       default:
-        // No issues
+        // No issues, all data present
         break;
     }
     
@@ -410,31 +469,43 @@ const generateQuestionnaireResponses = (
   submissionId: string, 
   scenario: ValidationScenario = "clean"
 ): QuestionnaireResponse[] => {
+  // Use submission ID to create deterministic seed
+  const baseSeed = submissionId.split("-").reduce((acc, part) => acc + parseInt(part.replace(/\D/g, "") || "0"), 0);
+  
   return INDICATORS.map((indicator, idx) => {
     // Apply different scenarios to different indicators for variety
     let indicatorScenario = scenario;
     if (scenario === "warnings" && idx > 2) indicatorScenario = "clean";
     if (scenario === "errors" && idx > 1) indicatorScenario = "clean";
+    if (scenario === "govt-errors" && idx > 2) indicatorScenario = "clean";
+    if (scenario === "partial" && idx > 3) indicatorScenario = "clean";
     
-    const questions = generateQuestionAnswers(indicator.code, indicatorScenario);
+    const questions = generateQuestionAnswers(indicator.code, indicatorScenario, baseSeed + idx * 10);
     const hasErrors = questions.some(q => q.errors.length > 0);
     const hasWarnings = questions.some(q => q.warnings.length > 0);
+    const hasData = questions.some(q => q.finalValue !== null);
+    
+    // Determine source based on data availability
+    const sourceRand = seededRandom(baseSeed + idx);
+    const source: DataSource = hasData 
+      ? (sourceRand > 0.3 ? "CIS Pipeline" : "Mixed") 
+      : "Manual Only";
     
     return {
       id: `qr-${submissionId}-${indicator.code}`,
       submissionId,
       indicatorCode: indicator.code,
       indicatorName: indicator.name,
-      status: hasErrors ? "Draft" : hasWarnings ? "Ready for Review" : "Reviewed",
-      source: Math.random() > 0.3 ? "CIS Pipeline" : "Mixed",
-      prefillAvailable: Math.random() > 0.2,
+      status: hasErrors ? "Draft" : hasWarnings ? "Ready for Review" : hasData ? "Reviewed" : "Not Started",
+      source,
+      prefillAvailable: scenario !== "empty",
       validationStatus: hasErrors ? "Errors" : hasWarnings ? "Warnings" : "OK",
-      lastReviewedByUserId: hasErrors ? undefined : "user-004",
-      lastReviewedAt: hasErrors ? undefined : new Date().toISOString(),
+      lastReviewedByUserId: hasErrors || !hasData ? undefined : "user-004",
+      lastReviewedAt: hasErrors || !hasData ? undefined : new Date().toISOString(),
       questions,
       fhirRawJson: JSON.stringify({ resourceType: "QuestionnaireResponse", status: "in-progress" }),
-      comments: ""
-    };
+      comments: hasData && seededRandom(baseSeed + idx + 50) > 0.7 ? "Reviewed and verified by nursing staff." : ""
+    } as QuestionnaireResponse;
   });
 };
 

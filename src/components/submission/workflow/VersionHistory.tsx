@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { Clock, User, FileCheck, FileEdit, FilePlus, ChevronDown } from "lucide-react";
+import { Clock, User, FileCheck, FileEdit, FilePlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Submission } from "@/lib/types";
-import { users, getReportingPeriodById } from "@/lib/mock/data";
+import { users } from "@/lib/mock/data";
 import { cn } from "@/lib/utils";
 
 interface VersionHistoryProps {
@@ -21,9 +20,6 @@ interface VersionEntry {
 }
 
 export function VersionHistory({ submission, className }: VersionHistoryProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const period = getReportingPeriodById(submission.reportingPeriodId);
-  
   // Generate mock version history based on submission data
   const versions: VersionEntry[] = [];
   
@@ -100,99 +96,67 @@ export function VersionHistory({ submission, className }: VersionHistoryProps) {
   };
 
   const latestVersion = versions[versions.length - 1];
-  const olderVersions = versions.slice(0, -1).reverse();
+  const allVersions = [...versions].reverse();
 
   return (
     <Popover>
       <PopoverTrigger asChild>
         <button
           className={cn(
-            "flex items-center gap-2 px-3 py-1.5 rounded-md border border-border bg-card hover:bg-accent/50 transition-colors text-sm",
+            "flex items-center justify-between w-full gap-2 px-2 py-1.5 rounded-md border border-border bg-background hover:bg-accent/50 transition-colors text-xs",
             className
           )}
         >
-          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-muted-foreground">v{submission.submissionVersionNumber}</span>
-          <Badge variant="outline" className="text-xs h-5 px-1.5">
-            {getActionLabel(latestVersion.action)}
+          <div className="flex items-center gap-1.5">
+            <Clock className="h-3 w-3 text-muted-foreground" />
+            <span className="text-muted-foreground">Version</span>
+          </div>
+          <Badge variant="secondary" className="text-xs h-5 px-1.5">
+            v{submission.submissionVersionNumber}
           </Badge>
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
+      <PopoverContent className="w-72 p-0" align="end">
         <div className="p-3 border-b border-border">
           <h4 className="font-medium text-sm">Version History</h4>
         </div>
         <div className="max-h-64 overflow-y-auto">
-          {/* Latest version - always visible */}
-          <div className="flex items-start gap-2 p-3 border-b border-border">
-            <div
+          {allVersions.map((entry, index) => (
+            <div 
+              key={entry.version} 
               className={cn(
-                "flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
-                getActionColor(latestVersion.action)
+                "flex items-start gap-2 p-3",
+                index < allVersions.length - 1 && "border-b border-border"
               )}
             >
-              {getActionIcon(latestVersion.action)}
-            </div>
-            
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="font-medium text-xs">v{latestVersion.version}</span>
-                <code className="text-xs bg-muted px-1 py-0.5 rounded font-mono">
-                  {latestVersion.fhirStatus}
-                </code>
+              <div
+                className={cn(
+                  "flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
+                  getActionColor(entry.action)
+                )}
+              >
+                {getActionIcon(entry.action)}
               </div>
-              <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
-                <span>{getUserName(latestVersion.userId)}</span>
-                <span>•</span>
-                <span>{new Date(latestVersion.timestamp).toLocaleDateString()}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Older versions - collapsible */}
-          {olderVersions.length > 0 && (
-            <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-              <CollapsibleTrigger className="flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full py-2 border-b border-border">
-                <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} />
-                {olderVersions.length} older version{olderVersions.length !== 1 ? "s" : ""}
-              </CollapsibleTrigger>
               
-              <CollapsibleContent>
-                {olderVersions.map((entry, index) => (
-                  <div 
-                    key={entry.version} 
-                    className={cn(
-                      "flex items-start gap-2 p-3",
-                      index < olderVersions.length - 1 && "border-b border-border"
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
-                        getActionColor(entry.action)
-                      )}
-                    >
-                      {getActionIcon(entry.action)}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-medium text-xs">v{entry.version}</span>
-                        <code className="text-xs bg-muted px-1 py-0.5 rounded font-mono">
-                          {entry.fhirStatus}
-                        </code>
-                      </div>
-                      <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
-                        <span>{getUserName(entry.userId)}</span>
-                        <span>•</span>
-                        <span>{new Date(entry.timestamp).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </CollapsibleContent>
-            </Collapsible>
-          )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="font-medium text-xs">v{entry.version}</span>
+                  <Badge variant="outline" className="text-xs h-5 px-1">
+                    {getActionLabel(entry.action)}
+                  </Badge>
+                  <code className="text-xs bg-muted px-1 py-0.5 rounded font-mono">
+                    {entry.fhirStatus}
+                  </code>
+                </div>
+                <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
+                  <User className="h-3 w-3" />
+                  <span>{getUserName(entry.userId)}</span>
+                  <span>•</span>
+                  <span>{new Date(entry.timestamp).toLocaleDateString()}</span>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </PopoverContent>
     </Popover>

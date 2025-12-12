@@ -1,9 +1,8 @@
-import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Check, AlertCircle, Zap, Pencil } from "lucide-react";
+import { Check, AlertCircle, Zap, Pencil, RotateCcw } from "lucide-react";
 
 interface QuestionFieldProps {
   linkId: string;
@@ -32,7 +31,7 @@ export function QuestionField({
 }: QuestionFieldProps) {
   const hasErrors = errors.length > 0;
   const hasWarnings = warnings.length > 0;
-  const isEdited = !isAutoFilled && value !== autoValue;
+  const isEdited = !isAutoFilled && autoValue !== null && autoValue !== undefined;
 
   const handleChange = (newValue: string) => {
     if (responseType === "integer") {
@@ -40,6 +39,14 @@ export function QuestionField({
       onChange(isNaN(parsed) ? null : parsed);
     } else {
       onChange(newValue || null);
+    }
+  };
+
+  const handleRevert = () => {
+    if (responseType === "integer") {
+      onChange(autoValue as number | null);
+    } else {
+      onChange(autoValue as string | null);
     }
   };
 
@@ -82,6 +89,16 @@ export function QuestionField({
                 </>
               )}
             </Badge>
+            {isEdited && (
+              <button
+                type="button"
+                onClick={handleRevert}
+                className="text-xs text-primary hover:text-primary/80 hover:underline flex items-center gap-1 transition-colors"
+              >
+                <RotateCcw className="h-3 w-3" />
+                Revert to pipeline ({String(autoValue)})
+              </button>
+            )}
             {required && (
               <span className="text-xs text-destructive">*</span>
             )}

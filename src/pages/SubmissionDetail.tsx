@@ -193,6 +193,24 @@ const SubmissionDetail = () => {
     });
   }, []);
 
+  const handleRevertAllToPipeline = useCallback(() => {
+    setSubmission((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        questionnaires: prev.questionnaires.map((q) => ({
+          ...q,
+          questions: q.questions.map((qu) => ({
+            ...qu,
+            finalValue: qu.autoValue,
+            userValue: null,
+            isOverridden: false,
+          })),
+        })),
+      };
+    });
+  }, []);
+
   const handleSaveProgress = () => {
     toast({ title: "Progress saved" });
   };
@@ -254,6 +272,7 @@ const SubmissionDetail = () => {
             onPrefillAll={handlePrefillAll}
             onPrefillMissing={handlePrefillMissing}
             onResetAll={handleResetAll}
+            onRevertAllToPipeline={handleRevertAllToPipeline}
           />
         )}
 

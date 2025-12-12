@@ -12,12 +12,15 @@ export function ProgressIndicator({ submission, className }: ProgressIndicatorPr
   const stats = useMemo(() => {
     const allQuestions = submission.questionnaires.flatMap((q) => q.questions);
     const total = allQuestions.length;
-    const filled = allQuestions.filter((q) => q.finalValue !== null && q.finalValue !== "").length;
+    // Count as complete: has value AND no errors (warnings are OK)
+    const complete = allQuestions.filter(
+      (q) => q.finalValue !== null && q.finalValue !== "" && q.errors.length === 0
+    ).length;
     const errors = allQuestions.filter((q) => q.errors.length > 0).length;
-    const warnings = allQuestions.filter((q) => q.warnings.length > 0).length;
-    const percentage = total > 0 ? Math.round((filled / total) * 100) : 0;
+    const warnings = allQuestions.filter((q) => q.warnings.length > 0 && q.errors.length === 0).length;
+    const percentage = total > 0 ? Math.round((complete / total) * 100) : 0;
 
-    return { total, filled, errors, warnings, percentage };
+    return { total, complete, errors, warnings, percentage };
   }, [submission.questionnaires]);
 
   return (
@@ -25,7 +28,7 @@ export function ProgressIndicator({ submission, className }: ProgressIndicatorPr
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-medium">Overall Progress</span>
         <span className="text-sm text-muted-foreground">
-          {stats.filled}/{stats.total} questions ({stats.percentage}%)
+          {stats.complete}/{stats.total} questions ({stats.percentage}%)
         </span>
       </div>
       <Progress value={stats.percentage} className="h-2" />

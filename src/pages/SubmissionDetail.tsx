@@ -117,6 +117,30 @@ const SubmissionDetail = () => {
     []
   );
 
+  const handleQuestionRevert = useCallback(
+    (indicatorCode: string, linkId: string) => {
+      setSubmission((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          questionnaires: prev.questionnaires.map((q) =>
+            q.indicatorCode === indicatorCode
+              ? {
+                  ...q,
+                  questions: q.questions.map((qu) =>
+                    qu.linkId === linkId
+                      ? { ...qu, finalValue: qu.autoValue, isOverridden: false, userValue: null }
+                      : qu
+                  ),
+                }
+              : q
+          ),
+        };
+      });
+    },
+    []
+  );
+
   const handlePrefillAll = useCallback(() => {
     setSubmission((prev) => {
       if (!prev) return prev;
@@ -226,6 +250,7 @@ const SubmissionDetail = () => {
             onSaveProgress={handleSaveProgress}
             onContinue={() => setCurrentStep("preview")}
             onQuestionChange={handleQuestionChange}
+            onQuestionRevert={handleQuestionRevert}
             onPrefillAll={handlePrefillAll}
             onPrefillMissing={handlePrefillMissing}
             onResetAll={handleResetAll}

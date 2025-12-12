@@ -14,6 +14,7 @@ interface StepDataEntryProps {
   onSaveProgress: () => void;
   onContinue: () => void;
   onQuestionChange: (indicatorCode: string, linkId: string, value: string | number | null) => void;
+  onQuestionRevert: (indicatorCode: string, linkId: string) => void;
   onPrefillAll: () => void;
   onPrefillMissing: () => void;
   onResetAll: () => void;
@@ -24,6 +25,7 @@ export function StepDataEntry({
   onSaveProgress,
   onContinue,
   onQuestionChange,
+  onQuestionRevert,
   onPrefillAll,
   onPrefillMissing,
   onResetAll,
@@ -162,6 +164,7 @@ export function StepDataEntry({
                   section={section}
                   questions={questionnaire.questions}
                   onQuestionChange={(linkId, value) => onQuestionChange(section.code, linkId, value)}
+                  onQuestionRevert={(linkId) => onQuestionRevert(section.code, linkId)}
                   isExpanded={expandedIndicators.includes(section.code)}
                   onToggle={() => toggleIndicator(section.code)}
                 />

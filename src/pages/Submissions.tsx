@@ -18,7 +18,10 @@ import {
   AlertTriangle, 
   AlertCircle,
   Eye,
-  Edit
+  Edit,
+  Clock,
+  FileCheck,
+  FileX
 } from "lucide-react";
 import { 
   facilities, 
@@ -43,6 +46,13 @@ const Submissions = () => {
   // Check user permissions
   const userRoles = roles.filter(r => currentUser.roleIds.includes(r.id));
   const canEdit = userRoles.some(r => r.permissions.includes("EDIT_QUESTIONNAIRE"));
+
+  // Calculate stats for KPI cards
+  const stats = {
+    inProgress: submissions.filter(s => s.status === "In Progress").length,
+    submitted: submissions.filter(s => ["Submitted", "Late Submission", "Submitted - Updated after Due Date"].includes(s.status)).length,
+    notStarted: submissions.filter(s => s.status === "Not Started" || s.status === "Not Submitted").length,
+  };
 
   // Filter submissions
   const filteredSubmissions = submissions.filter(sub => {
@@ -82,6 +92,51 @@ const Submissions = () => {
         <p className="text-muted-foreground">
           Manage and review NQIP submissions across all facilities
         </p>
+      </div>
+
+      {/* KPI Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="gradient-card border-border/50">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-info/20">
+                <Clock className="h-6 w-6 text-info-foreground" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">In Progress</p>
+                <p className="text-3xl font-bold text-foreground">{stats.inProgress}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="gradient-card border-border/50">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-success/20">
+                <FileCheck className="h-6 w-6 text-success" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Submitted</p>
+                <p className="text-3xl font-bold text-foreground">{stats.submitted}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="gradient-card border-border/50">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-muted">
+                <FileX className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Not Started</p>
+                <p className="text-3xl font-bold text-foreground">{stats.notStarted}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Filters */}

@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { UserProvider } from "@/contexts/UserContext";
-import Dashboard from "./pages/Dashboard";
 import KpiDashboard from "./pages/KpiDashboard";
 import Submissions from "./pages/Submissions";
 import SubmissionDetail from "./pages/SubmissionDetail";
@@ -30,9 +29,8 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route element={<DashboardLayout />}>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/" element={<Submissions />} />
               <Route path="/kpi" element={<KpiDashboard />} />
-              <Route path="/submissions" element={<Submissions />} />
               <Route path="/submissions/:id" element={<SubmissionDetail />} />
               <Route path="/submissions/:id/indicator/:indicatorCode" element={<QuestionnaireEditor />} />
               <Route path="/questionnaires" element={<Questionnaires />} />

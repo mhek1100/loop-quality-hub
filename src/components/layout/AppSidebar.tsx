@@ -1,5 +1,4 @@
 import { 
-  LayoutDashboard, 
   BarChart3, 
   FileText, 
   ClipboardList, 
@@ -27,9 +26,8 @@ import { cn } from "@/lib/utils";
 import loopLogo from "@/assets/loop-logo.png";
 
 const navItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Submissions", url: "/", icon: FileText },
   { title: "KPI Dashboard", url: "/kpi", icon: BarChart3 },
-  { title: "Submissions", url: "/submissions", icon: FileText },
   { title: "Questionnaires", url: "/questionnaires", icon: ClipboardList },
   { title: "CIS Data Pipeline", url: "/pipeline", icon: Database },
   { title: "Users & Roles", url: "/users", icon: Users },

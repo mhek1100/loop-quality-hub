@@ -2,7 +2,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Shield, AlertTriangle, FileText, Lock } from "lucide-react";
 
-const Conformance = () => {
+interface ConformanceProps {
+  showHeader?: boolean;
+}
+
+const Conformance = ({ showHeader = true }: ConformanceProps) => {
   const checks = [
     {
       title: "Error/Warning Presentation",
@@ -33,12 +37,14 @@ const Conformance = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground">API Conformance</h1>
-        <p className="text-muted-foreground">
-          Conformance status for the B2G Quality Indicators API
-        </p>
-      </div>
+      {showHeader && (
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">API Conformance</h1>
+          <p className="text-muted-foreground">
+            Conformance status for the B2G Quality Indicators API
+          </p>
+        </div>
+      )}
 
       <Card>
         <CardHeader>

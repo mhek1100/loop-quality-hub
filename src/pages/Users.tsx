@@ -2,9 +2,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { users, roles } from "@/lib/mock/data";
 
-const Users = () => (
+interface UsersProps {
+  showHeader?: boolean;
+}
+
+const Users = ({ showHeader = true }: UsersProps) => (
   <div className="space-y-6 animate-fade-in">
-    <div><h1 className="text-2xl font-semibold">Users & Roles</h1><p className="text-muted-foreground">Manage user access and permissions</p></div>
+    {showHeader && (
+      <div><h1 className="text-2xl font-semibold">Users & Roles</h1><p className="text-muted-foreground">Manage user access and permissions</p></div>
+    )}
     <Card>
       <CardHeader><CardTitle className="text-lg">Users</CardTitle></CardHeader>
       <CardContent>

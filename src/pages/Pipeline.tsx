@@ -6,17 +6,23 @@ import { Database, RefreshCw, Settings, CheckCircle, XCircle, AlertTriangle } fr
 import { facilities, pipelineConfigs, syncJobs, getFacilityById } from "@/lib/mock/data";
 import { toast } from "@/hooks/use-toast";
 
-const Pipeline = () => {
+interface PipelineProps {
+  showHeader?: boolean;
+}
+
+const Pipeline = ({ showHeader = true }: PipelineProps) => {
   const handleSync = () => {
     toast({ title: "Sync started", description: "CIS pipeline sync has been initiated." });
   };
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-semibold">CIS Data Pipeline</h1>
-        <p className="text-muted-foreground">Configure and monitor Telstra Health CIS integration</p>
-      </div>
+      {showHeader && (
+        <div>
+          <h1 className="text-2xl font-semibold">CIS Data Pipeline</h1>
+          <p className="text-muted-foreground">Configure and monitor Telstra Health CIS integration</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {pipelineConfigs.map(config => {

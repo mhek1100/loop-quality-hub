@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { AlertCircle, AlertTriangle, ExternalLink } from "lucide-react";
+import { AlertCircle, AlertTriangle, ExternalLink, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,18 +9,26 @@ import { cn } from "@/lib/utils";
 interface ValidationIssuesListProps {
   outcomes: OperationOutcome[];
   submissionId: string;
+  onNavigateToIndicator?: (indicatorCode: string, questionLinkId?: string) => void;
   className?: string;
 }
 
 export function ValidationIssuesList({
   outcomes,
   submissionId,
+  onNavigateToIndicator,
   className,
 }: ValidationIssuesListProps) {
   const errors = outcomes.filter((o) => o.severity === "error");
   const warnings = outcomes.filter((o) => o.severity === "warning");
 
   if (outcomes.length === 0) return null;
+
+  const handleViewAndFix = (indicatorCode: string, questionLinkId?: string) => {
+    if (onNavigateToIndicator) {
+      onNavigateToIndicator(indicatorCode, questionLinkId);
+    }
+  };
 
   return (
     <Card className={cn("border-destructive/20", className)}>
@@ -64,13 +72,14 @@ export function ValidationIssuesList({
               <p className="text-sm text-destructive">{outcome.diagnostics}</p>
             </div>
             {outcome.indicatorCode && (
-              <Button variant="ghost" size="sm" asChild className="shrink-0">
-                <Link
-                  to={`/submissions/${submissionId}/indicator/${outcome.indicatorCode}`}
-                >
-                  <ExternalLink className="h-3 w-3 mr-1" />
-                  View & Fix
-                </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => handleViewAndFix(outcome.indicatorCode!, outcome.questionLinkId)}
+              >
+                <ArrowRight className="h-3 w-3 mr-1" />
+                View & Fix
               </Button>
             )}
           </div>
@@ -104,13 +113,14 @@ export function ValidationIssuesList({
               <p className="text-sm text-warning">{outcome.diagnostics}</p>
             </div>
             {outcome.indicatorCode && (
-              <Button variant="ghost" size="sm" asChild className="shrink-0">
-                <Link
-                  to={`/submissions/${submissionId}/indicator/${outcome.indicatorCode}`}
-                >
-                  <ExternalLink className="h-3 w-3 mr-1" />
-                  View & Fix
-                </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0 text-warning hover:text-warning hover:bg-warning/10"
+                onClick={() => handleViewAndFix(outcome.indicatorCode!, outcome.questionLinkId)}
+              >
+                <ArrowRight className="h-3 w-3 mr-1" />
+                View & Fix
               </Button>
             )}
           </div>

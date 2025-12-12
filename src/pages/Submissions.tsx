@@ -12,16 +12,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { StatusBadge } from "@/components/ui/status-badge";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { 
   Building2, 
   Search, 
   AlertTriangle, 
   AlertCircle,
   Eye,
-  Edit,
   Clock,
   FileCheck,
-  FileX
+  FileX,
+  Copy
 } from "lucide-react";
 import { 
   facilities, 
@@ -33,6 +42,10 @@ import {
   roles
 } from "@/lib/mock/data";
 import { INDICATORS } from "@/lib/mock/indicators";
+import { toast } from "@/hooks/use-toast";
+import { Submission } from "@/lib/types";
+
+const ITEMS_PER_PAGE = 5;
 
 const Submissions = () => {
   const [selectedQuarter, setSelectedQuarter] = useState("all");
@@ -74,6 +87,43 @@ const Submissions = () => {
     
     return true;
   });
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(filteredSubmissions.length / ITEMS_PER_PAGE));
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filteredSubmissions.length);
+  const paginatedSubmissions = filteredSubmissions.slice(startIndex, endIndex);
+
+  // Generate page numbers
+  const getPageNumbers = () => {
+    const pages: number[] = [];
+    const showPages = 5;
+
+    if (totalPages <= showPages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      pages.push(1);
+      let start = Math.max(2, currentPage - 1);
+      let end = Math.min(totalPages - 1, currentPage + 1);
+
+      if (currentPage <= 3) end = 4;
+      if (currentPage >= totalPages - 2) start = totalPages - 3;
+
+      if (start > 2) pages.push(-1);
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (end < totalPages - 1) pages.push(-1);
+      pages.push(totalPages);
+    }
+    return pages;
+  };
+
+  const handleCopyQrId = (qrId: string) => {
+    navigator.clipboard.writeText(qrId);
+    toast({ title: "Copied to clipboard", description: qrId });
+  };
 
   const statuses = [
     "Not Started",
@@ -247,9 +297,14 @@ const Submissions = () => {
       {/* Submissions Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">
-            {filteredSubmissions.length} Submission{filteredSubmissions.length !== 1 ? "s" : ""}
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">
+              {filteredSubmissions.length} Submission{filteredSubmissions.length !== 1 ? "s" : ""}
+            </CardTitle>
+            <span className="text-sm text-muted-foreground">
+              Showing {startIndex + 1}-{endIndex} of {filteredSubmissions.length}
+            </span>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -267,7 +322,7 @@ const Submissions = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredSubmissions.map(sub => {
+                {paginatedSubmissions.map(sub => {
                   const facility = getFacilityById(sub.facilityId);
                   const period = getReportingPeriodById(sub.reportingPeriodId);
                   const warningsCount = sub.questionnaires.reduce((acc, q) => 
@@ -292,9 +347,21 @@ const Submissions = () => {
                       </td>
                       <td className="py-3 px-4 text-muted-foreground">{period?.quarter}</td>
                       <td className="py-3 px-4">
-                        <code className="text-xs bg-muted px-2 py-1 rounded truncate max-w-[120px] block" title={sub.questionnaireResponseId}>
-                          {sub.questionnaireResponseId || "Not yet submitted"}
-                        </code>
+                        <div className="flex items-center gap-1">
+                          <code className="text-xs bg-muted px-2 py-1 rounded truncate max-w-[100px] block" title={sub.questionnaireResponseId}>
+                            {sub.questionnaireResponseId || "Not yet submitted"}
+                          </code>
+                          {sub.questionnaireResponseId && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => handleCopyQrId(sub.questionnaireResponseId!)}
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3 px-4">
                         <StatusBadge status={sub.status} />
@@ -347,6 +414,45 @@ const Submissions = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-4 pt-4 border-t">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  
+                  {getPageNumbers().map((page, index) => (
+                    <PaginationItem key={index}>
+                      {page === -1 ? (
+                        <PaginationEllipsis />
+                      ) : (
+                        <PaginationLink
+                          onClick={() => setCurrentPage(page)}
+                          isActive={currentPage === page}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      )}
+                    </PaginationItem>
+                  ))}
+                  
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

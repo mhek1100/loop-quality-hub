@@ -104,43 +104,43 @@ export function VersionHistory({ submission, className }: VersionHistoryProps) {
 
   return (
     <Card className={cn("", className)}>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Clock className="h-4 w-4" />
+      <CardHeader className="p-4 pb-0">
+        <CardTitle className="text-sm font-medium flex items-center gap-2">
+          <Clock className="h-4 w-4 text-muted-foreground" />
           Version History
-          <Badge variant="secondary" className="ml-auto">
+          <Badge variant="secondary" className="ml-auto text-xs">
             v{submission.submissionVersionNumber}
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
+      <CardContent className="p-4">
+        <div className="space-y-0">
           {/* Latest version - always visible */}
-          <div className="relative flex gap-4">
+          <div className="flex items-start gap-3 py-3 border-b border-border">
             <div
               className={cn(
-                "relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+                "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
                 getActionColor(latestVersion.action)
               )}
             >
               {getActionIcon(latestVersion.action)}
             </div>
             
-            <div className="flex-1 pt-1">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-medium text-sm">
                   Version {latestVersion.version}
                 </span>
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-xs h-5">
                   {getActionLabel(latestVersion.action)}
                 </Badge>
                 {latestVersion.fhirStatus && (
-                  <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
+                  <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
                     {latestVersion.fhirStatus}
                   </code>
                 )}
               </div>
-              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
                 <User className="h-3 w-3" />
                 <span>{getUserName(latestVersion.userId)}</span>
                 <span>•</span>
@@ -155,42 +155,45 @@ export function VersionHistory({ submission, className }: VersionHistoryProps) {
           {/* Older versions - collapsible */}
           {olderVersions.length > 0 && (
             <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-              <CollapsibleTrigger className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full justify-center py-2 border-t border-dashed">
+              <CollapsibleTrigger className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full py-2">
                 <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} />
                 {isOpen ? "Hide" : "Show"} {olderVersions.length} older version{olderVersions.length !== 1 ? "s" : ""}
               </CollapsibleTrigger>
               
               <CollapsibleContent>
-                <div className="relative space-y-4 pt-3">
-                  {/* Timeline line */}
-                  <div className="absolute left-[15px] top-2 bottom-2 w-px bg-border" />
-                  
-                  {olderVersions.map((entry) => (
-                    <div key={entry.version} className="relative flex gap-4">
+                <div className="space-y-0 border-t border-border">
+                  {olderVersions.map((entry, index) => (
+                    <div 
+                      key={entry.version} 
+                      className={cn(
+                        "flex items-start gap-3 py-3",
+                        index < olderVersions.length - 1 && "border-b border-border"
+                      )}
+                    >
                       <div
                         className={cn(
-                          "relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+                          "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
                           getActionColor(entry.action)
                         )}
                       >
                         {getActionIcon(entry.action)}
                       </div>
                       
-                      <div className="flex-1 pt-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium text-sm">
                             Version {entry.version}
                           </span>
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs h-5">
                             {getActionLabel(entry.action)}
                           </Badge>
                           {entry.fhirStatus && (
-                            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
+                            <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
                               {entry.fhirStatus}
                             </code>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
                           <User className="h-3 w-3" />
                           <span>{getUserName(entry.userId)}</span>
                           <span>•</span>

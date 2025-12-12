@@ -9,7 +9,7 @@ import KpiDashboard from "./pages/KpiDashboard";
 import Submissions from "./pages/Submissions";
 import SubmissionDetail from "./pages/SubmissionDetail";
 import QuestionnaireEditor from "./pages/QuestionnaireEditor";
-import Questionnaires from "./pages/Questionnaires";
+
 import Pipeline from "./pages/Pipeline";
 import Users from "./pages/Users";
 import AuditLog from "./pages/AuditLog";
@@ -33,7 +33,7 @@ const App = () => (
               <Route path="/kpi" element={<KpiDashboard />} />
               <Route path="/submissions/:id" element={<SubmissionDetail />} />
               <Route path="/submissions/:id/indicator/:indicatorCode" element={<QuestionnaireEditor />} />
-              <Route path="/questionnaires" element={<Questionnaires />} />
+              
               <Route path="/pipeline" element={<Pipeline />} />
               <Route path="/users" element={<Users />} />
               <Route path="/audit" element={<AuditLog />} />

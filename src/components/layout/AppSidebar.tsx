@@ -1,7 +1,6 @@
 import { 
   BarChart3, 
   FileText, 
-  ClipboardList, 
   Database, 
   Users, 
   History, 
@@ -28,7 +27,6 @@ import loopLogo from "@/assets/loop-logo.png";
 const navItems = [
   { title: "Submissions", url: "/", icon: FileText },
   { title: "KPI Dashboard", url: "/kpi", icon: BarChart3 },
-  { title: "Questionnaires", url: "/questionnaires", icon: ClipboardList },
   { title: "CIS Data Pipeline", url: "/pipeline", icon: Database },
   { title: "Users & Roles", url: "/users", icon: Users },
   { title: "Audit Log", url: "/audit", icon: History },

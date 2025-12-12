@@ -148,8 +148,6 @@ const Submissions = () => {
         </p>
       </div>
 
-      {/* Demo Scenarios Panel */}
-      <DemoScenariosPanel />
 
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -462,6 +460,11 @@ const Submissions = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Demo Scenarios - Development/Testing Section */}
+      <div className="pt-8 mt-8 border-t-2 border-dashed border-muted-foreground/20">
+        <DemoScenariosPanel />
+      </div>
     </div>
   );
 };

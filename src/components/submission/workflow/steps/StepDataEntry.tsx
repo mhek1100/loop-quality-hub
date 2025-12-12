@@ -4,9 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { IndicatorAccordion } from "../IndicatorAccordion";
+import { DataEntryStats } from "../DataEntryStats";
+import { RevertConfirmDialog } from "../RevertConfirmDialog";
 import { QI_QUESTIONNAIRE } from "@/lib/questionnaire/definitions";
-import { Submission, QuestionAnswer } from "@/lib/types";
-import { Zap, RotateCcw, Save, ArrowRight, Info } from "lucide-react";
+import { Submission } from "@/lib/types";
+import { Zap, RotateCcw, Save, ArrowRight, Info, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface StepDataEntryProps {
@@ -18,6 +20,7 @@ interface StepDataEntryProps {
   onPrefillAll: () => void;
   onPrefillMissing: () => void;
   onResetAll: () => void;
+  onRevertAllToPipeline: () => void;
 }
 
 export function StepDataEntry({
@@ -29,9 +32,11 @@ export function StepDataEntry({
   onPrefillAll,
   onPrefillMissing,
   onResetAll,
+  onRevertAllToPipeline,
 }: StepDataEntryProps) {
   const [activeIndicator, setActiveIndicator] = useState<string>(QI_QUESTIONNAIRE.sections[0].code);
   const [expandedIndicators, setExpandedIndicators] = useState<string[]>([QI_QUESTIONNAIRE.sections[0].code]);
+  const [showRevertDialog, setShowRevertDialog] = useState(false);
   const indicatorRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // Calculate indicator status
@@ -55,8 +60,9 @@ export function StepDataEntry({
     const totalQuestions = allQuestions.length;
     const filledQuestions = allQuestions.filter((q) => q.finalValue !== null && q.finalValue !== "").length;
     const autoFilledQuestions = allQuestions.filter((q) => !q.isOverridden && q.autoValue !== null).length;
+    const manuallyEditedQuestions = allQuestions.filter((q) => q.isOverridden).length;
     
-    return { totalQuestions, filledQuestions, autoFilledQuestions };
+    return { totalQuestions, filledQuestions, autoFilledQuestions, manuallyEditedQuestions };
   }, [submission.questionnaires]);
 
   const handleIndicatorClick = useCallback((code: string) => {
@@ -78,6 +84,14 @@ export function StepDataEntry({
     );
   }, []);
 
+  const handleExpandAll = useCallback(() => {
+    setExpandedIndicators(QI_QUESTIONNAIRE.sections.map((s) => s.code));
+  }, []);
+
+  const handleCollapseAll = useCallback(() => {
+    setExpandedIndicators([]);
+  }, []);
+
   const handlePrefillAll = () => {
     onPrefillAll();
     toast({ title: "Pre-filled entire questionnaire with pipeline data" });
@@ -91,6 +105,12 @@ export function StepDataEntry({
   const handleResetAll = () => {
     onResetAll();
     toast({ title: "Reset all values to blank" });
+  };
+
+  const handleRevertAllToPipeline = () => {
+    setShowRevertDialog(false);
+    onRevertAllToPipeline();
+    toast({ title: "Reverted all values to pipeline data" });
   };
 
   return (
@@ -124,6 +144,15 @@ export function StepDataEntry({
               <Zap className="h-4 w-4 mr-2" />
               Pre-fill Missing Only ({stats.totalQuestions - stats.filledQuestions})
             </Button>
+            <Button 
+              onClick={() => setShowRevertDialog(true)} 
+              variant="outline" 
+              size="sm"
+              disabled={stats.manuallyEditedQuestions === 0}
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Revert All to Pipeline ({stats.manuallyEditedQuestions})
+            </Button>
             <Button onClick={handleResetAll} variant="ghost" size="sm">
               <RotateCcw className="h-4 w-4 mr-2" />
               Reset All to Blank
@@ -132,13 +161,40 @@ export function StepDataEntry({
         </CardContent>
       </Card>
 
+      {/* Stats Display */}
+      <DataEntryStats submission={submission} />
+
       {/* Questionnaire Section */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Questionnaire</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Review and complete answers for each quality indicator
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base">Questionnaire</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Review and complete answers for each quality indicator
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleExpandAll}
+                className="gap-1 text-xs"
+              >
+                <ChevronsUpDown className="h-3.5 w-3.5" />
+                Expand All
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCollapseAll}
+                className="gap-1 text-xs"
+              >
+                <ChevronsDownUp className="h-3.5 w-3.5" />
+                Collapse All
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Indicator Accordions */}
@@ -178,6 +234,14 @@ export function StepDataEntry({
           <ArrowRight className="h-4 w-4 ml-2" />
         </Button>
       </div>
+
+      {/* Revert Confirmation Dialog */}
+      <RevertConfirmDialog
+        open={showRevertDialog}
+        onOpenChange={setShowRevertDialog}
+        onConfirm={handleRevertAllToPipeline}
+        editedCount={stats.manuallyEditedQuestions}
+      />
     </div>
   );
 }

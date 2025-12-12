@@ -15,6 +15,7 @@ import {
   getSubmissionScenario 
 } from "@/lib/submission-utils";
 import { ServerDataPanel } from "./ServerDataPanel";
+import { SubmissionConfirmDialog } from "../SubmissionConfirmDialog";
 
 const ATTESTATION_BULLETS = [
   "Confirm that you have collected, and are reporting, the quality indicator data in accordance with National Aged Care Mandatory Quality Indicator Program Manual 3.0 and all applicable laws, in accordance with the Aged Care Act 1997, Records Principles 2014 and Accountability Principles 2014.",
@@ -47,6 +48,7 @@ export function StepFinalSubmission({
   const [confirmed, setConfirmed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showResultModal, setShowResultModal] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [patchResponse, setPatchResponse] = useState<object | null>(null);
   const [serverDataVerified, setServerDataVerified] = useState(false);
 
@@ -284,22 +286,13 @@ export function StepFinalSubmission({
         <CardContent className="p-6">
           <div className="flex flex-col items-center gap-4">
             <Button
-              onClick={handleSubmit}
+              onClick={() => setShowConfirmDialog(true)}
               size="lg"
               className="gap-2"
               disabled={!confirmed || isSubmitting}
             >
-              {isSubmitting ? (
-                <>
-                  <Send className="h-5 w-5 animate-pulse" />
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  <Send className="h-5 w-5" />
-                  Submit Final (PATCH)
-                </>
-              )}
+              <Send className="h-5 w-5" />
+              Submit Final (PATCH)
             </Button>
           </div>
         </CardContent>
@@ -312,6 +305,20 @@ export function StepFinalSubmission({
           Back
         </Button>
       </div>
+
+      {/* Submission Confirmation Dialog */}
+      <SubmissionConfirmDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        onConfirm={() => {
+          setShowConfirmDialog(false);
+          handleSubmit();
+        }}
+        submissionType={scenarioConfig.label}
+        facilityName={facility?.name || "Unknown Facility"}
+        quarter={period?.quarter || "Unknown Period"}
+        isSubmitting={isSubmitting}
+      />
 
       {/* Result Modal */}
       <FhirPayloadModal

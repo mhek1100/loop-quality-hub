@@ -13,7 +13,7 @@ import { StepPostInProgress } from "@/components/submission/workflow/steps/StepP
 import { StepFinalSubmission } from "@/components/submission/workflow/steps/StepFinalSubmission";
 import { ProgressIndicator } from "@/components/submission/workflow/ProgressIndicator";
 import { VersionHistory } from "@/components/submission/workflow/VersionHistory";
-import { Submission } from "@/lib/types";
+import { Submission, OperationOutcome } from "@/lib/types";
 
 const SubmissionDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -33,17 +33,45 @@ const SubmissionDetail = () => {
   };
 
   const [currentStep, setCurrentStep] = useState<WorkflowStepId>(getInitialStep);
+  const [governmentErrors, setGovernmentErrors] = useState<OperationOutcome[]>([]);
+
+  // Calculate validation state
+  const validationState = useMemo(() => {
+    if (!submission) return { hasErrors: false, hasWarnings: false, errorCount: 0, warningCount: 0, isComplete: false };
+    
+    let errorCount = 0;
+    let warningCount = 0;
+    let filledCount = 0;
+    let totalRequired = 0;
+    
+    submission.questionnaires.forEach((q) => {
+      q.questions.forEach((qu) => {
+        if (qu.required) totalRequired++;
+        if (qu.finalValue !== null && qu.finalValue !== "") filledCount++;
+        errorCount += qu.errors.length;
+        warningCount += qu.warnings.length;
+      });
+    });
+    
+    return {
+      hasErrors: errorCount > 0,
+      hasWarnings: warningCount > 0,
+      errorCount,
+      warningCount,
+      isComplete: filledCount >= totalRequired
+    };
+  }, [submission]);
 
   // Calculate completed steps
   const completedSteps = useMemo((): WorkflowStepId[] => {
     if (!submission) return [];
     const completed: WorkflowStepId[] = [];
 
-    // Data entry is complete if we have values
+    // Data entry is complete if we have values and no errors
     const hasData = submission.questionnaires.some((q) =>
       q.questions.some((qu) => qu.finalValue !== null && qu.finalValue !== "")
     );
-    if (hasData) completed.push("data-entry");
+    if (hasData && !validationState.hasErrors) completed.push("data-entry");
 
     // Preview is complete if we've moved past it
     if (submission.questionnaireResponseId) {
@@ -57,20 +85,25 @@ const SubmissionDetail = () => {
     }
 
     return completed;
-  }, [submission]);
+  }, [submission, validationState.hasErrors]);
 
-  // Calculate locked steps
+  // Calculate locked steps - stricter validation
   const lockedSteps = useMemo((): WorkflowStepId[] => {
     if (!submission) return ["preview", "post-in-progress", "final-submission"];
     const locked: WorkflowStepId[] = [];
 
-    // Can't go to final if no QR ID or not in-progress
-    if (!submission.questionnaireResponseId || submission.fhirStatus !== "in-progress") {
-      locked.push("final-submission");
+    // Can't proceed to preview if there are errors
+    if (validationState.hasErrors) {
+      locked.push("preview", "post-in-progress", "final-submission");
+    } else {
+      // Can't go to final if no QR ID or not in-progress
+      if (!submission.questionnaireResponseId || submission.fhirStatus !== "in-progress") {
+        locked.push("final-submission");
+      }
     }
 
     return locked;
-  }, [submission]);
+  }, [submission, validationState.hasErrors]);
 
   if (!submission) {
     return (
@@ -107,7 +140,7 @@ const SubmissionDetail = () => {
                   ...q,
                   questions: q.questions.map((qu) =>
                     qu.linkId === linkId
-                      ? { ...qu, finalValue: value, isOverridden: true, userValue: value }
+                      ? { ...qu, finalValue: value, isOverridden: true, userValue: value, errors: [], warnings: [] }
                       : qu
                   ),
                 }
@@ -115,6 +148,8 @@ const SubmissionDetail = () => {
           ),
         };
       });
+      // Clear government errors when user makes changes
+      setGovernmentErrors([]);
     },
     []
   );
@@ -211,6 +246,7 @@ const SubmissionDetail = () => {
         })),
       };
     });
+    setGovernmentErrors([]);
   }, []);
 
   const handleSaveProgress = () => {
@@ -220,6 +256,49 @@ const SubmissionDetail = () => {
   const handlePostComplete = (qrId: string) => {
     setSubmission((prev) => (prev ? { ...prev, questionnaireResponseId: qrId } : prev));
   };
+
+  // Handle government validation errors - map back to questions and revert step
+  const handleGovernmentErrors = useCallback((errors: OperationOutcome[]) => {
+    setGovernmentErrors(errors);
+    
+    // Map errors back to questions
+    setSubmission((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        questionnaires: prev.questionnaires.map((q) => ({
+          ...q,
+          questions: q.questions.map((qu) => {
+            // Find matching government errors for this question
+            const matchingErrors = errors.filter(
+              (e) => e.indicatorCode === q.indicatorCode && e.questionLinkId === qu.linkId
+            );
+            const newErrors = matchingErrors
+              .filter((e) => e.severity === "error")
+              .map((e) => e.diagnostics);
+            const newWarnings = matchingErrors
+              .filter((e) => e.severity === "warning")
+              .map((e) => e.diagnostics);
+            
+            return {
+              ...qu,
+              errors: [...qu.errors, ...newErrors],
+              warnings: [...qu.warnings, ...newWarnings],
+            };
+          }),
+        })),
+      };
+    });
+    
+    // Revert to data entry step
+    setCurrentStep("data-entry");
+    
+    toast({
+      title: "Government Validation Failed",
+      description: `${errors.filter(e => e.severity === "error").length} error(s) require correction before proceeding.`,
+      variant: "destructive",
+    });
+  }, []);
 
   const handleSubmitComplete = () => {
     setSubmission((prev) =>
@@ -234,6 +313,11 @@ const SubmissionDetail = () => {
       toast({ title: "Copied to clipboard", description: submission.questionnaireResponseId });
     }
   };
+
+  // Check if can proceed to next step
+  const canProceedToPreview = !validationState.hasErrors && validationState.isComplete;
+  const canProceedToPostInProgress = canProceedToPreview;
+  const canProceedToFinal = !!submission.questionnaireResponseId && !validationState.hasErrors;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -301,6 +385,8 @@ const SubmissionDetail = () => {
             onPrefillMissing={handlePrefillMissing}
             onResetAll={handleResetAll}
             onRevertAllToPipeline={handleRevertAllToPipeline}
+            canProceed={canProceedToPreview}
+            governmentErrors={governmentErrors}
           />
         )}
 
@@ -309,6 +395,7 @@ const SubmissionDetail = () => {
             submission={submission}
             onBack={() => setCurrentStep("data-entry")}
             onContinue={() => setCurrentStep("post-in-progress")}
+            canProceed={canProceedToPostInProgress}
           />
         )}
 
@@ -318,6 +405,7 @@ const SubmissionDetail = () => {
             onBack={() => setCurrentStep("preview")}
             onContinue={() => setCurrentStep("final-submission")}
             onPostComplete={handlePostComplete}
+            onGovernmentErrors={handleGovernmentErrors}
           />
         )}
 
@@ -326,6 +414,7 @@ const SubmissionDetail = () => {
             submission={submission}
             onBack={() => setCurrentStep("post-in-progress")}
             onSubmitComplete={handleSubmitComplete}
+            canProceed={canProceedToFinal}
           />
         )}
       </div>

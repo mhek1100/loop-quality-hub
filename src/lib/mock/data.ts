@@ -333,14 +333,51 @@ const seededRandom = (seed: number) => {
   return x - Math.floor(x);
 };
 
+const ensureManualOverrides = (questions: QuestionAnswer[], targetOverrides: number) => {
+  if (targetOverrides <= 0) return;
+
+  let overrides = questions.filter((q) => q.isOverridden && q.finalValue !== null).length;
+  if (overrides >= targetOverrides) return;
+
+  for (const question of questions) {
+    if (overrides >= targetOverrides) break;
+    if (question.finalValue === null || question.isOverridden) continue;
+
+    if (typeof question.finalValue === "number") {
+      question.isOverridden = true;
+      question.userValue = question.finalValue + 1;
+      question.finalValue = question.userValue;
+      overrides++;
+      continue;
+    }
+
+    if (typeof question.finalValue === "boolean") {
+      question.isOverridden = true;
+      question.userValue = !question.finalValue;
+      question.finalValue = question.userValue;
+      overrides++;
+      continue;
+    }
+
+    if (typeof question.finalValue === "string") {
+      question.isOverridden = true;
+      question.userValue = `${question.finalValue} (manual review)`;
+      question.finalValue = question.userValue;
+      overrides++;
+    }
+  }
+};
+
 const generateQuestionAnswers = (
   indicatorCode: IndicatorCode, 
   scenario: ValidationScenario = "clean",
   seed: number = 1
 ): QuestionAnswer[] => {
   const questions = INDICATOR_QUESTIONS[indicatorCode];
-  
-  return questions.map((q, idx) => {
+  const overrideRatio = scenario === "empty" ? 0 : scenario === "partial" ? 0.15 : 0.3;
+  const targetOverrides = Math.max(0, Math.ceil(questions.length * overrideRatio));
+
+  const generated = questions.map((q, idx) => {
     const questionSeed = seed + idx + indicatorCode.charCodeAt(0);
     const rand = seededRandom(questionSeed);
     
@@ -438,6 +475,7 @@ const generateQuestionAnswers = (
         // Some fields filled, some empty - good for showing pre-fill
         if (autoValue === null && q.required) {
           warnings.push("Required field not yet completed");
+          errors.push("Required response missing - please provide a value");
         }
         break;
         
@@ -452,7 +490,7 @@ const generateQuestionAnswers = (
         break;
     }
     
-    return {
+    const questionAnswer: QuestionAnswer = {
       ...q,
       autoValue,
       userValue,
@@ -461,7 +499,12 @@ const generateQuestionAnswers = (
       warnings,
       errors
     };
+
+    return questionAnswer;
   });
+
+  ensureManualOverrides(generated, targetOverrides);
+  return generated;
 };
 
 // Generate questionnaire responses for a submission with scenario
@@ -498,7 +541,7 @@ const generateQuestionnaireResponses = (
       indicatorName: indicator.name,
       status: hasErrors ? "Draft" : hasWarnings ? "Ready for Review" : hasData ? "Reviewed" : "Not Started",
       source,
-      prefillAvailable: scenario !== "empty",
+      prefillAvailable: true,
       validationStatus: hasErrors ? "Errors" : hasWarnings ? "Warnings" : "OK",
       lastReviewedByUserId: hasErrors || !hasData ? undefined : "user-004",
       lastReviewedAt: hasErrors || !hasData ? undefined : new Date().toISOString(),
@@ -818,6 +861,189 @@ export const submissions: Submission[] = [
     questionnaires: generateQuestionnaireResponses("sub-015", "clean"),
     questionnaireResponseId: "QIQR-2024-Q4-HH015",
     questionnaireId: "QI-019",
+    healthcareServiceReference: "HealthcareService/HS-003",
+    apiWorkflowStep: "submitted"
+  },
+
+  // ===== Q3 2024 - Historical =====
+  {
+    id: "sub-016",
+    facilityId: "fac-001",
+    reportingPeriodId: "rp-q3-2024",
+    status: "Submitted",
+    fhirStatus: "completed",
+    createdAt: "2024-07-01T00:00:00Z",
+    updatedAt: "2024-10-18T10:00:00Z",
+    createdByUserId: "user-003",
+    submittedByUserId: "user-005",
+    lastSubmittedDate: "2024-10-18T10:00:00Z",
+    hasWarnings: false,
+    hasErrors: false,
+    submissionVersionNumber: 2,
+    questionnaires: generateQuestionnaireResponses("sub-016", "clean"),
+    questionnaireResponseId: "QIQR-2024-Q3-RB016",
+    questionnaireId: "QI-018",
+    healthcareServiceReference: "HealthcareService/HS-001",
+    apiWorkflowStep: "submitted"
+  },
+  {
+    id: "sub-017",
+    facilityId: "fac-002",
+    reportingPeriodId: "rp-q3-2024",
+    status: "Not Submitted",
+    fhirStatus: "in-progress",
+    createdAt: "2024-07-01T00:00:00Z",
+    updatedAt: "2024-10-25T09:00:00Z",
+    createdByUserId: "user-002",
+    hasWarnings: true,
+    hasErrors: true,
+    submissionVersionNumber: 1,
+    questionnaires: generateQuestionnaireResponses("sub-017", "partial"),
+    questionnaireId: "QI-018",
+    healthcareServiceReference: "HealthcareService/HS-002",
+    apiWorkflowStep: "data-collection"
+  },
+  {
+    id: "sub-018",
+    facilityId: "fac-003",
+    reportingPeriodId: "rp-q3-2024",
+    status: "Submitted",
+    fhirStatus: "completed",
+    createdAt: "2024-07-01T00:00:00Z",
+    updatedAt: "2024-10-19T08:00:00Z",
+    createdByUserId: "user-003",
+    submittedByUserId: "user-005",
+    lastSubmittedDate: "2024-10-19T08:00:00Z",
+    hasWarnings: false,
+    hasErrors: false,
+    submissionVersionNumber: 3,
+    questionnaires: generateQuestionnaireResponses("sub-018", "clean"),
+    questionnaireResponseId: "QIQR-2024-Q3-HH018",
+    questionnaireId: "QI-018",
+    healthcareServiceReference: "HealthcareService/HS-003",
+    apiWorkflowStep: "submitted"
+  },
+
+  // ===== Q2 2024 - Historical =====
+  {
+    id: "sub-019",
+    facilityId: "fac-001",
+    reportingPeriodId: "rp-q2-2024",
+    status: "Submitted",
+    fhirStatus: "completed",
+    createdAt: "2024-04-01T00:00:00Z",
+    updatedAt: "2024-07-18T10:00:00Z",
+    createdByUserId: "user-003",
+    submittedByUserId: "user-005",
+    lastSubmittedDate: "2024-07-18T10:00:00Z",
+    hasWarnings: false,
+    hasErrors: false,
+    submissionVersionNumber: 2,
+    questionnaires: generateQuestionnaireResponses("sub-019", "clean"),
+    questionnaireResponseId: "QIQR-2024-Q2-RB019",
+    questionnaireId: "QI-017",
+    healthcareServiceReference: "HealthcareService/HS-001",
+    apiWorkflowStep: "submitted"
+  },
+  {
+    id: "sub-020",
+    facilityId: "fac-002",
+    reportingPeriodId: "rp-q2-2024",
+    status: "Late Submission",
+    fhirStatus: "completed",
+    createdAt: "2024-04-01T00:00:00Z",
+    updatedAt: "2024-07-28T09:30:00Z",
+    createdByUserId: "user-003",
+    submittedByUserId: "user-005",
+    lastSubmittedDate: "2024-07-28T09:30:00Z",
+    hasWarnings: true,
+    hasErrors: false,
+    submissionVersionNumber: 3,
+    questionnaires: generateQuestionnaireResponses("sub-020", "warnings"),
+    questionnaireResponseId: "QIQR-2024-Q2-CV020",
+    questionnaireId: "QI-017",
+    healthcareServiceReference: "HealthcareService/HS-002",
+    apiWorkflowStep: "submitted"
+  },
+  {
+    id: "sub-021",
+    facilityId: "fac-003",
+    reportingPeriodId: "rp-q2-2024",
+    status: "Submitted",
+    fhirStatus: "completed",
+    createdAt: "2024-04-01T00:00:00Z",
+    updatedAt: "2024-07-15T08:45:00Z",
+    createdByUserId: "user-003",
+    submittedByUserId: "user-005",
+    lastSubmittedDate: "2024-07-15T08:45:00Z",
+    hasWarnings: false,
+    hasErrors: false,
+    submissionVersionNumber: 2,
+    questionnaires: generateQuestionnaireResponses("sub-021", "clean"),
+    questionnaireResponseId: "QIQR-2024-Q2-HH021",
+    questionnaireId: "QI-017",
+    healthcareServiceReference: "HealthcareService/HS-003",
+    apiWorkflowStep: "submitted"
+  },
+
+  // ===== Q1 2024 - Historical =====
+  {
+    id: "sub-022",
+    facilityId: "fac-001",
+    reportingPeriodId: "rp-q1-2024",
+    status: "Submitted",
+    fhirStatus: "completed",
+    createdAt: "2024-01-01T00:00:00Z",
+    updatedAt: "2024-04-18T10:00:00Z",
+    createdByUserId: "user-003",
+    submittedByUserId: "user-005",
+    lastSubmittedDate: "2024-04-18T10:00:00Z",
+    hasWarnings: false,
+    hasErrors: false,
+    submissionVersionNumber: 2,
+    questionnaires: generateQuestionnaireResponses("sub-022", "clean"),
+    questionnaireResponseId: "QIQR-2024-Q1-RB022",
+    questionnaireId: "QI-016",
+    healthcareServiceReference: "HealthcareService/HS-001",
+    apiWorkflowStep: "submitted"
+  },
+  {
+    id: "sub-023",
+    facilityId: "fac-002",
+    reportingPeriodId: "rp-q1-2024",
+    status: "Submitted",
+    fhirStatus: "completed",
+    createdAt: "2024-01-01T00:00:00Z",
+    updatedAt: "2024-04-20T11:20:00Z",
+    createdByUserId: "user-003",
+    submittedByUserId: "user-005",
+    lastSubmittedDate: "2024-04-20T11:20:00Z",
+    hasWarnings: false,
+    hasErrors: false,
+    submissionVersionNumber: 2,
+    questionnaires: generateQuestionnaireResponses("sub-023", "clean"),
+    questionnaireResponseId: "QIQR-2024-Q1-CV023",
+    questionnaireId: "QI-016",
+    healthcareServiceReference: "HealthcareService/HS-002",
+    apiWorkflowStep: "submitted"
+  },
+  {
+    id: "sub-024",
+    facilityId: "fac-003",
+    reportingPeriodId: "rp-q1-2024",
+    status: "Submitted",
+    fhirStatus: "completed",
+    createdAt: "2024-01-01T00:00:00Z",
+    updatedAt: "2024-04-22T09:15:00Z",
+    createdByUserId: "user-003",
+    submittedByUserId: "user-005",
+    lastSubmittedDate: "2024-04-22T09:15:00Z",
+    hasWarnings: false,
+    hasErrors: false,
+    submissionVersionNumber: 3,
+    questionnaires: generateQuestionnaireResponses("sub-024", "clean"),
+    questionnaireResponseId: "QIQR-2024-Q1-HH024",
+    questionnaireId: "QI-016",
     healthcareServiceReference: "HealthcareService/HS-003",
     apiWorkflowStep: "submitted"
   }

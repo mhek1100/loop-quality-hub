@@ -137,11 +137,12 @@ export function StepValidation({
     </div>
   );
 
+  const hasSubmitterRole = canFinalSubmit && isAuthorizedSubmitter;
+
   const canAttemptFinal =
     hasInitialSubmission &&
     submission.questionnaireResponseId &&
-    canFinalSubmit &&
-    isAuthorizedSubmitter &&
+    hasSubmitterRole &&
     attestationConfirmed;
 
   const hasBlockingErrors = validationSummary.errorCount > 0 || validationSummary.missingRequired > 0;
@@ -333,7 +334,7 @@ export function StepValidation({
           className="min-w-[260px] h-12 text-base"
         >
           <Send className="h-4 w-4 mr-2" />
-          Try Final Submission
+          {hasSubmitterRole ? "Try Final Submission" : "Only a QI Submitter can send final submission"}
         </Button>
       </div>
 

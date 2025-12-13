@@ -5,13 +5,13 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 
 export function DashboardLayout() {
   return (
-    <SidebarProvider defaultOpen={true}>
-      <div className="min-h-screen flex w-full bg-background">
+    <SidebarProvider defaultOpen={true} className="app-zoom app-zoom-fill overflow-hidden">
+      <div className="flex h-full w-full bg-background">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <AppHeader />
-          <main className="flex-1 p-4 overflow-auto">
-            <div className="app-zoom w-full max-w-[1400px] mx-auto">
+          <main className="flex-1 overflow-auto px-8 py-4">
+            <div className="w-full">
               <Outlet />
             </div>
           </main>

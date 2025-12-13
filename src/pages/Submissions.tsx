@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -288,7 +287,7 @@ const Submissions = () => {
       if (selectedQuarter !== "all" && sub.reportingPeriodId !== selectedQuarter) return false;
       if (selectedFacility !== "all" && sub.facilityId !== selectedFacility) return false;
       if (selectedStatus !== "all" && sub.status !== selectedStatus) return false;
-      if (hasWarningsFilter && !sub.hasWarnings) return false;
+      if (hasWarningsFilter && (!sub.hasWarnings || sub.hasErrors)) return false;
       if (hasErrorsFilter && !sub.hasErrors) return false;
       if (searchQuery && !facility?.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { FhirPayloadModal } from "../FhirPayloadModal";
 import { ValidationIssuesList } from "../../ValidationIssuesList";
 import { ServerDataPanel } from "./ServerDataPanel";
 import { Submission, OperationOutcome } from "@/lib/types";
@@ -67,8 +66,9 @@ export function StepValidation({
   const headers = getGpmsHeaders();
   const [attestationConfirmed, setAttestationConfirmed] = useState(false);
   const [showWarningsDialog, setShowWarningsDialog] = useState(false);
-  const [showPayloadModal, setShowPayloadModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [warningsAcknowledged, setWarningsAcknowledged] = useState(false);
 
   const periodDueDate = useMemo(
     () => (period ? new Date(period.dueDate) : new Date()),
@@ -125,17 +125,7 @@ export function StepValidation({
     [submission, submissionScenario, scenarioConfig, currentUser.id]
   );
 
-  const conformanceContent = (
-    <div className="p-4 rounded-lg bg-muted/40 space-y-2 text-sm">
-      <p className="font-semibold">Conformance checklist</p>
-      <ul className="space-y-1 list-disc pl-5 text-muted-foreground">
-        <li>Payload references QuestionnaireResponse ID {submission.questionnaireResponseId}</li>
-        <li>Attestations recorded for NQIP Program Manual 3.0 requirements</li>
-        <li>GPMS headers ({Object.keys(headers).join(", ")}) will be attached</li>
-        <li>Submission type: {scenarioConfig.label}</li>
-      </ul>
-    </div>
-  );
+  const formattedPayload = useMemo(() => JSON.stringify(finalPayload, null, 2), [finalPayload]);
 
   const hasSubmitterRole = canFinalSubmit && isAuthorizedSubmitter;
 
@@ -147,7 +137,7 @@ export function StepValidation({
 
   const hasBlockingErrors = validationSummary.errorCount > 0 || validationSummary.missingRequired > 0;
 
-  const handleTryFinalSubmission = () => {
+  const handlePrimaryAction = () => {
     if (!hasInitialSubmission || !submission.questionnaireResponseId) {
       toast({
         title: "Initial submission required",
@@ -166,12 +156,16 @@ export function StepValidation({
       return;
     }
 
-    if (validationSummary.warningCount > 0) {
-      setShowWarningsDialog(true);
+    if (!showPreview) {
+      if (validationSummary.warningCount > 0 && !warningsAcknowledged) {
+        setShowWarningsDialog(true);
+        return;
+      }
+      setShowPreview(true);
       return;
     }
 
-    setShowPayloadModal(true);
+    executeFinalSubmission();
   };
 
   const executeFinalSubmission = async () => {
@@ -180,7 +174,8 @@ export function StepValidation({
     setIsSubmitting(false);
 
     if (result.success) {
-      setShowPayloadModal(false);
+      setShowPreview(false);
+      setWarningsAcknowledged(false);
     }
   };
 
@@ -193,6 +188,32 @@ export function StepValidation({
 
   const isAlreadyCompleted =
     submission.fhirStatus === "completed" || submission.fhirStatus === "amended";
+
+  useEffect(() => {
+    setShowPreview(false);
+    setWarningsAcknowledged(false);
+  }, [
+    submission.id,
+    submission.questionnaireResponseId,
+    validationSummary.warningCount,
+    validationSummary.errorCount,
+  ]);
+
+  const requestEndpoint = submission.questionnaireResponseId
+    ? `/fhir/QuestionnaireResponse/${submission.questionnaireResponseId}`
+    : "/fhir/QuestionnaireResponse/{id}";
+
+  const primaryButtonLabel = hasSubmitterRole
+    ? showPreview
+      ? "Submit Final Data"
+      : "Review Final Submission"
+    : "Only a QI Submitter can send final submission";
+
+  const handleWarningsConfirm = () => {
+    setWarningsAcknowledged(true);
+    setShowWarningsDialog(false);
+    setShowPreview(true);
+  };
 
   if (isAlreadyCompleted) {
     return (
@@ -326,15 +347,62 @@ export function StepValidation({
         </CardContent>
       </Card>
 
+      {showPreview && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Send className="h-4 w-4" />
+              Final Submission Preview
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-muted-foreground text-xs uppercase">Method</p>
+                <p className="font-mono text-sm">PATCH {requestEndpoint}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-xs uppercase">Headers</p>
+                {Object.keys(headers).length > 0 ? (
+                  <ul className="font-mono text-xs space-y-1">
+                    {Object.entries(headers).map(([key, value]) => (
+                      <li key={key}>
+                        {key}: {value}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-muted-foreground">No GPMS headers attached</p>
+                )}
+              </div>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs uppercase mb-2">Payload</p>
+              <pre className="bg-muted rounded-md p-3 overflow-auto text-xs font-mono">
+                {formattedPayload}
+              </pre>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/40 text-xs text-muted-foreground space-y-1">
+              <p className="font-medium text-foreground text-sm">Conformance checklist</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>QuestionnaireResponse ID {submission.questionnaireResponseId}</li>
+                <li>Submission type: {scenarioConfig.label}</li>
+                <li>Headers included: {Object.keys(headers).length || "None"}</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex justify-center pt-6 pb-10 border-t">
         <Button
           size="lg"
-          onClick={handleTryFinalSubmission}
+          onClick={handlePrimaryAction}
           disabled={!canAttemptFinal || isSubmitting}
           className="min-w-[260px] h-12 text-base"
         >
           <Send className="h-4 w-4 mr-2" />
-          {hasSubmitterRole ? "Try Final Submission" : "Only a QI Submitter can send final submission"}
+          {primaryButtonLabel}
         </Button>
       </div>
 
@@ -346,32 +414,10 @@ export function StepValidation({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Review</AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              setShowWarningsDialog(false);
-              setShowPayloadModal(true);
-            }}>
-              Continue
-            </AlertDialogAction>
+            <AlertDialogAction onClick={handleWarningsConfirm}>Continue</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <FhirPayloadModal
-        open={showPayloadModal}
-        onOpenChange={setShowPayloadModal}
-        title="Final Submission Preview"
-        description={`${facility?.name} — ${period?.quarter}`}
-        requestPayload={finalPayload}
-        validationIssues={[]}
-        httpMethod="PATCH"
-        endpoint={`/fhir/QuestionnaireResponse/${submission.questionnaireResponseId}`}
-        headers={headers}
-        onContinue={executeFinalSubmission}
-        continueLabel="Submit Final Data"
-        canContinue={canAttemptFinal}
-        extraContent={conformanceContent}
-        isContinuing={isSubmitting}
-      />
     </div>
   );
 }

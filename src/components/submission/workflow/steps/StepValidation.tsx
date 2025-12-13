@@ -99,7 +99,6 @@ export function StepValidation({
   const [attestationConfirmed, setAttestationConfirmed] = useState(false);
   const [showWarningsDialog, setShowWarningsDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
   const [warningsAcknowledged, setWarningsAcknowledged] = useState(false);
 
   const periodDueDate = useMemo(
@@ -189,12 +188,8 @@ export function StepValidation({
       return;
     }
 
-    if (!showPreview) {
-      if (validationSummary.warningCount > 0 && !warningsAcknowledged) {
-        setShowWarningsDialog(true);
-        return;
-      }
-      setShowPreview(true);
+    if (validationSummary.warningCount > 0 && !warningsAcknowledged) {
+      setShowWarningsDialog(true);
       return;
     }
 
@@ -207,7 +202,6 @@ export function StepValidation({
     setIsSubmitting(false);
 
     if (result.success) {
-      setShowPreview(false);
       setWarningsAcknowledged(false);
     }
   };
@@ -223,7 +217,6 @@ export function StepValidation({
     submission.fhirStatus === "completed" || submission.fhirStatus === "amended";
 
   useEffect(() => {
-    setShowPreview(false);
     setWarningsAcknowledged(false);
   }, [
     submission.id,
@@ -237,15 +230,12 @@ export function StepValidation({
     : "/fhir/QuestionnaireResponse/{id}";
 
   const primaryButtonLabel = hasSubmitterRole
-    ? showPreview
-      ? "Submit Final Data"
-      : "Review Final Submission"
+    ? "Submit Final Data"
     : "Only a QI Submitter can send final submission";
 
   const handleWarningsConfirm = () => {
     setWarningsAcknowledged(true);
     setShowWarningsDialog(false);
-    setShowPreview(true);
   };
 
   if (isAlreadyCompleted) {
@@ -375,52 +365,50 @@ export function StepValidation({
         </CardContent>
       </Card>
 
-      {showPreview && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Send className="h-4 w-4" />
-              Final Submission Preview
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-muted-foreground text-xs uppercase">Method</p>
-                <p className="font-mono text-sm">PATCH {requestEndpoint}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-xs uppercase">Headers</p>
-                {Object.keys(headers).length > 0 ? (
-                  <ul className="font-mono text-xs space-y-1">
-                    {Object.entries(headers).map(([key, value]) => (
-                      <li key={key}>
-                        {key}: {value}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-muted-foreground">No GPMS headers attached</p>
-                )}
-              </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Send className="h-4 w-4" />
+            Final Submission Preview
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-muted-foreground text-xs uppercase">Method</p>
+              <p className="font-mono text-sm">PATCH {requestEndpoint}</p>
             </div>
             <div>
-              <p className="text-muted-foreground text-xs uppercase mb-2">Payload</p>
-              <pre className="bg-muted rounded-md p-3 overflow-auto text-xs font-mono">
-                {formattedPayload}
-              </pre>
+              <p className="text-muted-foreground text-xs uppercase">Headers</p>
+              {Object.keys(headers).length > 0 ? (
+                <ul className="font-mono text-xs space-y-1">
+                  {Object.entries(headers).map(([key, value]) => (
+                    <li key={key}>
+                      {key}: {value}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-muted-foreground">No GPMS headers attached</p>
+              )}
             </div>
-            <div className="p-3 rounded-lg bg-muted/40 text-xs text-muted-foreground space-y-1">
-              <p className="font-medium text-foreground text-sm">Conformance checklist</p>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>QuestionnaireResponse ID {submission.questionnaireResponseId}</li>
-                <li>Submission type: {scenarioConfig.label}</li>
-                <li>Headers included: {Object.keys(headers).length || "None"}</li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+          <div>
+            <p className="text-muted-foreground text-xs uppercase mb-2">Payload</p>
+            <pre className="bg-muted rounded-md p-3 overflow-auto text-xs font-mono">
+              {formattedPayload}
+            </pre>
+          </div>
+          <div className="p-3 rounded-lg bg-muted/40 text-xs text-muted-foreground space-y-1">
+            <p className="font-medium text-foreground text-sm">Conformance checklist</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>QuestionnaireResponse ID {submission.questionnaireResponseId}</li>
+              <li>Submission type: {scenarioConfig.label}</li>
+              <li>Headers included: {Object.keys(headers).length || "None"}</li>
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="flex justify-center pt-6 pb-10 border-t">
         <Button

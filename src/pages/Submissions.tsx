@@ -185,6 +185,64 @@ const getDueInfo = (period?: ReportingPeriod) => {
   };
 };
 
+type DueTone = "normal" | "warning" | "overdue" | "success";
+
+const FINAL_STATUSES: SubmissionStatus[] = [
+  "Submitted",
+  "Late Submission",
+  "Submitted - Updated after Due Date",
+];
+
+const isFinalSubmission = (submission: Submission) =>
+  FINAL_STATUSES.includes(submission.status) ||
+  submission.fhirStatus === "completed" ||
+  submission.fhirStatus === "amended";
+
+const formatDateLabel = (dateString?: string) => {
+  if (!dateString) return "";
+  return new Date(dateString).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+const getDueDisplay = (submission: Submission, period?: ReportingPeriod) => {
+  const dueInfo = getDueInfo(period);
+
+  if (isFinalSubmission(submission)) {
+    const submittedAt = submission.lastSubmittedDate || submission.updatedAt;
+    const formatted = formatDateLabel(submittedAt);
+    let label = formatted ? `Submitted ${formatted}` : "Submitted";
+    let tone: DueTone = "success";
+
+    if (submission.status === "Late Submission") {
+      label = formatted ? `Submitted late ${formatted}` : "Submitted late";
+      tone = "warning";
+    } else if (submission.status === "Submitted - Updated after Due Date") {
+      label = formatted ? `Amended ${formatted}` : "Amended after due date";
+      tone = "warning";
+    }
+
+    return { label, tone };
+  }
+
+  return { label: dueInfo.label, tone: dueInfo.tone };
+};
+
+const getDueToneClass = (tone: DueTone) => {
+  switch (tone) {
+    case "overdue":
+      return "text-sm font-medium text-destructive";
+    case "warning":
+      return "text-sm font-medium text-warning";
+    case "success":
+      return "text-sm font-medium text-success";
+    default:
+      return "text-sm text-muted-foreground";
+  }
+};
+
 const Submissions = () => {
   const latestPeriod = getLatestReportingPeriod();
   const [selectedQuarter, setSelectedQuarter] = useState(latestPeriod.id);
@@ -477,7 +535,7 @@ const Submissions = () => {
                   const facility = getFacilityById(sub.facilityId);
                   const period = getReportingPeriodById(sub.reportingPeriodId);
                   const workflow = getWorkflowInfo(sub);
-                  const due = getDueInfo(period);
+                  const dueDisplay = getDueDisplay(sub, period);
 
                   let actionLabel = workflow.actionLabel;
                   let actionVariant = workflow.actionVariant;
@@ -519,17 +577,7 @@ const Submissions = () => {
                       <td className="py-3 px-4">
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span
-                              className={
-                                due.tone === "overdue"
-                                  ? "text-sm font-medium text-destructive"
-                                  : due.tone === "warning"
-                                  ? "text-sm font-medium text-warning"
-                                  : "text-sm text-muted-foreground"
-                              }
-                            >
-                              {due.label}
-                            </span>
+                            <span className={getDueToneClass(dueDisplay.tone)}>{dueDisplay.label}</span>
                           </TooltipTrigger>
                           {period && (
                             <TooltipContent>

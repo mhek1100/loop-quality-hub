@@ -298,15 +298,27 @@ const Submissions = () => {
 
   const sortedSubmissions = useMemo(() => {
     return filteredSubmissions.slice().sort((a, b) => {
-      const wa = getWorkflowInfo(a);
-      const wb = getWorkflowInfo(b);
-      if (wa.priority !== wb.priority) return wa.priority - wb.priority;
-
       const pa = getReportingPeriodById(a.reportingPeriodId);
       const pb = getReportingPeriodById(b.reportingPeriodId);
-      const da = getDueInfo(pa).daysUntil ?? 9999;
-      const db = getDueInfo(pb).daysUntil ?? 9999;
-      return da - db;
+      const yearA = pa ? parseInt(pa.quarter.split(" ")[1], 10) : 0;
+      const yearB = pb ? parseInt(pb.quarter.split(" ")[1], 10) : 0;
+
+      if (yearA !== yearB) {
+        return yearB - yearA;
+      }
+
+      const quarterOrder = ["Q1", "Q2", "Q3", "Q4"];
+      const quarterA = pa ? quarterOrder.indexOf(pa.quarter.split(" ")[0]) : -1;
+      const quarterB = pb ? quarterOrder.indexOf(pb.quarter.split(" ")[0]) : -1;
+
+      if (quarterA !== quarterB) {
+        return quarterB - quarterA;
+      }
+
+      const facilityA = getFacilityById(a.facilityId)?.name || "";
+      const facilityB = getFacilityById(b.facilityId)?.name || "";
+
+      return facilityA.localeCompare(facilityB);
     });
   }, [filteredSubmissions]);
 

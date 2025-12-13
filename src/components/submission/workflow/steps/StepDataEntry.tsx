@@ -28,6 +28,7 @@ interface StepDataEntryProps {
   initialSubmitLabel?: string;
   governmentIssues?: OperationOutcome[];
   initialSubmissionMeta?: { submittedAt?: string };
+  onProceedToValidation?: () => void;
 }
 
 export function StepDataEntry({
@@ -45,6 +46,7 @@ export function StepDataEntry({
   initialSubmitLabel = "Initial Submission",
   governmentIssues = [],
   initialSubmissionMeta,
+  onProceedToValidation,
 }: StepDataEntryProps) {
   const [activeIndicator, setActiveIndicator] = useState<string>(QI_QUESTIONNAIRE.sections[0].code);
   const [expandedIndicators, setExpandedIndicators] = useState<string[]>([]);
@@ -132,7 +134,16 @@ export function StepDataEntry({
   }, [governmentIssues]);
 
   const buttonDisabled =
-    !canInitialSubmit || initialSubmitStatus === "submitted" || initialSubmitStatus === "submitting";
+    initialSubmitStatus === "submitting" ||
+    (initialSubmitStatus !== "submitted" && !canInitialSubmit);
+
+  const handlePrimaryAction = () => {
+    if (initialSubmitStatus === "submitted") {
+      onProceedToValidation?.();
+      return;
+    }
+    onInitialSubmit();
+  };
 
   const statusLabel =
     initialSubmitStatus === "submitted"
@@ -272,7 +283,7 @@ export function StepDataEntry({
             Save Progress
           </Button>
           <Button
-            onClick={onInitialSubmit}
+            onClick={handlePrimaryAction}
             disabled={buttonDisabled}
             size="lg"
             className="min-w-[260px] h-12 text-base"
@@ -285,7 +296,7 @@ export function StepDataEntry({
             ) : initialSubmitStatus === "submitted" ? (
               <>
                 <CheckCircle2 className="h-4 w-4 mr-2" />
-                Initial Submission Sent
+                Go to validation page
               </>
             ) : (
               <>

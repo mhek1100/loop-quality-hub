@@ -604,6 +604,7 @@ const SubmissionDetail = () => {
             submission={submission}
             onSaveProgress={handleSaveProgress}
             onInitialSubmit={handleInitialSubmission}
+            onProceedToValidation={() => setCurrentStep("validation")}
             onQuestionChange={handleQuestionChange}
             onQuestionRevert={handleQuestionRevert}
             onPrefillAll={handlePrefillAll}

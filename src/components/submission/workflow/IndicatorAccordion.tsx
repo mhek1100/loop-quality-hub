@@ -46,7 +46,14 @@ export const IndicatorAccordion = forwardRef<HTMLDivElement, IndicatorAccordionP
     return (
       <div ref={ref} id={id} className="scroll-mt-20">
         <Accordion type="single" collapsible value={isExpanded ? section.code : ""}>
-          <AccordionItem value={section.code} className="border rounded-lg overflow-hidden">
+          <AccordionItem
+            value={section.code}
+            className={cn(
+              "border rounded-lg overflow-hidden",
+              "bg-[#fafafa] dark:bg-muted/20",
+              "hover:border-primary/30 transition-colors"
+            )}
+          >
             <AccordionTrigger
               onClick={onToggle}
               className={cn(

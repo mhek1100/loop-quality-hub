@@ -197,21 +197,37 @@
     @apply bg-sidebar-accent text-sidebar-foreground font-medium;
   }
 
-  /* App density: emulate ~85% browser zoom for content area (Chrome-friendly) */
+  /* App density: emulate ~80% browser zoom (Chrome-friendly) */
   .app-zoom {
-    zoom: 0.85;
+    --app-zoom: 0.8;
+    zoom: var(--app-zoom);
   }
 
   @supports not (zoom: 1) {
     .app-zoom {
-      transform: scale(0.85);
+      transform: scale(var(--app-zoom));
       transform-origin: top left;
-      width: calc(100% / 0.85);
+      width: calc(100% / var(--app-zoom));
     }
   }
 }
 
 @layer utilities {
+  /* When using zoom/scale, compensate height so full-viewport layouts still reach the bottom. */
+  .app-zoom-fill {
+    height: calc(100svh / var(--app-zoom));
+    min-height: calc(100svh / var(--app-zoom));
+  }
+
+  /* Ensure full-height helpers honor the zoom compensation inside zoomed layouts. */
+  .app-zoom :is(.h-svh) {
+    height: calc(100svh / var(--app-zoom));
+  }
+
+  .app-zoom :is(.min-h-svh) {
+    min-height: calc(100svh / var(--app-zoom));
+  }
+
   .animate-fade-in {
     animation: fadeIn 0.3s ease-out forwards;
   }

@@ -550,6 +550,10 @@ const DEMO_PIPELINE_OVERRIDES_BY_SUBMISSION_ID: Record<string, DemoPipelineOverr
   // Reject: total count cannot be zero
   "sub-009": {
     "PI/PI-01": 0,
+    // Keep related sub-counts at 0 so we only demo the "total cannot be zero" rule.
+    "PI/PI-02": 0,
+    // Extra safety: allow matching by linkId-only if indicator code mapping changes.
+    "PI-02": 0,
   },
   // Reject: inconsistent counts (sub-count exceeds total)
   "sub-010": {
@@ -569,8 +573,12 @@ const applyDemoPipelineOverrides = (
     ...q,
     questions: q.questions.map((qu) => {
       const key = `${q.indicatorCode}/${qu.linkId}`;
-      if (!Object.prototype.hasOwnProperty.call(overrides, key)) return qu;
-      return { ...qu, autoValue: overrides[key] };
+      const hasKey = Object.prototype.hasOwnProperty.call(overrides, key);
+      const hasLinkIdKey = Object.prototype.hasOwnProperty.call(overrides, qu.linkId);
+      if (!hasKey && !hasLinkIdKey) return qu;
+
+      const overrideValue = hasKey ? overrides[key] : overrides[qu.linkId];
+      return { ...qu, autoValue: overrideValue };
     }),
   }));
 };

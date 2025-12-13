@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Copy, FileJson, AlertTriangle, AlertCircle, Check, ExternalLink } from "lucide-react";
+import { Copy, FileJson, AlertTriangle, AlertCircle, Check, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +36,8 @@ interface FhirPayloadModalProps {
   onContinue?: () => void;
   continueLabel?: string;
   canContinue?: boolean;
+  extraContent?: ReactNode;
+  isContinuing?: boolean;
 }
 
 export function FhirPayloadModal({
@@ -51,6 +54,8 @@ export function FhirPayloadModal({
   onContinue,
   continueLabel = "Continue",
   canContinue = true,
+  extraContent,
+  isContinuing = false,
 }: FhirPayloadModalProps) {
   const errorCount = validationIssues.filter((v) => v.severity === "error").length;
   const warningCount = validationIssues.filter((v) => v.severity === "warning").length;
@@ -99,6 +104,8 @@ export function FhirPayloadModal({
             )}
           </div>
         )}
+
+        {extraContent}
 
         <Tabs defaultValue="request" className="flex-1 overflow-hidden flex flex-col">
           <TabsList className="grid w-full grid-cols-3">
@@ -208,8 +215,15 @@ export function FhirPayloadModal({
             Close
           </Button>
           {onContinue && (
-            <Button onClick={onContinue} disabled={!canContinue || errorCount > 0}>
-              {continueLabel}
+            <Button onClick={onContinue} disabled={!canContinue || errorCount > 0 || isContinuing}>
+              {isContinuing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Working...
+                </>
+              ) : (
+                continueLabel
+              )}
             </Button>
           )}
         </DialogFooter>

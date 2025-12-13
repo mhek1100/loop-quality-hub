@@ -8,7 +8,7 @@ import { DataEntryStats } from "../DataEntryStats";
 import { RevertConfirmDialog } from "../RevertConfirmDialog";
 import { QI_QUESTIONNAIRE } from "@/lib/questionnaire/definitions";
 import { Submission } from "@/lib/types";
-import { Zap, RotateCcw, Save, ArrowRight, Info, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
+import { Zap, RotateCcw, Save, Upload, Info, ChevronsUpDown, ChevronsDownUp, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 import { OperationOutcome } from "@/lib/types";
@@ -16,29 +16,35 @@ import { OperationOutcome } from "@/lib/types";
 interface StepDataEntryProps {
   submission: Submission;
   onSaveProgress: () => void;
-  onContinue: () => void;
+  onInitialSubmit: () => Promise<void> | void;
   onQuestionChange: (indicatorCode: string, linkId: string, value: string | number | null) => void;
   onQuestionRevert: (indicatorCode: string, linkId: string) => void;
   onPrefillAll: () => void;
   onPrefillMissing: () => void;
   onResetAll: () => void;
   onRevertAllToPipeline: () => void;
-  canProceed?: boolean;
-  governmentErrors?: OperationOutcome[];
+  canInitialSubmit?: boolean;
+  initialSubmitStatus?: "idle" | "submitting" | "submitted";
+  initialSubmitLabel?: string;
+  governmentIssues?: OperationOutcome[];
+  initialSubmissionMeta?: { submittedAt?: string };
 }
 
 export function StepDataEntry({
   submission,
   onSaveProgress,
-  onContinue,
+  onInitialSubmit,
   onQuestionChange,
   onQuestionRevert,
   onPrefillAll,
   onPrefillMissing,
   onResetAll,
   onRevertAllToPipeline,
-  canProceed = true,
-  governmentErrors = [],
+  canInitialSubmit = true,
+  initialSubmitStatus = "idle",
+  initialSubmitLabel = "Initial Submission",
+  governmentIssues = [],
+  initialSubmissionMeta,
 }: StepDataEntryProps) {
   const [activeIndicator, setActiveIndicator] = useState<string>(QI_QUESTIONNAIRE.sections[0].code);
   const [expandedIndicators, setExpandedIndicators] = useState<string[]>([]);
@@ -118,6 +124,24 @@ export function StepDataEntry({
     onRevertAllToPipeline();
     toast({ title: "Reverted all values to pipeline data" });
   };
+
+  const serverIssueCounts = useMemo(() => {
+    const errorCount = governmentIssues.filter((issue) => issue.severity === "error").length;
+    const warningCount = governmentIssues.filter((issue) => issue.severity === "warning").length;
+    return { errorCount, warningCount };
+  }, [governmentIssues]);
+
+  const buttonDisabled =
+    !canInitialSubmit || initialSubmitStatus === "submitted" || initialSubmitStatus === "submitting";
+
+  const statusLabel =
+    initialSubmitStatus === "submitted"
+      ? `Initial submission sent${initialSubmissionMeta?.submittedAt ? ` on ${new Date(initialSubmissionMeta.submittedAt).toLocaleString()}` : ""}`
+      : initialSubmitStatus === "submitting"
+      ? "Submitting initial payload…"
+      : canInitialSubmit
+      ? "Ready to send to Government"
+      : "Resolve outstanding issues to continue";
 
   return (
     <div className="space-y-6">
@@ -229,16 +253,58 @@ export function StepDataEntry({
         </CardContent>
       </Card>
 
+      {/* Outstanding validation alert */}
+      {governmentIssues.length > 0 && (
+        <Alert className={serverIssueCounts.errorCount > 0 ? "border-destructive/50 bg-destructive/5" : "border-warning/50 bg-warning/5"}>
+          <Info className="h-4 w-4 text-primary" />
+          <AlertDescription className="text-sm">
+            Government validation returned {serverIssueCounts.errorCount} error{serverIssueCounts.errorCount === 1 ? "" : "s"} and{" "}
+            {serverIssueCounts.warningCount} warning{serverIssueCounts.warningCount === 1 ? "" : "s"}. Issues are highlighted next to each question.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Actions */}
-      <div className="flex justify-between items-center pt-4 border-t">
+      <div className="flex flex-wrap justify-between items-center gap-4 pt-4 border-t">
         <Button variant="outline" onClick={onSaveProgress}>
           <Save className="h-4 w-4 mr-2" />
           Save Progress
         </Button>
-        <Button onClick={onContinue} disabled={!canProceed}>
-          Continue to Step 2
-          <ArrowRight className="h-4 w-4 ml-2" />
-        </Button>
+
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {initialSubmitStatus === "submitted" ? (
+              <CheckCircle2 className="h-4 w-4 text-success" />
+            ) : initialSubmitStatus === "submitting" ? (
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            ) : (
+              <Upload className="h-4 w-4 text-muted-foreground" />
+            )}
+            <span>{statusLabel}</span>
+          </div>
+          <Button
+            onClick={onInitialSubmit}
+            disabled={buttonDisabled}
+            className="min-w-[220px]"
+          >
+            {initialSubmitStatus === "submitting" ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Sending...
+              </>
+            ) : initialSubmitStatus === "submitted" ? (
+              <>
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Initial Submission Sent
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4 mr-2" />
+                {initialSubmitLabel}
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Revert Confirmation Dialog */}

@@ -1,7 +1,7 @@
 import { Check, Loader2, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type WorkflowStepId = "data-entry" | "preview" | "post-in-progress" | "final-submission";
+export type WorkflowStepId = "data-entry" | "validation" | "completion";
 
 export interface WorkflowStep {
   id: WorkflowStepId;
@@ -14,26 +14,20 @@ export const WORKFLOW_STEPS: WorkflowStep[] = [
   {
     id: "data-entry",
     number: 1,
-    label: "Data Entry",
-    description: "Enter all required indicator values",
+    label: "Data Collection",
+    description: "Complete all required indicator questions",
   },
   {
-    id: "preview",
+    id: "validation",
     number: 2,
-    label: "Build & Preview",
-    description: "Review the QuestionnaireResponse",
+    label: "Validation & Final Submit",
+    description: "Resolve issues and send final payload",
   },
   {
-    id: "post-in-progress",
+    id: "completion",
     number: 3,
-    label: "Submit In-Progress",
-    description: "POST to Government API",
-  },
-  {
-    id: "final-submission",
-    number: 4,
-    label: "Final Submission",
-    description: "PATCH to complete submission",
+    label: "Submission Complete",
+    description: "Review confirmation & amendments",
   },
 ];
 

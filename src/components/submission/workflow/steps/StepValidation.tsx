@@ -233,9 +233,10 @@ export function StepValidation({
     ? "Submit Final Data"
     : "Only a QI Submitter can send final submission";
 
-  const handleWarningsConfirm = () => {
+  const handleWarningsConfirm = async () => {
     setWarningsAcknowledged(true);
     setShowWarningsDialog(false);
+    await executeFinalSubmission();
   };
 
   if (isAlreadyCompleted) {
@@ -346,39 +347,26 @@ export function StepValidation({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">GPMS Headers</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="p-3 bg-muted/40 rounded-lg font-mono text-sm space-y-1">
-            {headers["X-User-Email"] && <p>X-User-Email: {headers["X-User-Email"]}</p>}
-            {headers["X-Federated-Id"] && <p>X-Federated-Id: {headers["X-Federated-Id"]}</p>}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="space-y-1 text-sm">
-          <p className="font-medium">QuestionnaireResponse ID</p>
-          <code className="text-xs bg-muted px-2 py-1 rounded">
-            {submission.questionnaireResponseId || "Not yet submitted"}
-          </code>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Send className="h-4 w-4" />
             Final Submission Preview
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-3 rounded-lg bg-muted/40 space-y-1">
               <p className="text-muted-foreground text-xs uppercase">Method</p>
-              <p className="font-mono text-sm">PATCH {requestEndpoint}</p>
+              <code className="text-xs block">
+                PATCH {requestEndpoint}
+              </code>
             </div>
-            <div>
+            <div className="p-3 rounded-lg bg-muted/40 space-y-1">
+              <p className="text-muted-foreground text-xs uppercase">QuestionnaireResponse ID</p>
+              <code className="text-xs block">
+                {submission.questionnaireResponseId || "Not yet submitted"}
+              </code>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/40 space-y-1">
               <p className="text-muted-foreground text-xs uppercase">Headers</p>
               {Object.keys(headers).length > 0 ? (
                 <ul className="font-mono text-xs space-y-1">
@@ -395,17 +383,9 @@ export function StepValidation({
           </div>
           <div>
             <p className="text-muted-foreground text-xs uppercase mb-2">Payload</p>
-            <pre className="bg-muted rounded-md p-3 overflow-auto text-xs font-mono">
+            <pre className="bg-muted rounded-md p-3 overflow-auto text-xs font-mono max-h-64">
               {formattedPayload}
             </pre>
-          </div>
-          <div className="p-3 rounded-lg bg-muted/40 text-xs text-muted-foreground space-y-1">
-            <p className="font-medium text-foreground text-sm">Conformance checklist</p>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>QuestionnaireResponse ID {submission.questionnaireResponseId}</li>
-              <li>Submission type: {scenarioConfig.label}</li>
-              <li>Headers included: {Object.keys(headers).length || "None"}</li>
-            </ul>
           </div>
         </CardContent>
       </Card>

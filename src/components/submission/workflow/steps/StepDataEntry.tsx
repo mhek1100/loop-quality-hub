@@ -52,6 +52,7 @@ export function StepDataEntry({
   const [expandedIndicators, setExpandedIndicators] = useState<string[]>([]);
   const [showRevertDialog, setShowRevertDialog] = useState(false);
   const indicatorRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const isReadOnly = submission.fhirStatus === "completed" || submission.fhirStatus === "amended";
 
   // Calculate indicator status
   const indicatorStatus = useMemo(() => {
@@ -107,21 +108,25 @@ export function StepDataEntry({
   }, []);
 
   const handlePrefillAll = () => {
+    if (isReadOnly) return;
     onPrefillAll();
     toast({ title: "Pre-filled entire questionnaire with pipeline data" });
   };
 
   const handlePrefillMissing = () => {
+    if (isReadOnly) return;
     onPrefillMissing();
     toast({ title: "Pre-filled missing values with pipeline data" });
   };
 
   const handleResetAll = () => {
+    if (isReadOnly) return;
     onResetAll();
     toast({ title: "Reset all values to blank" });
   };
 
   const handleRevertAllToPipeline = () => {
+    if (isReadOnly) return;
     setShowRevertDialog(false);
     onRevertAllToPipeline();
     toast({ title: "Reverted all values to pipeline data" });
@@ -135,9 +140,11 @@ export function StepDataEntry({
 
   const buttonDisabled =
     initialSubmitStatus === "submitting" ||
-    (initialSubmitStatus !== "submitted" && !canInitialSubmit);
+    (initialSubmitStatus !== "submitted" && !canInitialSubmit) ||
+    isReadOnly;
 
   const handlePrimaryAction = () => {
+    if (isReadOnly) return;
     if (initialSubmitStatus === "submitted") {
       onProceedToValidation?.();
       return;
@@ -160,7 +167,9 @@ export function StepDataEntry({
       <Alert className="bg-info/10 border-info/30">
         <Info className="h-4 w-4 text-info-foreground" />
         <AlertDescription>
-          Enter all required indicator values. You may edit pipeline data if needed.
+          {isReadOnly
+            ? "Submission is complete. Data entry is locked to preserve submitted values."
+            : "Enter all required indicator values. You may edit pipeline data if needed."}
         </AlertDescription>
       </Alert>
 
@@ -177,11 +186,11 @@ export function StepDataEntry({
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3">
-            <Button onClick={handlePrefillAll} variant="default" size="sm">
+            <Button onClick={handlePrefillAll} variant="default" size="sm" disabled={isReadOnly}>
               <Zap className="h-4 w-4 mr-2" />
               Pre-fill Entire Questionnaire
             </Button>
-            <Button onClick={handlePrefillMissing} variant="outline" size="sm">
+            <Button onClick={handlePrefillMissing} variant="outline" size="sm" disabled={isReadOnly}>
               <Zap className="h-4 w-4 mr-2" />
               Pre-fill Missing Only ({stats.totalQuestions - stats.filledQuestions})
             </Button>
@@ -189,12 +198,12 @@ export function StepDataEntry({
               onClick={() => setShowRevertDialog(true)} 
               variant="outline" 
               size="sm"
-              disabled={stats.manuallyEditedQuestions === 0}
+              disabled={isReadOnly || stats.manuallyEditedQuestions === 0}
             >
               <RotateCcw className="h-4 w-4 mr-2" />
               Revert All to Pipeline ({stats.manuallyEditedQuestions})
             </Button>
-            <Button onClick={handleResetAll} variant="ghost" size="sm">
+            <Button onClick={handleResetAll} variant="ghost" size="sm" disabled={isReadOnly}>
               <RotateCcw className="h-4 w-4 mr-2" />
               Reset All to Blank
             </Button>
@@ -257,6 +266,7 @@ export function StepDataEntry({
                   onQuestionRevert={(linkId) => onQuestionRevert(section.code, linkId)}
                   isExpanded={expandedIndicators.includes(section.code)}
                   onToggle={() => toggleIndicator(section.code)}
+                  readOnly={isReadOnly}
                 />
               );
             })}
@@ -278,7 +288,12 @@ export function StepDataEntry({
       {/* Actions */}
       <div className="flex flex-col items-center gap-4 pt-6 pb-10 border-t text-center">
         <div className="flex flex-wrap items-center justify-center gap-4 w-full">
-          <Button variant="outline" onClick={onSaveProgress} className="min-w-[200px] h-12 text-base">
+          <Button
+            variant="outline"
+            onClick={onSaveProgress}
+            className="min-w-[200px] h-12 text-base"
+            disabled={isReadOnly}
+          >
             <Save className="h-4 w-4 mr-2" />
             Save Progress
           </Button>

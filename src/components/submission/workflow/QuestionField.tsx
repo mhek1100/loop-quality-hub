@@ -18,6 +18,7 @@ interface QuestionFieldProps {
   warnings: string[];
   onChange: (value: string | number | null) => void;
   onRevert?: () => void;
+  disabled?: boolean;
 }
 
 export function QuestionField({
@@ -32,13 +33,15 @@ export function QuestionField({
   warnings,
   onChange,
   onRevert,
+  disabled = false,
 }: QuestionFieldProps) {
   const hasErrors = errors.length > 0;
   const hasWarnings = warnings.length > 0;
-  const canRevert = !isAutoFilled && autoValue !== null && autoValue !== undefined;
+  const canRevert = !disabled && !isAutoFilled && autoValue !== null && autoValue !== undefined;
   const showPrivacyWarning = isCommentField(linkId, text) && responseType === "string";
 
   const handleChange = (newValue: string) => {
+    if (disabled) return;
     if (responseType === "integer") {
       const parsed = parseInt(newValue, 10);
       onChange(isNaN(parsed) ? null : parsed);
@@ -111,6 +114,7 @@ export function QuestionField({
                 value={displayValue}
                 onChange={(e) => handleChange(e.target.value)}
                 placeholder="Enter comments..."
+                disabled={disabled}
                 className={cn(
                   "mt-2",
                   hasErrors && "border-destructive focus-visible:ring-destructive"
@@ -124,6 +128,7 @@ export function QuestionField({
               value={displayValue}
               onChange={(e) => handleChange(e.target.value)}
               placeholder="Enter value..."
+              disabled={disabled}
               className={cn(
                 "mt-2 max-w-xs",
                 hasErrors && "border-destructive focus-visible:ring-destructive"

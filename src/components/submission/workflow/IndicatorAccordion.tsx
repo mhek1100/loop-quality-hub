@@ -20,10 +20,11 @@ interface IndicatorAccordionProps {
   isExpanded: boolean;
   onToggle: () => void;
   id?: string;
+  readOnly?: boolean;
 }
 
 export const IndicatorAccordion = forwardRef<HTMLDivElement, IndicatorAccordionProps>(
-  ({ section, questions, onQuestionChange, onQuestionRevert, isExpanded, onToggle, id }, ref) => {
+  ({ section, questions, onQuestionChange, onQuestionRevert, isExpanded, onToggle, id, readOnly = false }, ref) => {
     const errorCount = questions.filter((q) => q.errors.length > 0).length;
     const warningCount = questions.filter((q) => q.warnings.length > 0).length;
     const completedCount = questions.filter((q) => q.finalValue !== null && q.finalValue !== "").length;
@@ -113,8 +114,16 @@ export const IndicatorAccordion = forwardRef<HTMLDivElement, IndicatorAccordionP
                               isAutoFilled={!question.isOverridden}
                               errors={question.errors}
                               warnings={question.warnings}
-                              onChange={(value) => onQuestionChange(question.linkId, value)}
-                              onRevert={() => onQuestionRevert(question.linkId)}
+                              disabled={readOnly}
+                              onChange={(value) => {
+                                if (readOnly) return;
+                                onQuestionChange(question.linkId, value);
+                              }}
+                              onRevert={
+                                readOnly
+                                  ? undefined
+                                  : () => onQuestionRevert(question.linkId)
+                              }
                             />
                           );
                         })}

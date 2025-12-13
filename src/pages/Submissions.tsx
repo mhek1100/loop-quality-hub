@@ -428,11 +428,6 @@ const Submissions = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-start justify-between gap-4">
-        <div />
-        <Button onClick={() => setCreateDialogOpen(true)}>Create New Submission</Button>
-      </div>
-
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent className="sm:max-w-[520px]">
           <DialogHeader>
@@ -807,18 +802,21 @@ const Submissions = () => {
       </Card>
 
       <div className="pt-8 mt-8 border-t-2 border-dashed border-muted-foreground/20">
-        <div className="flex items-center justify-end mb-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              clearCreatedSubmissions();
-              toast({ title: "Cleared created submissions" });
-            }}
-            disabled={createdSubmissions.length === 0}
-          >
-            Clear all created submissions
-          </Button>
+        <div className="flex items-center justify-end mb-4">
+          <div className="flex flex-col items-end gap-2">
+            <Button onClick={() => setCreateDialogOpen(true)}>Create New Submission</Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                clearCreatedSubmissions();
+                toast({ title: "Cleared created submissions" });
+              }}
+              disabled={createdSubmissions.length === 0}
+            >
+              Clear all created submissions
+            </Button>
+          </div>
         </div>
         <DemoScenariosPanel />
       </div>

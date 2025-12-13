@@ -75,9 +75,9 @@ export function AppHeader() {
   return (
     <header className="h-16 border-b border-border bg-card px-6 flex items-center justify-between shrink-0">
       <div className="min-w-0">
-        <h1 className="text-lg font-semibold text-foreground truncate">{title}</h1>
+        <h1 className="text-2xl font-semibold text-foreground truncate">{title}</h1>
         {subtitle ? (
-          <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
+          <p className="text-sm text-muted-foreground truncate">{subtitle}</p>
         ) : null}
       </div>
 

@@ -368,7 +368,8 @@ const generateQuestionAnswers = (
     }
     
     // Determine if user manually overrode
-    const isOverridden = scenario !== "empty" && scenario !== "partial" && rand > 0.7;
+    // For "empty" scenario, treat answers as user-managed (blank) so they don't appear as auto-filled.
+    let isOverridden = scenario !== "empty" && scenario !== "partial" && rand > 0.7;
     let userValue: string | number | boolean | null = null;
     
     if (isOverridden && autoValue !== null) {
@@ -438,6 +439,7 @@ const generateQuestionAnswers = (
         
       case "empty":
         userValue = null;
+        isOverridden = true;
         break;
         
       case "clean":

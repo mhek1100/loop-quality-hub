@@ -9,6 +9,7 @@ interface SubmissionsStoreContextType {
   getCreatedById: (id: string) => Submission | undefined;
   createSubmission: (submission: Submission) => void;
   updateSubmission: (id: string, updater: (prev: Submission) => Submission) => void;
+  clearCreatedSubmissions: () => void;
 }
 
 const SubmissionsStoreContext = createContext<SubmissionsStoreContextType | undefined>(undefined);
@@ -56,6 +57,10 @@ export function SubmissionsStoreProvider({ children }: { children: React.ReactNo
     );
   }, []);
 
+  const clearCreatedSubmissions = useCallback(() => {
+    setCreatedSubmissions([]);
+  }, []);
+
   const value = useMemo(
     () => ({
       createdSubmissions,
@@ -63,8 +68,9 @@ export function SubmissionsStoreProvider({ children }: { children: React.ReactNo
       getCreatedById,
       createSubmission,
       updateSubmission,
+      clearCreatedSubmissions,
     }),
-    [createdSubmissions, isStoreBacked, getCreatedById, createSubmission, updateSubmission]
+    [createdSubmissions, isStoreBacked, getCreatedById, createSubmission, updateSubmission, clearCreatedSubmissions]
   );
 
   return <SubmissionsStoreContext.Provider value={value}>{children}</SubmissionsStoreContext.Provider>;
@@ -77,4 +83,3 @@ export function useSubmissionsStore() {
   }
   return context;
 }
-

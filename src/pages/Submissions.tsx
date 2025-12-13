@@ -266,7 +266,7 @@ const Submissions = () => {
   const { canEdit, canPostInProgress, canFinalSubmit, currentUser } = useUser();
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { createdSubmissions, createSubmission } = useSubmissionsStore();
+  const { createdSubmissions, createSubmission, clearCreatedSubmissions } = useSubmissionsStore();
 
   const visibleSubmissions = useMemo(
     () => [...createdSubmissions, ...submissions].filter((s) => !s.isDemo),
@@ -812,6 +812,19 @@ const Submissions = () => {
       </Card>
 
       <div className="pt-8 mt-8 border-t-2 border-dashed border-muted-foreground/20">
+        <div className="flex items-center justify-end mb-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              clearCreatedSubmissions();
+              toast({ title: "Cleared created submissions" });
+            }}
+            disabled={createdSubmissions.length === 0}
+          >
+            Clear all created submissions
+          </Button>
+        </div>
         <DemoScenariosPanel />
       </div>
     </div>

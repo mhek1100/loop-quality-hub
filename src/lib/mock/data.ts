@@ -284,18 +284,19 @@ export const demoScenarios: DemoScenario[] = [
     expectedBehavior: "Initial submission is blocked; errors map back to the correct questions."
   },
   {
-    id: "demo-reject-inconsistent-counts",
+    id: "demo-final-submission-rejected",
     type: "reject",
-    name: "Reject: Inconsistent Counts (Start Empty)",
-    description: "Government rejects the initial submission when a sub-count exceeds the total.",
+    name: "Reject: Final Submission (Step 2)",
+    description: "Initial submission succeeds, but Government rejects the final PATCH in Step 2 with mapped errors.",
     submissionId: "sub-010",
     workflowSteps: [
       "1) Open the submission",
       "2) Click Pre-fill Entire Questionnaire",
-      "3) Click Initial Submission (rejected)",
-      "4) Fix the highlighted PI counts and retry Initial Submission"
+      "3) Click Initial Submission (succeeds)",
+      "4) Go to validation page and click Submit Final Data (rejected)",
+      "5) Review mapped Government errors and correct data"
     ],
-    expectedBehavior: "Initial submission fails with a business-rule error and highlights the offending fields."
+    expectedBehavior: "Final submission fails with Government errors mapped to specific questions."
   },
   {
     id: "demo-late-submission",
@@ -555,10 +556,9 @@ const DEMO_PIPELINE_OVERRIDES_BY_SUBMISSION_ID: Record<string, DemoPipelineOverr
     // Extra safety: allow matching by linkId-only if indicator code mapping changes.
     "PI-02": 0,
   },
-  // Reject: inconsistent counts (sub-count exceeds total)
+  // Final submission rejected demo: keep initial clean but make the failing value obvious after pre-fill.
   "sub-010": {
-    "PI/PI-01": 10,
-    "PI/PI-02": 25,
+    "UPWL/UPWL-12": 1002,
   },
 };
 

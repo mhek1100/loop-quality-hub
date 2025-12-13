@@ -23,9 +23,25 @@ interface GovernmentValidationResult {
   warnings: OperationOutcome[];
 }
 
-const generateMockGovernmentValidation = (submission: Submission): GovernmentValidationResult => {
+const generateMockGovernmentValidation = (
+  submission: Submission,
+  phase: "initial" | "final"
+): GovernmentValidationResult => {
   const errors: OperationOutcome[] = [];
   const warnings: OperationOutcome[] = [];
+
+  // Demo-only: force final submission rejection in Step 2 while allowing the initial POST to succeed.
+  if (submission.id === "sub-010" && phase === "final") {
+    errors.push({
+      severity: "error",
+      code: "business-rule",
+      diagnostics: `${GOV_PREFIX} Final submission rejected: UPWL-12 must be less than or equal to UPWL-01 for final submission.`,
+      indicatorCode: "UPWL",
+      questionLinkId: "UPWL-12",
+      location: "UPWL/UPWL-12",
+    });
+    return { success: false, errors, warnings };
+  }
 
   submission.questionnaires.forEach((q) => {
     q.questions.forEach((question) => {
@@ -402,7 +418,7 @@ const SubmissionDetail = () => {
 
     await new Promise((resolve) => setTimeout(resolve, 1200));
 
-    const validation = generateMockGovernmentValidation(submission);
+    const validation = generateMockGovernmentValidation(submission, "initial");
     handleGovernmentIssues([...validation.errors, ...validation.warnings]);
 
     if (validation.success) {
@@ -457,7 +473,7 @@ const SubmissionDetail = () => {
 
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      const validation = generateMockGovernmentValidation(submission);
+      const validation = generateMockGovernmentValidation(submission, "final");
       handleGovernmentIssues([...validation.errors, ...validation.warnings]);
 
       if (!validation.success) {

@@ -43,6 +43,7 @@ interface StepValidationProps {
   governmentIssues: OperationOutcome[];
   onFinalSubmit: (payload: object) => Promise<{ success: boolean }>;
   hasInitialSubmission: boolean;
+  onNavigateToIndicator?: (indicatorCode: string, questionLinkId?: string) => void;
 }
 
 const ATTESTATION_CONTENT: Record<SubmissionScenario, { intro: string; bullets: string[]; note?: string }> = {
@@ -85,6 +86,7 @@ export function StepValidation({
   governmentIssues,
   onFinalSubmit,
   hasInitialSubmission,
+  onNavigateToIndicator,
 }: StepValidationProps) {
   const facility = getFacilityById(submission.facilityId);
   const period = getReportingPeriodById(submission.reportingPeriodId);
@@ -300,6 +302,7 @@ export function StepValidation({
         outcomes={governmentIssues}
         submissionId={submission.id}
         className="border-dashed"
+        onNavigateToIndicator={onNavigateToIndicator}
       />
 
       <Card>

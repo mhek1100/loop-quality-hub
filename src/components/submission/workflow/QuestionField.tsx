@@ -54,8 +54,9 @@ export function QuestionField({
 
   return (
     <div
+      id={`question-${linkId}`}
       className={cn(
-        "p-4 rounded-lg border transition-all",
+        "p-4 rounded-lg border transition-all scroll-mt-24",
         hasErrors
           ? "border-destructive bg-destructive/5"
           : hasWarnings

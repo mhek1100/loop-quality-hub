@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { UserProvider } from "@/contexts/UserContext";
+import { SubmissionsStoreProvider } from "@/contexts/SubmissionsStoreContext";
 import KpiDashboard from "./pages/KpiDashboard";
 import Submissions from "./pages/Submissions";
 import SubmissionDetail from "./pages/SubmissionDetail";
@@ -26,33 +27,35 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <UserProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route element={<DashboardLayout />}>
-              <Route path="/" element={<Submissions />} />
-              <Route path="/kpi" element={<KpiDashboard />} />
-              <Route path="/submissions/:id" element={<SubmissionDetail />} />
-              <Route path="/submissions/:id/indicator/:indicatorCode" element={<QuestionnaireEditor />} />
-              <Route path="/audit" element={<AuditLog />} />
-              <Route path="/help" element={<Help />} />
-              <Route path="/dev/validation" element={<QuestionnaireValidation />} />
-              
-              {/* Settings routes */}
-              <Route path="/settings" element={<SettingsLayout />}>
-                <Route index element={<Navigate to="/settings/api-variables" replace />} />
-                <Route path="api-variables" element={<ApiVariables />} />
-                <Route path="pipeline" element={<SettingsPipeline />} />
-                <Route path="users" element={<SettingsUsers />} />
-                <Route path="conformance" element={<SettingsConformance />} />
+      <SubmissionsStoreProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route element={<DashboardLayout />}>
+                <Route path="/" element={<Submissions />} />
+                <Route path="/kpi" element={<KpiDashboard />} />
+                <Route path="/submissions/:id" element={<SubmissionDetail />} />
+                <Route path="/submissions/:id/indicator/:indicatorCode" element={<QuestionnaireEditor />} />
+                <Route path="/audit" element={<AuditLog />} />
+                <Route path="/help" element={<Help />} />
+                <Route path="/dev/validation" element={<QuestionnaireValidation />} />
+                
+                {/* Settings routes */}
+                <Route path="/settings" element={<SettingsLayout />}>
+                  <Route index element={<Navigate to="/settings/api-variables" replace />} />
+                  <Route path="api-variables" element={<ApiVariables />} />
+                  <Route path="pipeline" element={<SettingsPipeline />} />
+                  <Route path="users" element={<SettingsUsers />} />
+                  <Route path="conformance" element={<SettingsConformance />} />
+                </Route>
               </Route>
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </SubmissionsStoreProvider>
     </UserProvider>
   </QueryClientProvider>
 );

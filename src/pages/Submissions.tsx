@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Select,
   SelectContent,
@@ -10,6 +10,14 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import { StatusBadge } from "@/components/ui/status-badge";
 import { ProgressIndicator } from "@/components/submission/workflow/ProgressIndicator";
@@ -39,12 +47,14 @@ import {
   getFacilityById,
   getReportingPeriodById,
   getLatestReportingPeriod,
+  createEmptySubmissionQuestionnaires,
 } from "@/lib/mock/data";
 
 import { toast } from "@/hooks/use-toast";
 import { Submission, SubmissionStatus, ReportingPeriod } from "@/lib/types";
 import { DemoScenariosPanel } from "@/components/submissions/DemoScenariosPanel";
 import { useUser } from "@/contexts/UserContext";
+import { useSubmissionsStore } from "@/contexts/SubmissionsStoreContext";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -243,6 +253,7 @@ const getDueToneClass = (tone: DueTone) => {
 };
 
 const Submissions = () => {
+  const navigate = useNavigate();
   const latestPeriod = getLatestReportingPeriod();
   const [selectedQuarter, setSelectedQuarter] = useState(latestPeriod.id);
   const [selectedFacility, setSelectedFacility] = useState("all");
@@ -252,10 +263,52 @@ const Submissions = () => {
   const [hasErrorsFilter, setHasErrorsFilter] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { canEdit, canPostInProgress, canFinalSubmit } = useUser();
+  const { canEdit, canPostInProgress, canFinalSubmit, currentUser } = useUser();
   const [currentPage, setCurrentPage] = useState(1);
 
-  const visibleSubmissions = useMemo(() => submissions.filter((s) => !s.isDemo), []);
+  const { createdSubmissions, createSubmission } = useSubmissionsStore();
+
+  const visibleSubmissions = useMemo(
+    () => [...createdSubmissions, ...submissions].filter((s) => !s.isDemo),
+    [createdSubmissions]
+  );
+
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [createFacilityId, setCreateFacilityId] = useState(facilities[0]?.id || "all");
+  const [createPeriodId, setCreatePeriodId] = useState(latestPeriod.id);
+
+  const handleCreateSubmission = () => {
+    if (!createFacilityId || createFacilityId === "all") {
+      toast({ title: "Select a facility", variant: "destructive" });
+      return;
+    }
+
+    const id = `sub-local-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
+    const now = new Date().toISOString();
+
+    createSubmission({
+      id,
+      facilityId: createFacilityId,
+      reportingPeriodId: createPeriodId,
+      status: "Not Started",
+      fhirStatus: "in-progress",
+      createdAt: now,
+      updatedAt: now,
+      createdByUserId: currentUser.id,
+      hasWarnings: false,
+      hasErrors: false,
+      submissionVersionNumber: 1,
+      questionnaires: createEmptySubmissionQuestionnaires(id),
+      questionnaireId: "QI-020",
+      healthcareServiceReference: `HealthcareService/${getFacilityById(createFacilityId)?.serviceId || createFacilityId}`,
+      apiWorkflowStep: "data-collection",
+      isDemo: false,
+    });
+
+    setCreateDialogOpen(false);
+    navigate(`/submissions/${id}`);
+    toast({ title: "Submission created", description: "Starting in Data Collection (Step 1)." });
+  };
 
   const stats = useMemo(() => {
     let needsReview = 0;
@@ -375,12 +428,67 @@ const Submissions = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground">Submissions</h1>
-        <p className="text-muted-foreground">
-          Manage and review NQIP submissions across all facilities
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">Submissions</h1>
+          <p className="text-muted-foreground">
+            Manage and review NQIP submissions across all facilities
+          </p>
+        </div>
+        <Button onClick={() => setCreateDialogOpen(true)}>Create New Submission</Button>
       </div>
+
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle>Create New Submission</DialogTitle>
+            <DialogDescription>
+              Creates a new submission starting from a blank questionnaire (you can pre-fill from the pipeline in Step 1).
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Facility</p>
+              <Select value={createFacilityId} onValueChange={setCreateFacilityId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a facility" />
+                </SelectTrigger>
+                <SelectContent>
+                  {facilities.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>
+                      {f.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Reporting period</p>
+              <Select value={createPeriodId} onValueChange={setCreatePeriodId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a reporting period" />
+                </SelectTrigger>
+                <SelectContent>
+                  {reportingPeriods.map((rp) => (
+                    <SelectItem key={rp.id} value={rp.id}>
+                      {rp.quarter}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateSubmission}>Create & Open</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="gradient-card border-border/50">

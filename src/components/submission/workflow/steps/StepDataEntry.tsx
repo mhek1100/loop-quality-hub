@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -23,6 +23,7 @@ interface StepDataEntryProps {
   onPrefillMissing: () => void;
   onResetAll: () => void;
   onRevertAllToPipeline: () => void;
+  focusIssue?: { indicatorCode: string; questionLinkId?: string } | null;
   canInitialSubmit?: boolean;
   initialSubmitStatus?: "idle" | "submitting" | "submitted";
   initialSubmitLabel?: string;
@@ -41,6 +42,7 @@ export function StepDataEntry({
   onPrefillMissing,
   onResetAll,
   onRevertAllToPipeline,
+  focusIssue = null,
   canInitialSubmit = true,
   initialSubmitStatus = "idle",
   initialSubmitLabel = "Initial Submission",
@@ -53,6 +55,16 @@ export function StepDataEntry({
   const [showRevertDialog, setShowRevertDialog] = useState(false);
   const indicatorRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const isReadOnly = submission.fhirStatus === "completed" || submission.fhirStatus === "amended";
+
+  const scrollContentToTop = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const scrollContainer = document.querySelector("main");
+    if (scrollContainer instanceof HTMLElement) {
+      scrollContainer.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, []);
 
   // Calculate indicator status
   const indicatorStatus = useMemo(() => {
@@ -79,6 +91,40 @@ export function StepDataEntry({
     
     return { totalQuestions, filledQuestions, autoFilledQuestions, manuallyEditedQuestions };
   }, [submission.questionnaires]);
+
+  const lastFocusKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!focusIssue?.indicatorCode) return;
+
+    const focusKey = `${focusIssue.indicatorCode}:${focusIssue.questionLinkId || ""}`;
+    if (lastFocusKeyRef.current === focusKey) return;
+    lastFocusKeyRef.current = focusKey;
+
+    setActiveIndicator(focusIssue.indicatorCode);
+    setExpandedIndicators((prev) =>
+      prev.includes(focusIssue.indicatorCode) ? prev : [...prev, focusIssue.indicatorCode]
+    );
+
+    const targetId = focusIssue.questionLinkId
+      ? `question-${focusIssue.questionLinkId}`
+      : `indicator-${focusIssue.indicatorCode}`;
+
+    const attemptScroll = (remainingAttempts: number) => {
+      const el = document.getElementById(targetId);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+      if (remainingAttempts <= 0) {
+        scrollContentToTop();
+        return;
+      }
+      requestAnimationFrame(() => attemptScroll(remainingAttempts - 1));
+    };
+
+    // Wait for accordion content to mount/expand before scrolling.
+    attemptScroll(20);
+  }, [focusIssue, scrollContentToTop]);
 
   const handleIndicatorClick = useCallback((code: string) => {
     setActiveIndicator(code);
@@ -145,6 +191,7 @@ export function StepDataEntry({
 
   const handlePrimaryAction = () => {
     if (isReadOnly) return;
+    scrollContentToTop();
     if (initialSubmitStatus === "submitted") {
       onProceedToValidation?.();
       return;

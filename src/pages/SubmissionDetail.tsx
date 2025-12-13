@@ -6,6 +6,7 @@ import { ArrowLeft, Building2, Copy } from "lucide-react";
 import { getSubmission, getFacilityById, getReportingPeriodById } from "@/lib/mock/data";
 import { toast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/UserContext";
+import { useSubmissionsStore } from "@/contexts/SubmissionsStoreContext";
 import { WorkflowStepper, WorkflowStepId, WORKFLOW_STEPS } from "@/components/submission/workflow/WorkflowStepper";
 import { StepDataEntry } from "@/components/submission/workflow/steps/StepDataEntry";
 import { StepValidation } from "@/components/submission/workflow/steps/StepValidation";
@@ -127,8 +128,27 @@ const generateMockGovernmentValidation = (
 
 const SubmissionDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const [submission, setSubmission] = useState<Submission | undefined>(() => getSubmission(id || ""));
+  const { getCreatedById, isStoreBacked, updateSubmission } = useSubmissionsStore();
+  const [submission, setSubmission] = useState<Submission | undefined>(() => {
+    const submissionId = id || "";
+    return getCreatedById(submissionId) ?? getSubmission(submissionId);
+  });
   const { currentUser, canPostInProgress } = useUser();
+  const [focusIssue, setFocusIssue] = useState<{ indicatorCode: string; questionLinkId?: string } | null>(null);
+
+  const setSubmissionWithPersistence = useCallback(
+    (updater: (prev: Submission) => Submission) => {
+      setSubmission((prev) => {
+        if (!prev) return prev;
+        const next = updater(prev);
+        if (id && isStoreBacked(id)) {
+          updateSubmission(id, () => next);
+        }
+        return next;
+      });
+    },
+    [id, isStoreBacked, updateSubmission]
+  );
 
   // Determine initial step based on submission state
   const getInitialStep = (): WorkflowStepId => {
@@ -251,124 +271,106 @@ const SubmissionDetail = () => {
 
   const handleQuestionChange = useCallback(
     (indicatorCode: string, linkId: string, value: string | number | null) => {
-      setSubmission((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          questionnaires: prev.questionnaires.map((q) =>
-            q.indicatorCode === indicatorCode
-              ? {
-                  ...q,
-                  questions: q.questions.map((qu) =>
-                    qu.linkId === linkId
-                      ? { ...qu, finalValue: value, isOverridden: true, userValue: value, errors: [], warnings: [] }
-                      : qu
-                  ),
-                }
-              : q
-          ),
-        };
-      });
+      setSubmissionWithPersistence((prev) => ({
+        ...prev,
+        questionnaires: prev.questionnaires.map((q) =>
+          q.indicatorCode === indicatorCode
+            ? {
+                ...q,
+                questions: q.questions.map((qu) =>
+                  qu.linkId === linkId
+                    ? { ...qu, finalValue: value, isOverridden: true, userValue: value, errors: [], warnings: [] }
+                    : qu
+                ),
+              }
+            : q
+        ),
+      }));
       // Clear government errors when user makes changes
       setGovernmentIssues([]);
     },
-    []
+    [setSubmissionWithPersistence]
   );
 
   const handleQuestionRevert = useCallback(
     (indicatorCode: string, linkId: string) => {
-      setSubmission((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          questionnaires: prev.questionnaires.map((q) =>
-            q.indicatorCode === indicatorCode
-              ? {
-                  ...q,
-                  questions: q.questions.map((qu) =>
-                    qu.linkId === linkId
-                      ? { ...qu, finalValue: qu.autoValue, isOverridden: false, userValue: null }
-                      : qu
-                  ),
-                }
-              : q
-          ),
-        };
-      });
+      setSubmissionWithPersistence((prev) => ({
+        ...prev,
+        questionnaires: prev.questionnaires.map((q) =>
+          q.indicatorCode === indicatorCode
+            ? {
+                ...q,
+                questions: q.questions.map((qu) =>
+                  qu.linkId === linkId
+                    ? { ...qu, finalValue: qu.autoValue, isOverridden: false, userValue: null }
+                    : qu
+                ),
+              }
+            : q
+        ),
+      }));
     },
-    []
+    [setSubmissionWithPersistence]
   );
 
   const handlePrefillAll = useCallback(() => {
-    setSubmission((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        questionnaires: prev.questionnaires.map((q) => ({
-          ...q,
-          questions: q.questions.map((qu) => ({
-            ...qu,
-            finalValue: qu.autoValue,
-            isOverridden: false,
-          })),
+    setSubmissionWithPersistence((prev) => ({
+      ...prev,
+      questionnaires: prev.questionnaires.map((q) => ({
+        ...q,
+        questions: q.questions.map((qu) => ({
+          ...qu,
+          finalValue: qu.autoValue,
+          isOverridden: false,
         })),
-      };
-    });
-  }, []);
+      })),
+    }));
+  }, [setSubmissionWithPersistence]);
 
   const handlePrefillMissing = useCallback(() => {
-    setSubmission((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        questionnaires: prev.questionnaires.map((q) => ({
-          ...q,
-          questions: q.questions.map((qu) =>
-            qu.finalValue === null || qu.finalValue === ""
-              ? { ...qu, finalValue: qu.autoValue, isOverridden: false }
-              : qu
-          ),
-        })),
-      };
-    });
-  }, []);
+    setSubmissionWithPersistence((prev) => ({
+      ...prev,
+      questionnaires: prev.questionnaires.map((q) => ({
+        ...q,
+        questions: q.questions.map((qu) =>
+          qu.finalValue === null || qu.finalValue === ""
+            ? { ...qu, finalValue: qu.autoValue, isOverridden: false }
+            : qu
+        ),
+      })),
+    }));
+  }, [setSubmissionWithPersistence]);
 
   const handleResetAll = useCallback(() => {
-    setSubmission((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        questionnaires: prev.questionnaires.map((q) => ({
-          ...q,
-          questions: q.questions.map((qu) => ({
-            ...qu,
-            finalValue: null,
-            userValue: null,
-            isOverridden: true, // Mark as manually edited since user explicitly cleared values
-          })),
+    setSubmissionWithPersistence((prev) => ({
+      ...prev,
+      questionnaires: prev.questionnaires.map((q) => ({
+        ...q,
+        questions: q.questions.map((qu) => ({
+          ...qu,
+          finalValue: null,
+          userValue: null,
+          isOverridden: true, // Mark as manually edited since user explicitly cleared values
         })),
-      };
-    });
-  }, []);
+      })),
+    }));
+  }, [setSubmissionWithPersistence]);
 
   const handleRevertAllToPipeline = useCallback(() => {
-    setSubmission((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        questionnaires: prev.questionnaires.map((q) => ({
-          ...q,
-          questions: q.questions.map((qu) => ({
-            ...qu,
-            finalValue: qu.autoValue,
-            userValue: null,
-            isOverridden: false,
-          })),
+    setSubmissionWithPersistence((prev) => ({
+      ...prev,
+      questionnaires: prev.questionnaires.map((q) => ({
+        ...q,
+        questions: q.questions.map((qu) => ({
+          ...qu,
+          finalValue: qu.autoValue,
+          userValue: null,
+          isOverridden: false,
         })),
-      };
-    });
+      })),
+    }));
     setGovernmentIssues([]);
-  }, []);
+  }, [setSubmissionWithPersistence]);
 
   const handleSaveProgress = () => {
     toast({ title: "Progress saved" });
@@ -377,40 +379,37 @@ const SubmissionDetail = () => {
   const handleGovernmentIssues = useCallback((issues: OperationOutcome[]) => {
     setGovernmentIssues(issues);
 
-    setSubmission((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        questionnaires: prev.questionnaires.map((q) => ({
-          ...q,
-          questions: q.questions.map((qu) => {
-            const matching = issues.filter(
-              (issue) => issue.indicatorCode === q.indicatorCode && issue.questionLinkId === qu.linkId
-            );
+    setSubmissionWithPersistence((prev) => ({
+      ...prev,
+      questionnaires: prev.questionnaires.map((q) => ({
+        ...q,
+        questions: q.questions.map((qu) => {
+          const matching = issues.filter(
+            (issue) => issue.indicatorCode === q.indicatorCode && issue.questionLinkId === qu.linkId
+          );
 
-            const govErrors = matching
-              .filter((issue) => issue.severity === "error")
-              .map((issue) => issue.diagnostics);
-            const govWarnings = matching
-              .filter((issue) => issue.severity === "warning")
-              .map((issue) => issue.diagnostics);
+          const govErrors = matching
+            .filter((issue) => issue.severity === "error")
+            .map((issue) => issue.diagnostics);
+          const govWarnings = matching
+            .filter((issue) => issue.severity === "warning")
+            .map((issue) => issue.diagnostics);
 
-            return {
-              ...qu,
-              errors: [
-                ...qu.errors.filter((msg) => !msg.includes(GOV_PREFIX)),
-                ...govErrors,
-              ],
-              warnings: [
-                ...qu.warnings.filter((msg) => !msg.includes(GOV_PREFIX)),
-                ...govWarnings,
-              ],
-            };
-          }),
-        })),
-      };
-    });
-  }, []);
+          return {
+            ...qu,
+            errors: [
+              ...qu.errors.filter((msg) => !msg.includes(GOV_PREFIX)),
+              ...govErrors,
+            ],
+            warnings: [
+              ...qu.warnings.filter((msg) => !msg.includes(GOV_PREFIX)),
+              ...govWarnings,
+            ],
+          };
+        }),
+      })),
+    }));
+  }, [setSubmissionWithPersistence]);
 
   const handleInitialSubmission = useCallback(async () => {
     if (!submission) return;
@@ -424,28 +423,24 @@ const SubmissionDetail = () => {
     if (validation.success) {
       const qrId = submission.questionnaireResponseId || `QIQR-${Date.now()}`;
       const timestamp = new Date().toISOString();
-      setSubmission((prev) =>
-        prev
-          ? {
-              ...prev,
-              questionnaireResponseId: qrId,
-              fhirStatus: "in-progress",
-              apiWorkflowStep: "in-progress-posted",
-              lastApiOperation: {
-                timestamp,
-                method: "POST",
-                endpoint: "/fhir/QuestionnaireResponse",
-                httpStatus: 201,
-                questionnaireResponseId: qrId,
-                warningsCount: validation.warnings.length,
-                errorsCount: 0,
-                performedByUserId: currentUser.id,
-                performedByEmail: currentUser.email || "",
-                roles: [],
-              },
-            }
-          : prev
-      );
+      setSubmissionWithPersistence((prev) => ({
+        ...prev,
+        questionnaireResponseId: qrId,
+        fhirStatus: "in-progress",
+        apiWorkflowStep: "in-progress-posted",
+        lastApiOperation: {
+          timestamp,
+          method: "POST",
+          endpoint: "/fhir/QuestionnaireResponse",
+          httpStatus: 201,
+          questionnaireResponseId: qrId,
+          warningsCount: validation.warnings.length,
+          errorsCount: 0,
+          performedByUserId: currentUser.id,
+          performedByEmail: currentUser.email || "",
+          roles: [],
+        },
+      }));
       setInitialSubmitStatus("submitted");
       setInitialSubmissionMeta({ submittedAt: timestamp });
       setCurrentStep("validation");
@@ -465,7 +460,7 @@ const SubmissionDetail = () => {
         variant: "destructive",
       });
     }
-  }, [submission, currentUser.id, currentUser.email, handleGovernmentIssues]);
+  }, [submission, currentUser.id, currentUser.email, handleGovernmentIssues, setSubmissionWithPersistence]);
 
   const handleFinalSubmission = useCallback(
     async (_payload: object) => {
@@ -491,29 +486,25 @@ const SubmissionDetail = () => {
       const scenarioConfig = SUBMISSION_SCENARIO_CONFIG[submissionScenario];
 
       const timestamp = new Date().toISOString();
-      setSubmission((prev) =>
-        prev
-          ? {
-              ...prev,
-              fhirStatus: scenarioConfig.fhirTargetStatus,
-              status: scenarioConfig.submissionStatus,
-              lastSubmittedDate: timestamp,
-              apiWorkflowStep: "submitted",
-              lastApiOperation: {
-                timestamp,
-                method: "PATCH",
-                endpoint: `/fhir/QuestionnaireResponse/${prev.questionnaireResponseId}`,
-                httpStatus: 200,
-                questionnaireResponseId: prev.questionnaireResponseId,
-                warningsCount: validation.warnings.length,
-                errorsCount: 0,
-                performedByUserId: currentUser.id,
-                performedByEmail: currentUser.email || "",
-                roles: [],
-              },
-            }
-          : prev
-      );
+      setSubmissionWithPersistence((prev) => ({
+        ...prev,
+        fhirStatus: scenarioConfig.fhirTargetStatus,
+        status: scenarioConfig.submissionStatus,
+        lastSubmittedDate: timestamp,
+        apiWorkflowStep: "submitted",
+        lastApiOperation: {
+          timestamp,
+          method: "PATCH",
+          endpoint: `/fhir/QuestionnaireResponse/${prev.questionnaireResponseId}`,
+          httpStatus: 200,
+          questionnaireResponseId: prev.questionnaireResponseId,
+          warningsCount: validation.warnings.length,
+          errorsCount: 0,
+          performedByUserId: currentUser.id,
+          performedByEmail: currentUser.email || "",
+          roles: [],
+        },
+      }));
 
       setCurrentStep("completion");
       toast({
@@ -526,7 +517,7 @@ const SubmissionDetail = () => {
 
       return { success: true };
     },
-    [submission, currentUser.id, currentUser.email, handleGovernmentIssues]
+    [submission, currentUser.id, currentUser.email, handleGovernmentIssues, setSubmissionWithPersistence]
   );
 
   if (!submission) {
@@ -619,6 +610,7 @@ const SubmissionDetail = () => {
             onPrefillMissing={handlePrefillMissing}
             onResetAll={handleResetAll}
             onRevertAllToPipeline={handleRevertAllToPipeline}
+            focusIssue={focusIssue}
             canInitialSubmit={canPostInProgress && initialButtonReady}
             initialSubmitStatus={initialSubmitStatus}
             initialSubmissionMeta={initialSubmissionMeta}
@@ -633,6 +625,10 @@ const SubmissionDetail = () => {
             governmentIssues={governmentIssues}
             onFinalSubmit={handleFinalSubmission}
             hasInitialSubmission={hasInitialSubmission}
+            onNavigateToIndicator={(indicatorCode, questionLinkId) => {
+              setFocusIssue({ indicatorCode, questionLinkId });
+              setCurrentStep("data-entry");
+            }}
           />
         )}
 

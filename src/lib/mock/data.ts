@@ -1371,6 +1371,10 @@ export const getSubmission = (submissionId: string): Submission | undefined => {
   return submissions.find(s => s.id === submissionId);
 };
 
+export const createEmptySubmissionQuestionnaires = (submissionId: string): QuestionnaireResponse[] => {
+  return generateQuestionnaireResponses(submissionId, "empty");
+};
+
 export const getDemoScenarios = (): DemoScenario[] => {
   return demoScenarios;
 };

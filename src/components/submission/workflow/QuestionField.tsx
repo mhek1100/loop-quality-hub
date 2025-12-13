@@ -51,6 +51,9 @@ export function QuestionField({
   };
 
   const displayValue = value !== null && value !== undefined ? String(value) : "";
+  const isEmpty = displayValue === "";
+  const statusLabel = isEmpty ? "No Entry" : isAutoFilled ? "Auto-filled" : "Edited manually";
+  const statusIcon = isEmpty ? null : isAutoFilled ? <Zap className="h-3 w-3" /> : <Pencil className="h-3 w-3" />;
 
   return (
     <div
@@ -73,22 +76,15 @@ export function QuestionField({
               variant="secondary"
               className={cn(
                 "text-xs gap-1",
-                isAutoFilled
+                isEmpty
+                  ? "bg-muted text-muted-foreground"
+                  : isAutoFilled
                   ? "bg-success/10 text-success border-success/30"
                   : "bg-muted text-muted-foreground"
               )}
             >
-              {isAutoFilled ? (
-                <>
-                  <Zap className="h-3 w-3" />
-                  Auto-filled
-                </>
-              ) : (
-                <>
-                  <Pencil className="h-3 w-3" />
-                  Edited manually
-                </>
-              )}
+              {statusIcon}
+              {statusLabel}
             </Badge>
             {canRevert && onRevert && (
               <button

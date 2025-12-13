@@ -1,4 +1,4 @@
-import { Submission, FhirStatus } from "@/lib/types";
+import { Submission, FhirStatus, SubmissionStatus } from "@/lib/types";
 
 export type SubmissionScenario = 
   | "first-submission" 
@@ -12,6 +12,7 @@ export interface SubmissionScenarioConfig {
   additionalMessage: string;
   fhirTargetStatus: FhirStatus;
   description: string;
+  submissionStatus: SubmissionStatus;
 }
 
 export const SUBMISSION_SCENARIO_CONFIG: Record<SubmissionScenario, SubmissionScenarioConfig> = {
@@ -21,6 +22,7 @@ export const SUBMISSION_SCENARIO_CONFIG: Record<SubmissionScenario, SubmissionSc
     additionalMessage: "",
     fhirTargetStatus: "completed",
     description: "First submission within the reporting period",
+    submissionStatus: "Submitted",
   },
   "re-submit": {
     value: "re-submit",
@@ -28,6 +30,7 @@ export const SUBMISSION_SCENARIO_CONFIG: Record<SubmissionScenario, SubmissionSc
     additionalMessage: "To update a previously submitted Quality Indicator data submission, ensure all changes are accurate before proceeding.",
     fhirTargetStatus: "amended",
     description: "Resubmission within the reporting period",
+    submissionStatus: "Submitted",
   },
   "late-submission": {
     value: "late-submission",
@@ -35,6 +38,7 @@ export const SUBMISSION_SCENARIO_CONFIG: Record<SubmissionScenario, SubmissionSc
     additionalMessage: "This submission is being made after the due date for the reporting period. Please ensure all data is accurate before proceeding.",
     fhirTargetStatus: "completed",
     description: "First submission after the due date",
+    submissionStatus: "Late Submission",
   },
   "updated-after-due": {
     value: "updated-after-due",
@@ -42,6 +46,7 @@ export const SUBMISSION_SCENARIO_CONFIG: Record<SubmissionScenario, SubmissionSc
     additionalMessage: "This is an update to a previously submitted Quality Indicator data submission made after the due date. Please ensure all changes are accurate before proceeding.",
     fhirTargetStatus: "amended",
     description: "Resubmission after the due date",
+    submissionStatus: "Submitted - Updated after Due Date",
   },
 };
 

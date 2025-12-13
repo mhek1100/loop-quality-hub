@@ -13,6 +13,7 @@ import { StepCompletion } from "@/components/submission/workflow/steps/StepCompl
 import { ProgressIndicator } from "@/components/submission/workflow/ProgressIndicator";
 import { VersionHistory } from "@/components/submission/workflow/VersionHistory";
 import { Submission, OperationOutcome } from "@/lib/types";
+import { SUBMISSION_SCENARIO_CONFIG, getSubmissionScenario } from "@/lib/submission-utils";
 
 const GOV_PREFIX = "[GOVT]";
 
@@ -476,13 +477,18 @@ const SubmissionDetail = () => {
         return { success: false };
       }
 
+      const period = getReportingPeriodById(submission.reportingPeriodId);
+      const periodDueDate = period ? new Date(period.dueDate) : new Date();
+      const submissionScenario = getSubmissionScenario(submission, periodDueDate);
+      const scenarioConfig = SUBMISSION_SCENARIO_CONFIG[submissionScenario];
+
       const timestamp = new Date().toISOString();
       setSubmission((prev) =>
         prev
           ? {
               ...prev,
-              fhirStatus: "completed",
-              status: "Submitted",
+              fhirStatus: scenarioConfig.fhirTargetStatus,
+              status: scenarioConfig.submissionStatus,
               lastSubmittedDate: timestamp,
               apiWorkflowStep: "submitted",
               lastApiOperation: {
@@ -506,8 +512,8 @@ const SubmissionDetail = () => {
         title: "Submission complete!",
         description:
           validation.warnings.length > 0
-            ? `Completed with ${validation.warnings.length} warning(s).`
-            : "Government marked submission as Complete.",
+            ? `${scenarioConfig.label} completed with ${validation.warnings.length} warning(s).`
+            : `${scenarioConfig.label} accepted by Government.`,
       });
 
       return { success: true };

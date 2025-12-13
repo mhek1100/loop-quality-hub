@@ -98,12 +98,14 @@ const getWorkflowInfo = (submission: Submission): WorkflowInfo => {
     };
   }
 
-  const isInProgressPosted =
-    submission.fhirStatus === "in-progress" ||
+  const hasPostedDraft =
     submission.apiWorkflowStep === "in-progress-posted" ||
+    submission.apiWorkflowStep === "awaiting-approval" ||
+    submission.apiWorkflowStep === "review-complete" ||
+    submission.apiWorkflowStep === "submitted" ||
     !!submission.questionnaireResponseId;
 
-  if (isInProgressPosted) {
+  if (hasPostedDraft) {
     return {
       stage: "awaiting-final",
       nextStep: "Final review & submit to Government",

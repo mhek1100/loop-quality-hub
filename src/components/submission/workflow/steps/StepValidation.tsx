@@ -18,14 +18,13 @@ import { ValidationIssuesList } from "../../ValidationIssuesList";
 import { Submission, OperationOutcome } from "@/lib/types";
 import { useUser } from "@/contexts/UserContext";
 import { getFacilityById, getReportingPeriodById } from "@/lib/mock/data";
-import { SUBMISSION_SCENARIO_CONFIG, getSubmissionScenario } from "@/lib/submission-utils";
+import { SUBMISSION_SCENARIO_CONFIG, getSubmissionScenario, SubmissionScenario } from "@/lib/submission-utils";
 import {
   AlertCircle,
   AlertTriangle,
   Check,
   FileText,
   Info,
-  Shield,
   Send,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -45,6 +44,40 @@ interface StepValidationProps {
   onFinalSubmit: (payload: object) => Promise<{ success: boolean }>;
   hasInitialSubmission: boolean;
 }
+
+const ATTESTATION_CONTENT: Record<SubmissionScenario, { intro: string; bullets: string[]; note?: string }> = {
+  "first-submission": {
+    intro: "By submitting Quality Indicators data you:",
+    bullets: [
+      "Confirm that you have collected, and are reporting, the quality indicator data in accordance with National Aged Care Mandatory Quality Indicator Program Manual 3.0 and all applicable laws, in accordance with the Aged Care Act 1997, Records Principles 2014 and Accountability Principles 2014.",
+      "Confirm that any information you have provided does not contain any personal information as defined under Privacy Act 1988.",
+    ],
+  },
+  "re-submit": {
+    intro: "By submitting Quality Indicators data you:",
+    bullets: [
+      "Confirm that you have collected, and are reporting, the quality indicator data in accordance with National Aged Care Mandatory Quality Indicator Program Manual 3.0 and all applicable laws, in accordance with the Aged Care Act 1997, Records Principles 2014, Accountability Principles 2014.",
+      "Confirm that any information you have provided does not contain any personal information as defined under Privacy Act 1988.",
+    ],
+    note: "This will result in a new version of the QI data submission, with an updated date.",
+  },
+  "updated-after-due": {
+    intro: "By submitting Quality Indicators data you:",
+    bullets: [
+      "Confirm that you have collected, and are reporting, the quality indicator data in accordance with National Aged Care Mandatory Quality Indicator Program Manual 3.0 and all applicable laws, in accordance with the Aged Care Act 1997, Records Principles 2014 and Accountability Principles 2014.",
+      "Confirm that any information you have provided does not contain any personal information as defined under Privacy Act 1988.",
+    ],
+    note: "This will result in a new version of the QI data submission, with the label 'Submitted - Updated after Due Date'.",
+  },
+  "late-submission": {
+    intro: "By submitting Quality Indicators data you:",
+    bullets: [
+      "Confirm that you have collected, and are reporting, the quality indicator data in accordance with National Aged Care Mandatory Quality Indicator Program Manual 3.0 and all applicable laws, in accordance with the Aged Care Act 1997, Records Principles 2014 and Accountability Principles 2014.",
+      "Confirm that any information you have provided does not contain any personal information as defined under Privacy Act 1988.",
+    ],
+    note: "This will result in QI data submission, with the label 'Late Submission'.",
+  },
+};
 
 export function StepValidation({
   submission,
@@ -78,6 +111,7 @@ export function StepValidation({
     [submission, periodDueDate]
   );
   const scenarioConfig = SUBMISSION_SCENARIO_CONFIG[submissionScenario];
+  const attestationCopy = ATTESTATION_CONTENT[submissionScenario];
 
   const finalPayload = useMemo(
     () => ({
@@ -281,10 +315,10 @@ export function StepValidation({
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            Submission Type
+            Submission Type & Attestation
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-4">
           <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
             <Badge variant="outline">{scenarioConfig.label}</Badge>
             <span className="text-sm text-muted-foreground">{scenarioConfig.description}</span>
@@ -297,27 +331,24 @@ export function StepValidation({
               </AlertDescription>
             </Alert>
           )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            Attestation
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Confirm the conformance statements from the NQIP Conformance guide before sending your final submission.
-          </p>
+          <div className="p-4 rounded-lg border bg-muted/20 space-y-3">
+            <p className="text-sm font-medium text-foreground">{attestationCopy.intro}</p>
+            <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
+              {attestationCopy.bullets.map((line, idx) => (
+                <li key={idx}>{line}</li>
+              ))}
+            </ul>
+            {attestationCopy.note && (
+              <p className="text-xs text-muted-foreground italic">{attestationCopy.note}</p>
+            )}
+          </div>
           <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border">
             <Checkbox
               checked={attestationConfirmed}
               onCheckedChange={(value) => setAttestationConfirmed(value === true)}
             />
             <span className="text-sm">
-              I confirm the submission meets the National Aged Care Mandatory Quality Indicator Program requirements.
+              I confirm the statements above are true and complete.
             </span>
           </label>
         </CardContent>

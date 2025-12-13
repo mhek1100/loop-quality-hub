@@ -255,12 +255,14 @@ const Submissions = () => {
   const { canEdit, canPostInProgress, canFinalSubmit } = useUser();
   const [currentPage, setCurrentPage] = useState(1);
 
+  const visibleSubmissions = useMemo(() => submissions.filter((s) => !s.isDemo), []);
+
   const stats = useMemo(() => {
     let needsReview = 0;
     let awaitingFinal = 0;
     let overdueOrMissing = 0;
 
-    submissions.forEach((s) => {
+    visibleSubmissions.forEach((s) => {
       const period = getReportingPeriodById(s.reportingPeriodId);
       const due = getDueInfo(period);
       const workflow = getWorkflowInfo(s);
@@ -278,10 +280,10 @@ const Submissions = () => {
     });
 
     return { needsReview, awaitingFinal, overdueOrMissing };
-  }, []);
+  }, [visibleSubmissions]);
 
   const filteredSubmissions = useMemo(() => {
-    return submissions.filter((sub) => {
+    return visibleSubmissions.filter((sub) => {
       const facility = getFacilityById(sub.facilityId);
 
       if (selectedQuarter !== "all" && sub.reportingPeriodId !== selectedQuarter) return false;
@@ -293,7 +295,7 @@ const Submissions = () => {
 
       return true;
     });
-  }, [selectedQuarter, selectedFacility, selectedStatus, hasWarningsFilter, hasErrorsFilter, searchQuery]);
+  }, [visibleSubmissions, selectedQuarter, selectedFacility, selectedStatus, hasWarningsFilter, hasErrorsFilter, searchQuery]);
 
   const sortedSubmissions = useMemo(() => {
     return filteredSubmissions.slice().sort((a, b) => {

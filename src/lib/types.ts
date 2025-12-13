@@ -35,6 +35,7 @@ export interface Submission {
   id: string;
   facilityId: string;
   reportingPeriodId: string;
+  isDemo?: boolean;
   status: SubmissionStatus;
   fhirStatus: FhirStatus;
   createdAt: string;

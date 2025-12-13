@@ -229,6 +229,7 @@ export const currentUser = users[4]; // Morgan - QI Submitter
 // Demo Scenario Types for documentation
 export interface DemoScenario {
   id: string;
+  type: "clean" | "warnings" | "reject" | "late";
   name: string;
   description: string;
   submissionId: string;
@@ -239,88 +240,76 @@ export interface DemoScenario {
 // Demo scenarios for testing and showcasing
 export const demoScenarios: DemoScenario[] = [
   {
-    id: "scenario-happy-path",
-    name: "Happy Path - Clean Submission",
-    description: "Complete submission workflow with no errors or warnings. All data is valid.",
-    submissionId: "sub-003",
-    workflowSteps: [
-      "1. Open workflow from Submissions page",
-      "2. Review pre-filled data in Data Entry",
-      "3. Preview the QuestionnaireResponse",
-      "4. Submit In-Progress - receives QR ID",
-      "5. Final Submission - status changes to 'completed'"
-    ],
-    expectedBehavior: "All steps complete successfully, green checkmarks throughout."
-  },
-  {
-    id: "scenario-govt-validation-errors",
-    name: "Government Validation Errors",
-    description: "Submission has data issues that Government API rejects. Shows error mapping back to questions.",
+    id: "demo-clean-on-time",
+    type: "clean",
+    name: "Clean On-Time Submission (Start Empty)",
+    description: "Walk the full workflow from a blank questionnaire, then pre-fill and submit successfully.",
     submissionId: "sub-007",
     workflowSteps: [
-      "1. Open workflow - see validation errors in Data Entry",
-      "2. Attempt to proceed - blocked due to errors",
-      "3. Fix PI-01 (Total residents) - was 0, change to valid number",
-      "4. Submit In-Progress - Government returns additional error on PI-02",
-      "5. Workflow reverts to Data Entry with mapped errors",
-      "6. Fix PI-02 and re-submit"
+      "1) Open the submission",
+      "2) Click Pre-fill Entire Questionnaire",
+      "3) Click Initial Submission",
+      "4) Click Go to validation page",
+      "5) Tick attestation and submit final data"
     ],
-    expectedBehavior: "Shows error blocking, government validation response, error mapping."
+    expectedBehavior: "Initial and final submissions succeed; status becomes Submitted."
   },
   {
-    id: "scenario-warnings-only",
-    name: "Warnings Only - Can Proceed",
-    description: "Submission has warnings but no blocking errors. User can acknowledge and proceed.",
-    submissionId: "sub-001",
-    workflowSteps: [
-      "1. Open workflow - see warning indicators",
-      "2. Preview shows warnings in yellow",
-      "3. Submit In-Progress - succeeds with warnings",
-      "4. Final Submission - user acknowledges warnings"
-    ],
-    expectedBehavior: "Warnings displayed but don't block progression. Yellow indicators shown."
-  },
-  {
-    id: "scenario-empty-questionnaire",
-    name: "Fresh Start - Empty Questionnaire",
-    description: "New submission with no data. Shows pre-fill functionality.",
+    id: "demo-warnings-only",
+    type: "warnings",
+    name: "Warnings Only (Start Empty)",
+    description: "Government returns warnings (no blocking errors). You can proceed after acknowledging warnings.",
     submissionId: "sub-008",
     workflowSteps: [
-      "1. Open workflow - all fields empty",
-      "2. Click 'Pre-fill Entire Questionnaire'",
-      "3. Data populates from CIS pipeline",
-      "4. Make manual edits - shows 'Manually Edited' badge",
-      "5. Proceed through workflow"
+      "1) Open the submission",
+      "2) Click Pre-fill Entire Questionnaire",
+      "3) Click Initial Submission (warnings returned)",
+      "4) Go to validation page and review issues",
+      "5) Submit final data after acknowledgement"
     ],
-    expectedBehavior: "Demonstrates pre-fill, manual editing, and data source tracking."
+    expectedBehavior: "Warnings are visible and do not block; submission still completes."
   },
   {
-    id: "scenario-post-in-progress-rejected",
-    name: "Government Rejection on POST",
-    description: "Step 3 POST is rejected by Government with validation errors.",
+    id: "demo-reject-total-zero",
+    type: "reject",
+    name: "Reject: Total Count = 0 (Start Empty)",
+    description: "Government rejects the initial submission when a required total count is zero.",
     submissionId: "sub-009",
     workflowSteps: [
-      "1. Complete Data Entry with some borderline values",
-      "2. Preview looks okay locally",
-      "3. Submit In-Progress - Government API returns 422",
-      "4. Errors displayed in modal",
-      "5. Workflow reverts to Data Entry with Government errors mapped",
-      "6. Fix issues and re-attempt"
+      "1) Open the submission",
+      "2) Click Pre-fill Entire Questionnaire",
+      "3) Click Initial Submission (rejected)",
+      "4) Fix the highlighted field(s) and retry Initial Submission"
     ],
-    expectedBehavior: "Shows POST rejection handling and error recovery flow."
+    expectedBehavior: "Initial submission is blocked; errors map back to the correct questions."
   },
   {
-    id: "scenario-late-amendment",
-    name: "Late Amendment After Submission",
-    description: "Previously submitted data needs correction after due date.",
+    id: "demo-reject-inconsistent-counts",
+    type: "reject",
+    name: "Reject: Inconsistent Counts (Start Empty)",
+    description: "Government rejects the initial submission when a sub-count exceeds the total.",
     submissionId: "sub-010",
     workflowSteps: [
-      "1. Open already-submitted workflow",
-      "2. Make corrections to submitted data",
-      "3. Submit as 'amended'",
-      "4. Status shows 'Submitted - Updated after Due Date'"
+      "1) Open the submission",
+      "2) Click Pre-fill Entire Questionnaire",
+      "3) Click Initial Submission (rejected)",
+      "4) Fix the highlighted PI counts and retry Initial Submission"
     ],
-    expectedBehavior: "Shows amendment workflow for previously completed submissions."
+    expectedBehavior: "Initial submission fails with a business-rule error and highlights the offending fields."
+  },
+  {
+    id: "demo-late-submission",
+    type: "late",
+    name: "Late Submission (Start Empty)",
+    description: "Complete a submission for an older quarter; final status should be Late Submission.",
+    submissionId: "sub-011",
+    workflowSteps: [
+      "1) Open the submission",
+      "2) Click Pre-fill Entire Questionnaire",
+      "3) Click Initial Submission",
+      "4) Go to validation page and submit final data"
+    ],
+    expectedBehavior: "Final status label is Late Submission with the matching attestation."
   }
 ];
 
@@ -506,7 +495,7 @@ const generateQuestionAnswers = (
 
 // Generate questionnaire responses for a submission with scenario
 const generateQuestionnaireResponses = (
-  submissionId: string, 
+  submissionId: string,
   scenario: ValidationScenario = "clean"
 ): QuestionnaireResponse[] => {
   // Use submission ID to create deterministic seed
@@ -547,6 +536,48 @@ const generateQuestionnaireResponses = (
       comments: hasData && seededRandom(baseSeed + idx + 50) > 0.7 ? "Reviewed and verified by nursing staff." : ""
     } as QuestionnaireResponse;
   });
+};
+
+type DemoPipelineOverrideValue = string | number | boolean | null;
+type DemoPipelineOverrideMap = Record<string, DemoPipelineOverrideValue>;
+
+const DEMO_PIPELINE_OVERRIDES_BY_SUBMISSION_ID: Record<string, DemoPipelineOverrideMap> = {
+  // Warnings-only: high numeric + empty comment triggers a government warning
+  "sub-008": {
+    "PI/PI-01": 120,
+    "PI/PI-18": "",
+  },
+  // Reject: total count cannot be zero
+  "sub-009": {
+    "PI/PI-01": 0,
+  },
+  // Reject: inconsistent counts (sub-count exceeds total)
+  "sub-010": {
+    "PI/PI-01": 10,
+    "PI/PI-02": 25,
+  },
+};
+
+const applyDemoPipelineOverrides = (
+  submissionId: string,
+  questionnaires: QuestionnaireResponse[]
+): QuestionnaireResponse[] => {
+  const overrides = DEMO_PIPELINE_OVERRIDES_BY_SUBMISSION_ID[submissionId];
+  if (!overrides) return questionnaires;
+
+  return questionnaires.map((q) => ({
+    ...q,
+    questions: q.questions.map((qu) => {
+      const key = `${q.indicatorCode}/${qu.linkId}`;
+      if (!Object.prototype.hasOwnProperty.call(overrides, key)) return qu;
+      return { ...qu, autoValue: overrides[key] };
+    }),
+  }));
+};
+
+const createDemoEmptySubmissionQuestionnaires = (submissionId: string): QuestionnaireResponse[] => {
+  const empty = generateQuestionnaireResponses(submissionId, "empty");
+  return applyDemoPipelineOverrides(submissionId, empty);
 };
 
 // Submissions - comprehensive scenarios for Q1-Q4 2025
@@ -678,84 +709,104 @@ export const submissions: Submission[] = [
   
   // ===== SPECIAL DEMO SCENARIOS =====
   
-  // Scenario: Government Validation Errors - for demo
+  // Demo: Clean On-Time Submission (start empty)
   {
     id: "sub-007",
     facilityId: "fac-001",
-    reportingPeriodId: "rp-q2-2025",
-    status: "In Progress",
+    reportingPeriodId: "rp-q4-2025",
+    isDemo: true,
+    status: "Not Started",
     fhirStatus: "in-progress",
-    createdAt: "2025-04-01T00:00:00Z",
-    updatedAt: "2025-06-15T14:30:00Z",
+    createdAt: "2025-10-01T00:00:00Z",
+    updatedAt: "2025-10-01T00:00:00Z",
     createdByUserId: "user-003",
     hasWarnings: false,
-    hasErrors: true,
-    submissionVersionNumber: 3,
-    questionnaires: generateQuestionnaireResponses("sub-007", "govt-errors"),
-    questionnaireResponseId: "QIQR-2025-Q2-RB007",
+    hasErrors: false,
+    submissionVersionNumber: 1,
+    questionnaires: createDemoEmptySubmissionQuestionnaires("sub-007"),
     questionnaireId: "QI-020",
     healthcareServiceReference: "HealthcareService/HS-001",
-    apiWorkflowStep: "in-progress-posted"
+    apiWorkflowStep: "data-collection"
   },
   
-  // Scenario: Fresh Start - Empty Questionnaire
+  // Demo: Warnings Only (start empty)
   {
     id: "sub-008",
     facilityId: "fac-002",
-    reportingPeriodId: "rp-q2-2025",
+    reportingPeriodId: "rp-q4-2025",
+    isDemo: true,
     status: "Not Started",
     fhirStatus: "in-progress",
-    createdAt: "2025-04-01T00:00:00Z",
-    updatedAt: "2025-04-01T00:00:00Z",
+    createdAt: "2025-10-01T00:00:00Z",
+    updatedAt: "2025-10-01T00:00:00Z",
     createdByUserId: "user-002",
     hasWarnings: false,
     hasErrors: false,
     submissionVersionNumber: 1,
-    questionnaires: generateQuestionnaireResponses("sub-008", "empty"),
+    questionnaires: createDemoEmptySubmissionQuestionnaires("sub-008"),
     questionnaireId: "QI-020",
     healthcareServiceReference: "HealthcareService/HS-002",
     apiWorkflowStep: "data-collection"
   },
   
-  // Scenario: POST Rejection Demo
+  // Demo: Reject Total Count = 0 (start empty)
   {
     id: "sub-009",
     facilityId: "fac-003",
-    reportingPeriodId: "rp-q2-2025",
-    status: "In Progress",
+    reportingPeriodId: "rp-q4-2025",
+    isDemo: true,
+    status: "Not Started",
     fhirStatus: "in-progress",
-    createdAt: "2025-04-01T00:00:00Z",
-    updatedAt: "2025-06-18T09:00:00Z",
+    createdAt: "2025-10-01T00:00:00Z",
+    updatedAt: "2025-10-01T00:00:00Z",
     createdByUserId: "user-003",
-    hasWarnings: true,
-    hasErrors: true,
-    submissionVersionNumber: 2,
-    questionnaires: generateQuestionnaireResponses("sub-009", "errors"),
+    hasWarnings: false,
+    hasErrors: false,
+    submissionVersionNumber: 1,
+    questionnaires: createDemoEmptySubmissionQuestionnaires("sub-009"),
     questionnaireId: "QI-020",
     healthcareServiceReference: "HealthcareService/HS-003",
     apiWorkflowStep: "data-collection"
   },
   
-  // Scenario: Late Amendment
+  // Demo: Reject Inconsistent Counts (start empty)
   {
     id: "sub-010",
-    facilityId: "fac-001",
-    reportingPeriodId: "rp-q1-2025",
-    status: "Submitted - Updated after Due Date",
-    fhirStatus: "amended",
-    createdAt: "2025-01-01T00:00:00Z",
-    updatedAt: "2025-05-15T08:00:00Z",
+    facilityId: "fac-002",
+    reportingPeriodId: "rp-q4-2025",
+    isDemo: true,
+    status: "Not Started",
+    fhirStatus: "in-progress",
+    createdAt: "2025-10-01T00:00:00Z",
+    updatedAt: "2025-10-01T00:00:00Z",
     createdByUserId: "user-003",
-    submittedByUserId: "user-005",
-    lastSubmittedDate: "2025-05-15T08:00:00Z",
     hasWarnings: false,
     hasErrors: false,
-    submissionVersionNumber: 6,
-    questionnaires: generateQuestionnaireResponses("sub-010", "clean"),
-    questionnaireResponseId: "QIQR-2025-Q1-RB010",
+    submissionVersionNumber: 1,
+    questionnaires: createDemoEmptySubmissionQuestionnaires("sub-010"),
     questionnaireId: "QI-020",
-    healthcareServiceReference: "HealthcareService/HS-001",
-    apiWorkflowStep: "submitted"
+    healthcareServiceReference: "HealthcareService/HS-002",
+    apiWorkflowStep: "data-collection"
+  },
+
+  // Demo: Late Submission (start empty, older reporting period)
+  {
+    id: "sub-011",
+    facilityId: "fac-003",
+    reportingPeriodId: "rp-q2-2025",
+    isDemo: true,
+    status: "Not Started",
+    fhirStatus: "in-progress",
+    createdAt: "2025-04-01T00:00:00Z",
+    updatedAt: "2025-04-01T00:00:00Z",
+    createdByUserId: "user-003",
+    hasWarnings: false,
+    hasErrors: false,
+    submissionVersionNumber: 1,
+    questionnaires: createDemoEmptySubmissionQuestionnaires("sub-011"),
+    questionnaireId: "QI-020",
+    healthcareServiceReference: "HealthcareService/HS-003",
+    apiWorkflowStep: "data-collection",
   },
   
   // ===== Q1 2025 - Historical =====

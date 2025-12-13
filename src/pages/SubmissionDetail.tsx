@@ -83,7 +83,8 @@ const generateMockGovernmentValidation = (submission: Submission): GovernmentVal
         }
       }
 
-      if (question.linkId.includes("Comment") && !question.finalValue) {
+      const isCommentField = question.promptText.toLowerCase().includes("comment");
+      if (isCommentField && !question.finalValue) {
         const numericQuestions = q.questions.filter(
           (qu) => typeof qu.finalValue === "number" && qu.finalValue > 50
         );
@@ -99,15 +100,6 @@ const generateMockGovernmentValidation = (submission: Submission): GovernmentVal
         }
       }
     });
-  });
-
-  warnings.push({
-    severity: "warning",
-    code: "informational",
-    diagnostics: "Optional comment fields are empty but recommended for context",
-    indicatorCode: "UPWL",
-    questionLinkId: "UPWL-06",
-    location: "UPWL/UPWL-06",
   });
 
   return {

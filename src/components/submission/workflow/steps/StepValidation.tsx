@@ -15,7 +15,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ValidationIssuesList } from "../../ValidationIssuesList";
-import { ServerDataPanel } from "./ServerDataPanel";
 import { Submission, OperationOutcome } from "@/lib/types";
 import { useUser } from "@/contexts/UserContext";
 import { getFacilityById, getReportingPeriodById } from "@/lib/mock/data";
@@ -300,8 +299,6 @@ export function StepValidation({
           )}
         </CardContent>
       </Card>
-
-      <ServerDataPanel submission={submission} />
 
       <Card>
         <CardHeader>

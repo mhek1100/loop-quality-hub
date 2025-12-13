@@ -10,8 +10,10 @@ export function DashboardLayout() {
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <AppHeader />
-          <main className="flex-1 p-6 overflow-auto">
-            <Outlet />
+          <main className="flex-1 p-4 overflow-auto">
+            <div className="app-zoom w-full max-w-[1400px] mx-auto">
+              <Outlet />
+            </div>
           </main>
         </div>
       </div>

@@ -196,6 +196,19 @@
   .sidebar-nav-item-active {
     @apply bg-sidebar-accent text-sidebar-foreground font-medium;
   }
+
+  /* App density: emulate ~85% browser zoom for content area (Chrome-friendly) */
+  .app-zoom {
+    zoom: 0.85;
+  }
+
+  @supports not (zoom: 1) {
+    .app-zoom {
+      transform: scale(0.85);
+      transform-origin: top left;
+      width: calc(100% / 0.85);
+    }
+  }
 }
 
 @layer utilities {

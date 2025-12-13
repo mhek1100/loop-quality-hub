@@ -384,24 +384,22 @@ const generateQuestionAnswers = (
     // Generate realistic auto values based on question type
     let autoValue: string | number | boolean | null = null;
     
-    if (scenario !== "empty") {
-      if (q.responseType === "integer") {
-        // Generate realistic values based on linkId patterns
-        if (q.linkId.includes("01")) autoValue = Math.floor(rand * 100) + 50; // Total residents: 50-150
-        else if (q.linkId.includes("02")) autoValue = Math.floor(rand * 20) + 5; // Subset counts: 5-25
-        else if (q.linkId.includes("03")) autoValue = Math.floor(rand * 10); // Smaller counts: 0-10
-        else if (q.linkId.includes("04")) autoValue = Math.floor(rand * 5); // Very small: 0-5
-        else autoValue = Math.floor(rand * 30) + 10;
-      } else if (q.responseType === "boolean") {
-        autoValue = rand > 0.3;
-      } else if (q.responseType === "date") {
-        autoValue = "2025-01-15";
-      } else if (q.responseType === "string") {
-        if (q.linkId.includes("Comment")) {
-          autoValue = rand > 0.6 ? "Verified by clinical team during quarterly review." : "";
-        } else {
-          autoValue = "Standard procedure followed";
-        }
+    if (q.responseType === "integer") {
+      // Generate realistic values based on linkId patterns
+      if (q.linkId.includes("01")) autoValue = Math.floor(rand * 100) + 50; // Total residents: 50-150
+      else if (q.linkId.includes("02")) autoValue = Math.floor(rand * 20) + 5; // Subset counts: 5-25
+      else if (q.linkId.includes("03")) autoValue = Math.floor(rand * 10); // Smaller counts: 0-10
+      else if (q.linkId.includes("04")) autoValue = Math.floor(rand * 5); // Very small: 0-5
+      else autoValue = Math.floor(rand * 30) + 10;
+    } else if (q.responseType === "boolean") {
+      autoValue = rand > 0.3;
+    } else if (q.responseType === "date") {
+      autoValue = "2025-01-15";
+    } else if (q.responseType === "string") {
+      if (q.linkId.includes("Comment")) {
+        autoValue = rand > 0.6 ? "Verified by clinical team during quarterly review." : "";
+      } else {
+        autoValue = "Standard procedure followed";
       }
     }
     
@@ -480,7 +478,6 @@ const generateQuestionAnswers = (
         break;
         
       case "empty":
-        autoValue = null;
         userValue = null;
         break;
         

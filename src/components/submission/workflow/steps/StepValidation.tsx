@@ -325,12 +325,12 @@ export function StepValidation({
         </CardContent>
       </Card>
 
-      <div className="flex justify-end pt-4 border-t">
+      <div className="flex justify-center pt-6 pb-10 border-t">
         <Button
           size="lg"
           onClick={handleTryFinalSubmission}
           disabled={!canAttemptFinal || isSubmitting}
-          className="min-w-[220px]"
+          className="min-w-[260px] h-12 text-base"
         >
           <Send className="h-4 w-4 mr-2" />
           Try Final Submission

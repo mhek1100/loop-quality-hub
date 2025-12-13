@@ -265,27 +265,17 @@ export function StepDataEntry({
       )}
 
       {/* Actions */}
-      <div className="flex flex-wrap justify-between items-center gap-4 pt-4 border-t">
-        <Button variant="outline" onClick={onSaveProgress}>
-          <Save className="h-4 w-4 mr-2" />
-          Save Progress
-        </Button>
-
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {initialSubmitStatus === "submitted" ? (
-              <CheckCircle2 className="h-4 w-4 text-success" />
-            ) : initialSubmitStatus === "submitting" ? (
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            ) : (
-              <Upload className="h-4 w-4 text-muted-foreground" />
-            )}
-            <span>{statusLabel}</span>
-          </div>
+      <div className="flex flex-col items-center gap-4 pt-6 pb-10 border-t text-center">
+        <div className="flex flex-wrap items-center justify-center gap-4 w-full">
+          <Button variant="outline" onClick={onSaveProgress} className="min-w-[200px] h-12 text-base">
+            <Save className="h-4 w-4 mr-2" />
+            Save Progress
+          </Button>
           <Button
             onClick={onInitialSubmit}
             disabled={buttonDisabled}
-            className="min-w-[220px]"
+            size="lg"
+            className="min-w-[260px] h-12 text-base"
           >
             {initialSubmitStatus === "submitting" ? (
               <>
@@ -304,6 +294,18 @@ export function StepDataEntry({
               </>
             )}
           </Button>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {initialSubmitStatus === "submitted" ? (
+              <CheckCircle2 className="h-4 w-4 text-success" />
+            ) : initialSubmitStatus === "submitting" ? (
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            ) : (
+              <Upload className="h-4 w-4 text-muted-foreground" />
+            )}
+            <span>{statusLabel}</span>
+          </div>
         </div>
       </div>
 

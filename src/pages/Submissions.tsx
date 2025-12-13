@@ -575,14 +575,7 @@ const Submissions = () => {
                         </Tooltip>
                       </td>
                       <td className="py-3 px-4">
-                        <div className="text-sm">
-                          {nextStep}
-                          {sub.fhirStatus === "in-progress" && (
-                            <Badge variant="outline" className="ml-2 text-[10px] font-normal">
-                              With Government
-                            </Badge>
-                          )}
-                        </div>
+                        <div className="text-sm">{nextStep}</div>
                       </td>
                       <td className="py-3 px-4 min-w-[160px]">
                         <ProgressIndicator submission={sub} />

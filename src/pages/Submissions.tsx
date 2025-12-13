@@ -429,12 +429,7 @@ const Submissions = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Submissions</h1>
-          <p className="text-muted-foreground">
-            Manage and review NQIP submissions across all facilities
-          </p>
-        </div>
+        <div />
         <Button onClick={() => setCreateDialogOpen(true)}>Create New Submission</Button>
       </div>
 

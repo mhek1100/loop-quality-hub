@@ -87,14 +87,6 @@ const KpiDashboard = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground">KPI Dashboard</h1>
-        <p className="text-muted-foreground">
-          Performance analytics across all quality indicators
-        </p>
-      </div>
-
       {/* Filters */}
       <Card>
         <CardContent className="p-4">

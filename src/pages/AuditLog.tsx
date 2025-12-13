@@ -9,7 +9,6 @@ const AuditLog = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div><h1 className="text-2xl font-semibold">Audit Log</h1><p className="text-muted-foreground">Track all system activity</p></div>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">Activity Log</CardTitle>

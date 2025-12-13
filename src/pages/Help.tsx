@@ -4,8 +4,6 @@ import { ExternalLink, FileText, HelpCircle, Info } from "lucide-react";
 
 const Help = () => (
   <div className="space-y-6 animate-fade-in">
-    <div><h1 className="text-2xl font-semibold">Help & Resources</h1><p className="text-muted-foreground">Learn about NQIP submissions and get support</p></div>
-    
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card>
         <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Info className="h-5 w-5" />About NQIP</CardTitle></CardHeader>

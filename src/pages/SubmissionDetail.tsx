@@ -68,25 +68,6 @@ const generateMockGovernmentValidation = (
         });
       }
 
-      if (q.indicatorCode === "PI" && question.linkId === "PI-02") {
-        const totalQuestion = q.questions.find((qu) => qu.linkId === "PI-01");
-        if (
-          totalQuestion &&
-          typeof question.finalValue === "number" &&
-          typeof totalQuestion.finalValue === "number" &&
-          question.finalValue > totalQuestion.finalValue
-        ) {
-          errors.push({
-            severity: "error",
-            code: "business-rule",
-            diagnostics: `${GOV_PREFIX} Stage 2+ count (${question.finalValue}) cannot exceed total pressure injuries (${totalQuestion.finalValue})`,
-            indicatorCode: q.indicatorCode,
-            questionLinkId: question.linkId,
-            location: `${q.indicatorCode}/${question.linkId}`,
-          });
-        }
-      }
-
       if (question.linkId.includes("Rate") || question.linkId.includes("Percent")) {
         if (typeof question.finalValue === "number" && question.finalValue > 100) {
           errors.push({

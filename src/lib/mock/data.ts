@@ -169,34 +169,10 @@ export const roles: Role[] = [
 // Users
 export const users: User[] = [
   {
-    id: "user-001",
-    name: "Admin Alice",
-    email: "alice.admin@loop.health",
-    federatedId: "alice.admin@digitalid.gov.au",
-    roleIds: ["role-sys-admin"],
-    isActive: true
-  },
-  {
-    id: "user-002",
-    name: "Dana",
-    email: "dana@loop.health",
-    federatedId: "dana@digitalid.gov.au",
-    roleIds: ["role-data-admin"],
-    isActive: true
-  },
-  {
     id: "user-003",
     name: "Chris",
     email: "chris@loop.health",
     roleIds: ["role-data-entry"],
-    isActive: true
-  },
-  {
-    id: "user-004",
-    name: "Riley",
-    email: "riley@loop.health",
-    federatedId: "riley@digitalid.gov.au",
-    roleIds: ["role-reviewer"],
     isActive: true
   },
   {
@@ -211,20 +187,13 @@ export const users: User[] = [
     id: "user-006",
     name: "Sam",
     email: "sam@loop.health",
-    roleIds: ["role-compliance"],
-    isActive: true
-  },
-  {
-    id: "user-007",
-    name: "Eva",
-    email: "eva@loop.health",
-    roleIds: ["role-executive"],
+    roleIds: ["role-reviewer", "role-compliance"],
     isActive: true
   }
 ];
 
 // Current user (simulated logged in user)
-export const currentUser = users[4]; // Morgan - QI Submitter
+export const currentUser = users.find((u) => u.id === "user-005") || users[0]; // Morgan - QI Submitter
 
 // Demo Scenario Types for documentation
 export interface DemoScenario {
@@ -530,7 +499,7 @@ const generateQuestionnaireResponses = (
       source,
       prefillAvailable: true,
       validationStatus: hasErrors ? "Errors" : hasWarnings ? "Warnings" : "OK",
-      lastReviewedByUserId: hasErrors || !hasData ? undefined : "user-004",
+      lastReviewedByUserId: hasErrors || !hasData ? undefined : "user-006",
       lastReviewedAt: hasErrors || !hasData ? undefined : new Date().toISOString(),
       questions,
       fhirRawJson: JSON.stringify({ resourceType: "QuestionnaireResponse", status: "in-progress" }),
@@ -621,7 +590,7 @@ export const submissions: Submission[] = [
     fhirStatus: "in-progress",
     createdAt: "2025-10-01T00:00:00Z",
     updatedAt: "2025-10-01T00:00:00Z",
-    createdByUserId: "user-002",
+    createdByUserId: "user-003",
     hasWarnings: false,
     hasErrors: false,
     submissionVersionNumber: 1,
@@ -747,7 +716,7 @@ export const submissions: Submission[] = [
     fhirStatus: "in-progress",
     createdAt: "2025-10-01T00:00:00Z",
     updatedAt: "2025-10-01T00:00:00Z",
-    createdByUserId: "user-002",
+    createdByUserId: "user-003",
     hasWarnings: false,
     hasErrors: false,
     submissionVersionNumber: 1,
@@ -950,7 +919,7 @@ export const submissions: Submission[] = [
     fhirStatus: "in-progress",
     createdAt: "2024-07-01T00:00:00Z",
     updatedAt: "2024-10-25T09:00:00Z",
-    createdByUserId: "user-002",
+    createdByUserId: "user-003",
     hasWarnings: true,
     hasErrors: true,
     submissionVersionNumber: 1,
@@ -1119,7 +1088,7 @@ export const auditLogs: AuditLogEntry[] = [
   {
     id: "audit-002",
     timestamp: "2025-12-07T16:30:00Z",
-    userId: "user-004",
+    userId: "user-006",
     actionType: "QUESTIONNAIRE_REVIEWED",
     entityType: "Questionnaire",
     entityId: "qr-sub-003-PI",
@@ -1137,7 +1106,7 @@ export const auditLogs: AuditLogEntry[] = [
   {
     id: "audit-004",
     timestamp: "2025-12-05T10:00:00Z",
-    userId: "user-002",
+    userId: "user-003",
     actionType: "PIPELINE_SYNC",
     entityType: "PipelineConfig",
     entityId: "pipe-001",
@@ -1146,7 +1115,7 @@ export const auditLogs: AuditLogEntry[] = [
   {
     id: "audit-005",
     timestamp: "2025-10-01T08:00:00Z",
-    userId: "user-002",
+    userId: "user-003",
     actionType: "PREFILL_APPLIED",
     entityType: "Submission",
     entityId: "sub-001",

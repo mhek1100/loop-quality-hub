@@ -24,15 +24,19 @@ import SettingsConformance from "./pages/settings/SettingsConformance";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <UserProvider>
-      <SubmissionsStoreProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
+const App = () => {
+  const base = import.meta.env.BASE_URL || "/";
+  const basename = base === "/" ? undefined : base.replace(/\/$/, "");
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <UserProvider>
+        <SubmissionsStoreProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter basename={basename}>
+              <Routes>
               <Route element={<DashboardLayout />}>
                 <Route path="/" element={<Submissions />} />
                 <Route path="/kpi" element={<KpiDashboard />} />
@@ -51,13 +55,14 @@ const App = () => (
                   <Route path="conformance" element={<SettingsConformance />} />
                 </Route>
               </Route>
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </SubmissionsStoreProvider>
-    </UserProvider>
-  </QueryClientProvider>
-);
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </SubmissionsStoreProvider>
+      </UserProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

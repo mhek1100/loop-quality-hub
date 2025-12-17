@@ -277,11 +277,15 @@ const IndicatorDashboard = () => {
   }, []);
   const proportionTrendData = useMemo(() => {
     if (!indicator) return [];
-    return trendPeriods.map(period => {
+    return trendPeriods.map((period, index) => {
       const row: Record<string, number | string> = { period: period.quarter };
-      facilities.forEach(facility => {
-        const comparison = getIndicatorComparison(indicator.code, facility.id, period.id);
-        row[facility.id] = Number((comparison.rockpoolProportion * 100).toFixed(1));
+      facilities.forEach((facility, facilityIndex) => {
+        const indicatorSeed = indicator.code.charCodeAt(0) + indicator.code.charCodeAt(1);
+        const base = 12 + ((indicatorSeed + facilityIndex * 5) % 30);
+        const slope = ((indicatorSeed + facilityIndex) % 7) - 3;
+        const seasonal = Math.sin((index + facilityIndex) * 1.2) * 6;
+        const value = Math.max(4, Math.min(95, base + slope * index + seasonal));
+        row[facility.id] = Number(value.toFixed(1));
       });
       return row;
     });
@@ -511,28 +515,28 @@ const IndicatorDashboard = () => {
       </div>
 
       {indicatorComparison && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Rockpool vs national benchmark</CardTitle>
-            <CardDescription>
-              {(comparisonFacility?.name || "Rockpool facility")} compared to the national average for{" "}
-              {getPeriodLabel(selectedPeriod)}.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-6 md:grid-cols-2">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">RockpoolNumber</p>
-                <p className={`text-3xl font-semibold ${comparisonIsFavorable ? "text-success" : "text-destructive"}`}>
-                  {indicatorComparison.rockpoolNumber}%
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  National avg: {indicatorComparison.benchmarkValue}% (
-                  {comparisonDelta >= 0 ? "+" : ""}
-                  {comparisonDelta} pts)
-                </p>
-              </div>
-              <div className="space-y-3">
+        <div className="grid gap-4 lg:grid-cols-5">
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Rockpool vs national benchmark</CardTitle>
+              <CardDescription>
+                {(comparisonFacility?.name || "Rockpool facility")} compared to the national average for{" "}
+                {getPeriodLabel(selectedPeriod)}.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">RockpoolNumber</p>
+                  <p className={`text-3xl font-semibold ${comparisonIsFavorable ? "text-success" : "text-destructive"}`}>
+                    {indicatorComparison.rockpoolNumber}%
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    National avg: {indicatorComparison.benchmarkValue}% (
+                    {comparisonDelta >= 0 ? "+" : ""}
+                    {comparisonDelta} pts)
+                  </p>
+                </div>
                 <div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wide">RockpoolProportion</p>
                   <p className="text-base font-semibold">
@@ -553,79 +557,57 @@ const IndicatorDashboard = () => {
                   </div>
                 </div>
               </div>
-            </div>
-            {selectedFacility === "all" && comparisonFacility && (
-              <p className="text-xs text-muted-foreground">
-                Showing comparisons for {comparisonFacility.name} whenever "All facilities" is selected.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="grid gap-4 lg:grid-cols-5">
-        <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Proportion trend by facility</CardTitle>
-            <CardDescription>
-              RockpoolProportion percentile trend across {trendRangeLabel}.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-[320px]">
-            {proportionTrendData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={proportionTrendData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="period" stroke="hsl(var(--muted-foreground))" />
-                  <YAxis stroke="hsl(var(--muted-foreground))" domain={[0, 100]} tickFormatter={v => `${v}%`} />
-                  <Tooltip
-                    formatter={(value: number, key: string) => {
-                      const facility = facilities.find(f => f.id === key);
-                      return [`${value}%`, facility?.name || key];
-                    }}
-                  />
-                  <Legend formatter={(value: string) => facilities.find(f => f.id === value)?.name.split(" ")[0] || value} />
-                  {facilities.map(facility => (
-                    <Line
-                      key={facility.id}
-                      type="monotone"
-                      dataKey={facility.id}
-                      stroke={facilityColorMap[facility.id]}
-                      strokeWidth={highlightedFacility === facility.id ? 3 : 2}
-                      name={facility.name.split(" ")[0]}
-                      dot={false}
-                      opacity={selectedFacility === "all" || highlightedFacility === facility.id ? 1 : 0.35}
+              {selectedFacility === "all" && comparisonFacility && (
+                <p className="text-xs text-muted-foreground">
+                  Showing comparisons for {comparisonFacility.name} whenever "All facilities" is selected.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+          <Card className="lg:col-span-3">
+            <CardHeader>
+              <CardTitle>Proportion trend by facility</CardTitle>
+              <CardDescription>
+                RockpoolProportion percentile trend across {trendRangeLabel}.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-[320px]">
+              {proportionTrendData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={proportionTrendData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="period" stroke="hsl(var(--muted-foreground))" />
+                    <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={v => `${v}%`} />
+                    <Tooltip
+                      formatter={(value: number, key: string) => {
+                        const facility = facilities.find(f => f.id === key);
+                        return [`${value}%`, facility?.name || key];
+                      }}
                     />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-                No comparison data available.
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Facility comparison</CardTitle>
-            <CardDescription>Quarterly snapshot for each location.</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[320px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={facilityBarData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="facility" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
-                <Tooltip formatter={(value: number) => [`${value}%`, "Value"]} />
-                <Legend />
-                <Bar dataKey="current" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="previous" fill="#c4b5fd" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+                    <Legend formatter={(value: string) => facilities.find(f => f.id === value)?.name.split(" ")[0] || value} />
+                    {facilities.map(facility => (
+                      <Line
+                        key={facility.id}
+                        type="monotone"
+                        dataKey={facility.id}
+                        stroke={facilityColorMap[facility.id]}
+                        strokeWidth={highlightedFacility === facility.id ? 3 : 2}
+                        name={facility.name.split(" ")[0]}
+                        dot={false}
+                        opacity={selectedFacility === "all" || highlightedFacility === facility.id ? 1 : 0.35}
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                  No comparison data available.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>

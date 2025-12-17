@@ -5,8 +5,10 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
+  // Only use repo base path for GitHub Pages (when built via GitHub Actions)
+  const isGitHubPages = process.env.GITHUB_ACTIONS === 'true';
   const repoName = process.env.GITHUB_REPOSITORY?.split("/").pop() ?? "loop-quality-hub";
-  const base = mode === "development" ? "/" : `/${repoName}/`;
+  const base = isGitHubPages ? `/${repoName}/` : "/";
 
   return {
     server: {

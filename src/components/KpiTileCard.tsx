@@ -37,6 +37,7 @@ interface KpiTileCardProps {
   onSelect: () => void;
   onNavigate: () => void;
   comparison?: IndicatorComparison;
+  facilityName?: string;
 }
 
 // Map indicator codes to icons
@@ -320,7 +321,7 @@ const toOrdinal = (value: number): string => {
   return `${safeValue}th`;
 };
 
-export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate, comparison }: KpiTileCardProps) => {
+export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate, comparison, facilityName }: KpiTileCardProps) => {
   const chartType = indicatorChartTypes[indicator.code];
   const icon = indicatorIcons[indicator.code];
   const description = indicatorDescriptions[indicator.code];
@@ -462,7 +463,7 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate, 
       {comparison && (
         <div className="space-y-1 text-xs mb-3">
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Rockpool</span>
+            <span className="text-muted-foreground">{facilityName || "All Facilities"}</span>
             <span
               className={cn(
                 "font-semibold",
@@ -478,9 +479,9 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate, 
           </div>
           <div className="flex items-center justify-between pt-2 border-t border-dashed border-border">
             <div>
-              <span className="text-muted-foreground block">RockpoolProportion</span>
+              <span className="text-muted-foreground block">Proportion</span>
               <span className="text-foreground font-medium">
-                {proportionPercent ?? 0}% {percentileLabel ? `(${percentileLabel})` : ""}
+                {proportionPercent ?? 0}%
               </span>
             </div>
             <div className="flex items-center gap-1">

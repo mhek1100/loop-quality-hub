@@ -112,6 +112,9 @@ const KpiDashboard = () => {
           const kpi = getIndicatorKpi(indicator.code);
           const isSelected = selectedIndicator === indicator.code;
           const comparison = getIndicatorComparison(indicator.code, comparisonFacilityId, selectedPeriod);
+          const facilityName = selectedFacility === "all" 
+            ? "All Facilities" 
+            : facilities.find(f => f.id === selectedFacility)?.name;
           
           return (
             <KpiTileCard
@@ -122,6 +125,7 @@ const KpiDashboard = () => {
               onSelect={() => setSelectedIndicator(indicator.code)}
               onNavigate={() => navigate(`/kpi/indicator/${indicator.code.toLowerCase()}`)}
               comparison={comparison}
+              facilityName={facilityName}
             />
           );
         })}

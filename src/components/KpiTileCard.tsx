@@ -450,7 +450,23 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate, 
       <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
         {description}
       </p>
-
+      <div className="text-xs mb-2">
+        {kpi ? (
+          deltaValue > 0 ? (
+            <span className={cn(isPositiveChange ? "text-success" : "text-destructive", "flex items-center gap-1")}>
+              {isIncreasing ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+              {deltaValue.toFixed(1)}% vs previous quarter
+            </span>
+          ) : (
+            <span className="flex items-center gap-1 text-muted-foreground">
+              No change vs previous quarter
+            </span>
+          )
+        ) : null}
+      </div>
+      
+      <div className="border-t border-border my-3" />
+      
       {comparison && (
         <div className="space-y-1 text-xs mb-3">
           <div className="flex items-center justify-between">
@@ -469,8 +485,8 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate, 
             <span>{comparison.benchmarkValue}%</span>
           </div>
           <div className="flex items-center justify-between pt-2 border-t border-dashed border-border">
-            <div className="flex flex-col">
-              <span className="text-muted-foreground">RockpoolProportion</span>
+            <div>
+              <span className="text-muted-foreground block">RockpoolProportion</span>
               <span className="text-foreground font-medium">
                 {proportionPercent ?? 0}% {percentileLabel ? `(${percentileLabel})` : ""}
               </span>
@@ -483,25 +499,7 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate, 
         </div>
       )}
       
-      {/* Delta comparison */}
-      {kpi && deltaValue > 0 && (
-        <div className={cn(
-          "flex items-center gap-1 text-xs",
-          isPositiveChange ? "text-success" : "text-destructive"
-        )}>
-          {isIncreasing ? (
-            <TrendingUp className="h-3 w-3" />
-          ) : (
-            <TrendingDown className="h-3 w-3" />
-          )}
-          <span>{deltaValue.toFixed(1)}% vs previous quarter</span>
-        </div>
-      )}
-      {kpi && deltaValue === 0 && (
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <span>No change vs previous quarter</span>
-        </div>
-      )}
+      {/* Delta comparison is moved above */}
     </button>
   );
 };

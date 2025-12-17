@@ -14,7 +14,9 @@ import { cn } from "@/lib/utils";
 import { 
   facilities, 
   reportingPeriods, 
-  getAllKpiData 
+  getAllKpiData,
+  DEFAULT_COMPARISON_FACILITY_ID,
+  getIndicatorComparison
 } from "@/lib/mock/data";
 import { INDICATORS, getIndicatorByCode } from "@/lib/mock/indicators";
 import { IndicatorCode, KpiData } from "@/lib/types";
@@ -39,6 +41,7 @@ const KpiDashboard = () => {
   const navigate = useNavigate();
   
   const allKpiData = getAllKpiData();
+  const comparisonFacilityId = selectedFacility === "all" ? DEFAULT_COMPARISON_FACILITY_ID : selectedFacility;
   
   // Filter KPI data based on selections
   const filteredKpiData = allKpiData.filter(kpi => 
@@ -130,6 +133,7 @@ const KpiDashboard = () => {
         {INDICATORS.map(indicator => {
           const kpi = getIndicatorKpi(indicator.code);
           const isSelected = selectedIndicator === indicator.code;
+          const comparison = getIndicatorComparison(indicator.code, comparisonFacilityId, selectedPeriod);
           
           return (
             <KpiTileCard
@@ -139,6 +143,7 @@ const KpiDashboard = () => {
               isSelected={isSelected}
               onSelect={() => setSelectedIndicator(indicator.code)}
               onNavigate={() => navigate(`/kpi/indicator/${indicator.code.toLowerCase()}`)}
+              comparison={comparison}
             />
           );
         })}

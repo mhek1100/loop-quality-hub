@@ -121,6 +121,16 @@ export type IndicatorCode =
   | "EN" // Enrolled nursing
   | "LO"; // Lifestyle officers
 
+export interface IndicatorComparison {
+  indicatorCode: IndicatorCode;
+  facilityId: string;
+  periodId: string;
+  rockpoolNumber: number;
+  benchmarkValue: number;
+  rockpoolProportion: number;
+  quintile: number;
+}
+
 export type QuestionnaireStatus = 
   | "Not Started"
   | "Draft"

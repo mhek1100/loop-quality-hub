@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { KpiData, IndicatorCode, IndicatorDefinition } from "@/lib/types";
+import { KpiData, IndicatorCode, IndicatorDefinition, IndicatorComparison } from "@/lib/types";
 import { 
   Heart, 
   Lock, 
@@ -28,6 +28,7 @@ import {
   Pie,
   Cell
 } from "recharts";
+import { QuintileStars } from "@/components/QuintileStars";
 
 interface KpiTileCardProps {
   indicator: IndicatorDefinition;
@@ -35,6 +36,7 @@ interface KpiTileCardProps {
   isSelected: boolean;
   onSelect: () => void;
   onNavigate: () => void;
+  comparison?: IndicatorComparison;
 }
 
 // Map indicator codes to icons
@@ -308,7 +310,17 @@ const MultiBarChart = ({ values, colors, labels }: { values: number[]; colors: s
   );
 };
 
-export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate }: KpiTileCardProps) => {
+const toOrdinal = (value: number): string => {
+  const safeValue = Math.max(0, value);
+  const mod10 = safeValue % 10;
+  const mod100 = safeValue % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${safeValue}st`;
+  if (mod10 === 2 && mod100 !== 12) return `${safeValue}nd`;
+  if (mod10 === 3 && mod100 !== 13) return `${safeValue}rd`;
+  return `${safeValue}th`;
+};
+
+export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate, comparison }: KpiTileCardProps) => {
   const chartType = indicatorChartTypes[indicator.code];
   const icon = indicatorIcons[indicator.code];
   const description = indicatorDescriptions[indicator.code];
@@ -383,6 +395,13 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate }
   
   // Determine if the value went up or down for the arrow icon
   const isIncreasing = kpi ? kpi.delta > 0 : false;
+  const comparisonIsFavorable = comparison
+    ? (isLowerBetter
+        ? comparison.rockpoolNumber <= comparison.benchmarkValue
+        : comparison.rockpoolNumber >= comparison.benchmarkValue)
+    : undefined;
+  const proportionPercent = comparison ? Number((comparison.rockpoolProportion * 100).toFixed(1)) : undefined;
+  const percentileLabel = proportionPercent !== undefined ? toOrdinal(Math.round(proportionPercent)) : undefined;
   
   return (
     <button
@@ -414,7 +433,7 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate }
       
       {/* Main value */}
       <p className="text-3xl font-bold text-foreground mb-3">
-        {kpi?.value || "—"}<span className="text-xl">%</span>
+        {kpi?.value ?? "--"}<span className="text-xl">%</span>
       </p>
       
       {/* Mini chart */}
@@ -431,6 +450,38 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate }
       <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
         {description}
       </p>
+
+      {comparison && (
+        <div className="space-y-1 text-xs mb-3">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Rockpool</span>
+            <span
+              className={cn(
+                "font-semibold",
+                comparisonIsFavorable ? "text-success" : "text-destructive"
+              )}
+            >
+              {comparison.rockpoolNumber}%
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span>National avg</span>
+            <span>{comparison.benchmarkValue}%</span>
+          </div>
+          <div className="flex items-center justify-between pt-2 border-t border-dashed border-border">
+            <div className="flex flex-col">
+              <span className="text-muted-foreground">RockpoolProportion</span>
+              <span className="text-foreground font-medium">
+                {proportionPercent ?? 0}% {percentileLabel ? `(${percentileLabel})` : ""}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground">Quintile</span>
+              <QuintileStars value={comparison.quintile} />
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Delta comparison */}
       {kpi && deltaValue > 0 && (

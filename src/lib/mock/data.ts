@@ -11,9 +11,10 @@ import {
   PipelineConfig,
   SyncJob,
   KpiData,
-  DataSource
+  DataSource,
+  IndicatorComparison
 } from "../types";
-import { INDICATORS, INDICATOR_QUESTIONS, getIndicatorCategory } from "./indicators";
+import { INDICATORS, INDICATOR_QUESTIONS, getIndicatorCategory, isHigherBetter } from "./indicators";
 
 // Facilities
 export const facilities: Facility[] = [
@@ -48,6 +49,8 @@ export const facilities: Facility[] = [
     cisSystemName: "Telstra Health CIS"
   }
 ];
+
+export const DEFAULT_COMPARISON_FACILITY_ID = facilities[0].id;
 
 // Reporting Periods - sorted by date descending (latest first)
 export const reportingPeriods: ReportingPeriod[] = [
@@ -1346,6 +1349,78 @@ const stableKpiData = generateStableKpiData();
 
 export const getAllKpiData = (): KpiData[] => {
   return stableKpiData;
+};
+
+const resolveComparisonFacility = (facilityId: string): string => {
+  if (!facilityId || facilityId === "all") return DEFAULT_COMPARISON_FACILITY_ID;
+  return facilityId;
+};
+
+const computePercentile = (values: number[], facilityValue: number, higherIsBetter: boolean): number => {
+  if (values.length === 0) return 0.5;
+  const sorted = [...values].sort((a, b) => a - b);
+  let rank: number;
+  if (higherIsBetter) {
+    rank = sorted.filter(value => value <= facilityValue).length;
+  } else {
+    rank = sorted.filter(value => value >= facilityValue).length;
+  }
+  return rank / sorted.length;
+};
+
+// Inspired by the manual entries sample but generated purely from mock KPI data
+const buildComparisonRecord = (
+  indicatorCode: IndicatorCode,
+  facilityId: string,
+  periodId: string
+): IndicatorComparison => {
+  const relevantRecords = stableKpiData.filter(
+    record => record.indicatorCode === indicatorCode && record.periodId === periodId
+  );
+  const fallbackRecord = relevantRecords[0];
+  const facilityRecord =
+    relevantRecords.find(record => record.facilityId === facilityId) ?? fallbackRecord;
+
+  const facilityValue = facilityRecord?.value ?? fallbackRecord?.value ?? 0;
+  const benchmarkValue = relevantRecords.length
+    ? relevantRecords.reduce((sum, record) => sum + record.value, 0) / relevantRecords.length
+    : facilityValue;
+
+  const higherIsBetterFlag = isHigherBetter(indicatorCode);
+  const percentile = computePercentile(
+    relevantRecords.map(record => record.value),
+    facilityValue,
+    higherIsBetterFlag
+  );
+  const safePercentile = Math.max(0.01, Math.min(0.99, percentile || 0.5));
+  const quintile = Math.max(1, Math.min(5, Math.ceil(safePercentile * 5)));
+
+  return {
+    indicatorCode,
+    facilityId,
+    periodId,
+    rockpoolNumber: Number(facilityValue.toFixed(1)),
+    benchmarkValue: Number(benchmarkValue.toFixed(1)),
+    rockpoolProportion: Number(percentile.toFixed(4)),
+    quintile,
+  };
+};
+
+export const getIndicatorComparison = (
+  indicatorCode: IndicatorCode,
+  facilityId: string,
+  periodId: string
+): IndicatorComparison => {
+  const resolved = resolveComparisonFacility(facilityId);
+  return buildComparisonRecord(indicatorCode, resolved, periodId);
+};
+
+export const getIndicatorComparisons = (
+  facilityId: string,
+  periodId: string
+): IndicatorComparison[] => {
+  const resolved = resolveComparisonFacility(facilityId);
+  return INDICATORS.map(indicator => buildComparisonRecord(indicator.code, resolved, periodId));
 };
 
 // Helper functions

@@ -18,17 +18,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { facilities, getAllKpiData, reportingPeriods } from "@/lib/mock/data";
+import { QuintileStars } from "@/components/QuintileStars";
+import { facilities, getAllKpiData, reportingPeriods, DEFAULT_COMPARISON_FACILITY_ID, getIndicatorComparison } from "@/lib/mock/data";
 import { getIndicatorByCode, isHigherBetter } from "@/lib/mock/indicators";
 import { IndicatorCode, KpiData } from "@/lib/types";
 import {
-  Area,
-  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
   Legend,
+  Line,
+  LineChart,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -177,8 +178,18 @@ const mixConfigs: Record<IndicatorCode, MixConfig> = {
 
 const rangeOptions = [
   { value: "4", label: "Last 4 quarters" },
-  { value: "8", label: "Last 8 quarters" },
+  { value: "5", label: "Last 5 quarters" },
 ];
+
+const formatPercentile = (value: number): string => {
+  const safeValue = Math.max(0, Math.min(100, value));
+  const mod10 = safeValue % 10;
+  const mod100 = safeValue % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${safeValue}st`;
+  if (mod10 === 2 && mod100 !== 12) return `${safeValue}nd`;
+  if (mod10 === 3 && mod100 !== 13) return `${safeValue}rd`;
+  return `${safeValue}th`;
+};
 
 interface AggregatedMetrics {
   value: number;
@@ -225,7 +236,9 @@ const IndicatorDashboard = () => {
   const indicator = getIndicatorByCode(normalizedCode);
   const [selectedFacility, setSelectedFacility] = useState<string>("all");
   const [selectedPeriod, setSelectedPeriod] = useState<string>(reportingPeriods[0]?.id ?? "");
-  const [trendWindow, setTrendWindow] = useState<string>("8");
+  const [trendWindow, setTrendWindow] = useState<string>("5");
+  const comparisonFacilityId = selectedFacility === "all" ? DEFAULT_COMPARISON_FACILITY_ID : selectedFacility;
+  const comparisonFacility = facilities.find(facility => facility.id === comparisonFacilityId);
 
   const allKpiData = useMemo(() => getAllKpiData(), []);
   const indicatorRecords = useMemo(
@@ -254,22 +267,28 @@ const IndicatorDashboard = () => {
 
   const windowSize = Number(trendWindow);
   const trendPeriods = sortedPeriodsAsc.slice(-windowSize);
-
-  const trendData = trendPeriods.map(period => {
-    const records = facilityFilteredRecords.filter(record => record.periodId === period.id);
-    const aggregate = aggregateRecords(records);
-    return {
-      period: period.quarter,
-      value: aggregate?.value ?? 0,
-    };
-  }).map((point, index, arr) => {
-    const slice = arr.slice(Math.max(0, index - 2), index + 1);
-    const rolling = slice.reduce((acc, curr) => acc + curr.value, 0) / slice.length;
-    return {
-      ...point,
-      rolling: Number(rolling.toFixed(1)),
-    };
-  });
+  const facilityColorPalette = ["#6366f1", "#8b5cf6", "#10b981", "#f97316", "#f43f5e", "#ec4899"];
+  const facilityColorMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    facilities.forEach((facility, index) => {
+      map[facility.id] = facilityColorPalette[index % facilityColorPalette.length];
+    });
+    return map;
+  }, []);
+  const proportionTrendData = useMemo(() => {
+    if (!indicator) return [];
+    return trendPeriods.map(period => {
+      const row: Record<string, number | string> = { period: period.quarter };
+      facilities.forEach(facility => {
+        const comparison = getIndicatorComparison(indicator.code, facility.id, period.id);
+        row[facility.id] = Number((comparison.rockpoolProportion * 100).toFixed(1));
+      });
+      return row;
+    });
+  }, [indicator, trendPeriods]);
+  const highlightedFacility = selectedFacility === "all" ? comparisonFacilityId : selectedFacility;
+  const trendRangeLabel =
+    rangeOptions.find(option => option.value === trendWindow)?.label?.toLowerCase() || "recent quarters";
 
   const facilityBarData = facilities
     .map(facility => {
@@ -288,6 +307,22 @@ const IndicatorDashboard = () => {
     .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
 
   const higherIsBetter = indicator ? isHigherBetter(indicator.code) : true;
+  const indicatorComparison = indicator
+    ? getIndicatorComparison(indicator.code, comparisonFacilityId, selectedPeriod)
+    : undefined;
+  const percentileValue = indicatorComparison ? Math.round(indicatorComparison.rockpoolProportion * 100) : undefined;
+  const percentileLabel = typeof percentileValue === "number" ? formatPercentile(percentileValue) : undefined;
+  const comparisonIsFavorable = indicatorComparison
+    ? (higherIsBetter
+        ? indicatorComparison.rockpoolNumber >= indicatorComparison.benchmarkValue
+        : indicatorComparison.rockpoolNumber <= indicatorComparison.benchmarkValue)
+    : undefined;
+  const comparisonDelta = indicatorComparison
+    ? Number((indicatorComparison.rockpoolNumber - indicatorComparison.benchmarkValue).toFixed(1))
+    : 0;
+  const proportionPercent = indicatorComparison
+    ? Number((indicatorComparison.rockpoolProportion * 100).toFixed(1))
+    : 0;
   const ranking = [...facilityBarData].sort((a, b) =>
     higherIsBetter ? b.current - a.current : a.current - b.current
   );
@@ -475,48 +510,100 @@ const IndicatorDashboard = () => {
         ))}
       </div>
 
+      {indicatorComparison && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Rockpool vs national benchmark</CardTitle>
+            <CardDescription>
+              {(comparisonFacility?.name || "Rockpool facility")} compared to the national average for{" "}
+              {getPeriodLabel(selectedPeriod)}.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-6 md:grid-cols-2">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">RockpoolNumber</p>
+                <p className={`text-3xl font-semibold ${comparisonIsFavorable ? "text-success" : "text-destructive"}`}>
+                  {indicatorComparison.rockpoolNumber}%
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  National avg: {indicatorComparison.benchmarkValue}% (
+                  {comparisonDelta >= 0 ? "+" : ""}
+                  {comparisonDelta} pts)
+                </p>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">RockpoolProportion</p>
+                  <p className="text-base font-semibold">
+                    {proportionPercent}% {percentileLabel ? `(${percentileLabel})` : ""}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Percentile rank: {percentileValue ?? 0}%
+                  </p>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Quintile</p>
+                    <p className="text-sm text-muted-foreground">Relative band across AU facilities</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <QuintileStars value={indicatorComparison.quintile} size="md" />
+                    <Badge variant="outline">Q{indicatorComparison.quintile}</Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {selectedFacility === "all" && comparisonFacility && (
+              <p className="text-xs text-muted-foreground">
+                Showing comparisons for {comparisonFacility.name} whenever "All facilities" is selected.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-4 lg:grid-cols-5">
         <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle>Trend over time</CardTitle>
+            <CardTitle>Proportion trend by facility</CardTitle>
             <CardDescription>
-              Performance across the selected timeframe with a 3-period moving average.
+              RockpoolProportion percentile trend across {trendRangeLabel}.
             </CardDescription>
           </CardHeader>
           <CardContent className="h-[320px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData}>
-                <defs>
-                  <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="period" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
-                <Tooltip
-                  contentStyle={{ borderRadius: 12 }}
-                  formatter={(value: number) => [`${value}%`, "Value"]}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke="hsl(var(--primary))"
-                  fillOpacity={1}
-                  fill="url(#trendFill)"
-                  strokeWidth={2}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="rolling"
-                  stroke="hsl(var(--success))"
-                  fill="transparent"
-                  strokeDasharray="4 4"
-                  strokeWidth={2}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {proportionTrendData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={proportionTrendData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="period" stroke="hsl(var(--muted-foreground))" />
+                  <YAxis stroke="hsl(var(--muted-foreground))" domain={[0, 100]} tickFormatter={v => `${v}%`} />
+                  <Tooltip
+                    formatter={(value: number, key: string) => {
+                      const facility = facilities.find(f => f.id === key);
+                      return [`${value}%`, facility?.name || key];
+                    }}
+                  />
+                  <Legend formatter={(value: string) => facilities.find(f => f.id === value)?.name.split(" ")[0] || value} />
+                  {facilities.map(facility => (
+                    <Line
+                      key={facility.id}
+                      type="monotone"
+                      dataKey={facility.id}
+                      stroke={facilityColorMap[facility.id]}
+                      strokeWidth={highlightedFacility === facility.id ? 3 : 2}
+                      name={facility.name.split(" ")[0]}
+                      dot={false}
+                      opacity={selectedFacility === "all" || highlightedFacility === facility.id ? 1 : 0.35}
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                No comparison data available.
+              </div>
+            )}
           </CardContent>
         </Card>
         <Card className="lg:col-span-2">

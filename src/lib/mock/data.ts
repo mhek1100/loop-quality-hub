@@ -1356,9 +1356,38 @@ const resolveComparisonFacility = (facilityId: string): string => {
   return facilityId;
 };
 
-const computePercentile = (values: number[], facilityValue: number, higherIsBetter: boolean): number => {
-  if (values.length === 0) return 0.5;
-  const sorted = [...values].sort((a, b) => a - b);
+// Seeded random for deterministic percentile generation
+const seededRandomForComparison = (seed: number): number => {
+  const x = Math.sin(seed * 9999) * 10000;
+  return x - Math.floor(x);
+};
+
+// Generate synthetic national distribution for comparison
+// This creates ~100 simulated facility values to compare against
+const generateNationalDistribution = (
+  indicatorCode: IndicatorCode,
+  benchmarkMean: number,
+  periodSeed: number
+): number[] => {
+  const values: number[] = [];
+  const indicatorSeed = indicatorCode.charCodeAt(0) + indicatorCode.charCodeAt(indicatorCode.length - 1);
+  
+  // Generate 100 synthetic national facility values with normal-ish distribution
+  for (let i = 0; i < 100; i++) {
+    const seed = indicatorSeed * 1000 + periodSeed * 100 + i;
+    const rand = seededRandomForComparison(seed);
+    // Create variation: ±40% around benchmark mean
+    const variation = (rand - 0.5) * 0.8 * benchmarkMean;
+    const value = Math.max(0, benchmarkMean + variation);
+    values.push(Number(value.toFixed(1)));
+  }
+  
+  return values;
+};
+
+const computePercentile = (nationalValues: number[], facilityValue: number, higherIsBetter: boolean): number => {
+  if (nationalValues.length === 0) return 0.5;
+  const sorted = [...nationalValues].sort((a, b) => a - b);
   let rank: number;
   if (higherIsBetter) {
     rank = sorted.filter(value => value <= facilityValue).length;
@@ -1382,16 +1411,21 @@ const buildComparisonRecord = (
     relevantRecords.find(record => record.facilityId === facilityId) ?? fallbackRecord;
 
   const facilityValue = facilityRecord?.value ?? fallbackRecord?.value ?? 0;
+  
+  // Calculate benchmark from actual facilities
   const benchmarkValue = relevantRecords.length
     ? relevantRecords.reduce((sum, record) => sum + record.value, 0) / relevantRecords.length
     : facilityValue;
 
+  // Generate synthetic national distribution for more realistic percentiles
+  const periodSeed = periodId.split("-").reduce((acc, part) => acc + parseInt(part.replace(/\D/g, "") || "0"), 0);
+  const nationalDistribution = generateNationalDistribution(indicatorCode, benchmarkValue, periodSeed);
+  
+  // Add actual facility values to the distribution
+  const allValues = [...nationalDistribution, ...relevantRecords.map(r => r.value)];
+
   const higherIsBetterFlag = isHigherBetter(indicatorCode);
-  const percentile = computePercentile(
-    relevantRecords.map(record => record.value),
-    facilityValue,
-    higherIsBetterFlag
-  );
+  const percentile = computePercentile(allValues, facilityValue, higherIsBetterFlag);
   const safePercentile = Math.max(0.01, Math.min(0.99, percentile || 0.5));
   const quintile = Math.max(1, Math.min(5, Math.ceil(safePercentile * 5)));
 
@@ -1401,7 +1435,7 @@ const buildComparisonRecord = (
     periodId,
     rockpoolNumber: Number(facilityValue.toFixed(1)),
     benchmarkValue: Number(benchmarkValue.toFixed(1)),
-    rockpoolProportion: Number(percentile.toFixed(4)),
+    rockpoolProportion: Number(safePercentile.toFixed(4)),
     quintile,
   };
 };

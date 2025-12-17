@@ -8,7 +8,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { IndicatorChip } from "@/components/ui/indicator-chip";
 import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { 
@@ -69,27 +68,6 @@ const KpiDashboard = () => {
     };
   };
 
-  const heroKpi = getIndicatorKpi(selectedIndicator);
-  const heroIndicator = getIndicatorByCode(selectedIndicator);
-
-  // Prepare chart data for hero KPI
-  const trendChartData = heroKpi?.trendPeriods.map((period, idx) => ({
-    period,
-    value: heroKpi.trend[idx]
-  })) || [];
-
-  // Facility comparison data
-  const facilityComparisonData = selectedFacility === "all" 
-    ? facilities.map(f => {
-        const kpi = allKpiData.find(k => k.facilityId === f.id && k.indicatorCode === selectedIndicator);
-        return {
-          facility: f.name.split(" ")[0],
-          value: kpi?.value || 0,
-          previousValue: kpi?.previousValue || 0
-        };
-      })
-    : [];
-
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Filters */}
@@ -148,126 +126,6 @@ const KpiDashboard = () => {
           );
         })}
       </div>
-
-      {/* Hero KPI Section */}
-      {heroKpi && heroIndicator && (() => {
-        // Define which indicators are "lower is better"
-        const lowerIsBetterIndicators: IndicatorCode[] = ["PI", "RP", "UPWL", "FALL", "MM", "ADL", "IC", "HP", "WF"];
-        const isLowerBetter = lowerIsBetterIndicators.includes(selectedIndicator);
-        
-        // Determine if the change is positive (good) for this specific indicator
-        const isPositiveChange = isLowerBetter ? heroKpi.delta < 0 : heroKpi.delta > 0;
-        
-        // Choose line color based on whether the trend is good or bad
-        const lineColor = isPositiveChange ? "hsl(var(--success))" : "hsl(var(--destructive))";
-        
-        return (
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-xl">Hero KPI — {heroIndicator.name}</CardTitle>
-                    <IndicatorChip category={heroIndicator.category} />
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {heroIndicator.description}
-                  </p>
-                </div>
-                <div className="flex items-center gap-6">
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Current</p>
-                    <p className="text-3xl font-bold">{heroKpi.value}%</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Previous</p>
-                    <p className="text-2xl font-medium text-muted-foreground">{heroKpi.previousValue}%</p>
-                  </div>
-                  <div className={cn(
-                    "px-3 py-2 rounded-lg",
-                    isPositiveChange ? "bg-green-100 text-green-700" : heroKpi.delta === 0 ? "bg-muted text-muted-foreground" : "bg-red-100 text-red-700"
-                  )}>
-                    <p className="text-xs">Change</p>
-                    <p className="text-lg font-semibold">
-                      {heroKpi.delta > 0 ? "+" : ""}{heroKpi.deltaPercent}%
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={trendChartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis 
-                      dataKey="period" 
-                      tick={{ fontSize: 12 }}
-                      stroke="hsl(var(--muted-foreground))"
-                    />
-                    <YAxis 
-                      tick={{ fontSize: 12 }}
-                      stroke="hsl(var(--muted-foreground))"
-                    />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px"
-                      }}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="value" 
-                      stroke={lineColor}
-                      strokeWidth={3}
-                      dot={{ fill: lineColor, strokeWidth: 2 }}
-                      activeDot={{ r: 6, fill: lineColor }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })()}
-
-      {/* Facility Comparison */}
-      {selectedFacility === "all" && facilityComparisonData.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Facility Comparison — {heroIndicator?.name}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={facilityComparisonData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis 
-                    dataKey="facility" 
-                    tick={{ fontSize: 12 }}
-                    stroke="hsl(var(--muted-foreground))"
-                  />
-                  <YAxis 
-                    tick={{ fontSize: 12 }}
-                    stroke="hsl(var(--muted-foreground))"
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px"
-                    }}
-                  />
-                  <Legend />
-                  <Bar dataKey="value" name="Current" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="previousValue" name="Previous" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* KPI Insights */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

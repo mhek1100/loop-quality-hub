@@ -1362,27 +1362,48 @@ const seededRandomForComparison = (seed: number): number => {
   return x - Math.floor(x);
 };
 
-// Generate synthetic national distribution for comparison
-// This creates ~100 simulated facility values to compare against
-const generateNationalDistribution = (
+// Hash string to number for seeding
+const hashString = (str: string): number => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash);
+};
+
+// Generate deterministic but varied percentile based on facility, indicator, and period
+const generateVariedPercentile = (
   indicatorCode: IndicatorCode,
-  benchmarkMean: number,
-  periodSeed: number
-): number[] => {
-  const values: number[] = [];
-  const indicatorSeed = indicatorCode.charCodeAt(0) + indicatorCode.charCodeAt(indicatorCode.length - 1);
+  facilityId: string,
+  periodId: string,
+  facilityValue: number,
+  benchmarkValue: number,
+  higherIsBetter: boolean
+): number => {
+  // Create unique seed combining all factors
+  const combinedSeed = hashString(`${indicatorCode}-${facilityId}-${periodId}`);
   
-  // Generate 100 synthetic national facility values with normal-ish distribution
-  for (let i = 0; i < 100; i++) {
-    const seed = indicatorSeed * 1000 + periodSeed * 100 + i;
-    const rand = seededRandomForComparison(seed);
-    // Create variation: ±40% around benchmark mean
-    const variation = (rand - 0.5) * 0.8 * benchmarkMean;
-    const value = Math.max(0, benchmarkMean + variation);
-    values.push(Number(value.toFixed(1)));
+  // Base percentile from actual performance vs benchmark
+  let basePercentile: number;
+  if (higherIsBetter) {
+    // Higher value = better = higher percentile
+    basePercentile = facilityValue >= benchmarkValue 
+      ? 0.5 + (Math.min((facilityValue - benchmarkValue) / benchmarkValue, 0.5) * 0.8)
+      : 0.5 - (Math.min((benchmarkValue - facilityValue) / benchmarkValue, 0.5) * 0.8);
+  } else {
+    // Lower value = better = higher percentile
+    basePercentile = facilityValue <= benchmarkValue 
+      ? 0.5 + (Math.min((benchmarkValue - facilityValue) / benchmarkValue, 0.5) * 0.8)
+      : 0.5 - (Math.min((facilityValue - benchmarkValue) / benchmarkValue, 0.5) * 0.8);
   }
   
-  return values;
+  // Add deterministic variation based on the combined seed (±0.25)
+  const variation = (seededRandomForComparison(combinedSeed) - 0.5) * 0.5;
+  
+  // Clamp final percentile
+  return Math.max(0.05, Math.min(0.95, basePercentile + variation));
 };
 
 const computePercentile = (nationalValues: number[], facilityValue: number, higherIsBetter: boolean): number => {
@@ -1417,16 +1438,19 @@ const buildComparisonRecord = (
     ? relevantRecords.reduce((sum, record) => sum + record.value, 0) / relevantRecords.length
     : facilityValue;
 
-  // Generate synthetic national distribution for more realistic percentiles
-  const periodSeed = periodId.split("-").reduce((acc, part) => acc + parseInt(part.replace(/\D/g, "") || "0"), 0);
-  const nationalDistribution = generateNationalDistribution(indicatorCode, benchmarkValue, periodSeed);
-  
-  // Add actual facility values to the distribution
-  const allValues = [...nationalDistribution, ...relevantRecords.map(r => r.value)];
-
   const higherIsBetterFlag = isHigherBetter(indicatorCode);
-  const percentile = computePercentile(allValues, facilityValue, higherIsBetterFlag);
-  const safePercentile = Math.max(0.01, Math.min(0.99, percentile || 0.5));
+  
+  // Generate varied percentile based on facility, indicator, and period
+  const percentile = generateVariedPercentile(
+    indicatorCode,
+    facilityId,
+    periodId,
+    facilityValue,
+    benchmarkValue,
+    higherIsBetterFlag
+  );
+  
+  const safePercentile = Math.max(0.01, Math.min(0.99, percentile));
   const quintile = Math.max(1, Math.min(5, Math.ceil(safePercentile * 5)));
 
   return {

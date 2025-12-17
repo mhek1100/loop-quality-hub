@@ -420,15 +420,7 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate, 
         <h3 className="font-medium text-sm text-foreground leading-tight pr-2">
           {indicator.name}
         </h3>
-        <div className="flex items-center gap-2">
-          {icon}
-          <span className={cn(
-            "text-[9px] px-1.5 py-0.5 rounded shrink-0",
-            kpi?.isComplete ? "bg-success/20 text-success" : "bg-warning/20 text-warning"
-          )}>
-            {kpi?.isComplete ? "Complete" : "Incomplete"}
-          </span>
-        </div>
+        {icon}
       </div>
       
       {/* Main value */}

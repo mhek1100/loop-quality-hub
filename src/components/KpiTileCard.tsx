@@ -33,7 +33,8 @@ interface KpiTileCardProps {
   indicator: IndicatorDefinition;
   kpi?: KpiData;
   isSelected: boolean;
-  onClick: () => void;
+  onSelect: () => void;
+  onNavigate: () => void;
 }
 
 // Map indicator codes to icons
@@ -307,7 +308,7 @@ const MultiBarChart = ({ values, colors, labels }: { values: number[]; colors: s
   );
 };
 
-export const KpiTileCard = ({ indicator, kpi, isSelected, onClick }: KpiTileCardProps) => {
+export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate }: KpiTileCardProps) => {
   const chartType = indicatorChartTypes[indicator.code];
   const icon = indicatorIcons[indicator.code];
   const description = indicatorDescriptions[indicator.code];
@@ -384,10 +385,14 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onClick }: KpiTileCard
   const isIncreasing = kpi ? kpi.delta > 0 : false;
   
   return (
-    <div
-      onClick={onClick}
+    <button
+      type="button"
+      onClick={onNavigate}
+      onMouseEnter={() => onSelect()}
+      onFocus={() => onSelect()}
+      onTouchStart={() => onSelect()}
       className={cn(
-        "bg-card rounded-lg border p-4 cursor-pointer transition-all hover:shadow-md",
+        "bg-card rounded-lg border p-4 cursor-pointer transition-all hover:shadow-md text-left w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary",
         isSelected && "ring-2 ring-primary border-primary/30"
       )}
     >
@@ -446,6 +451,6 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onClick }: KpiTileCard
           <span>No change vs previous quarter</span>
         </div>
       )}
-    </div>
+    </button>
   );
 };

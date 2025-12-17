@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   Select,
   SelectContent,
@@ -35,6 +36,7 @@ const KpiDashboard = () => {
   const [selectedFacility, setSelectedFacility] = useState("all");
   const [selectedPeriod, setSelectedPeriod] = useState("rp-q4-2025");
   const [selectedIndicator, setSelectedIndicator] = useState<IndicatorCode>("PI");
+  const navigate = useNavigate();
   
   const allKpiData = getAllKpiData();
   
@@ -135,7 +137,8 @@ const KpiDashboard = () => {
               indicator={indicator}
               kpi={kpi}
               isSelected={isSelected}
-              onClick={() => setSelectedIndicator(indicator.code)}
+              onSelect={() => setSelectedIndicator(indicator.code)}
+              onNavigate={() => navigate(`/kpi/indicator/${indicator.code.toLowerCase()}`)}
             />
           );
         })}

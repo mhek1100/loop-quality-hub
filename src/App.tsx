@@ -7,6 +7,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { UserProvider } from "@/contexts/UserContext";
 import { SubmissionsStoreProvider } from "@/contexts/SubmissionsStoreContext";
 import KpiDashboard from "./pages/KpiDashboard";
+import IndicatorDashboard from "./pages/IndicatorDashboard";
 import Submissions from "./pages/Submissions";
 import SubmissionDetail from "./pages/SubmissionDetail";
 import QuestionnaireEditor from "./pages/QuestionnaireEditor";
@@ -40,6 +41,7 @@ const App = () => {
               <Route element={<DashboardLayout />}>
                 <Route path="/" element={<Submissions />} />
                 <Route path="/kpi" element={<KpiDashboard />} />
+                <Route path="/kpi/indicator/:indicatorCode" element={<IndicatorDashboard />} />
                 <Route path="/submissions/:id" element={<SubmissionDetail />} />
                 <Route path="/submissions/:id/indicator/:indicatorCode" element={<QuestionnaireEditor />} />
                 <Route path="/audit" element={<AuditLog />} />

@@ -470,7 +470,7 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate, 
       {comparison && (
         <div className="space-y-1 text-xs mb-3">
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Rockpool</span>
+            <span className="text-muted-foreground">Facility</span>
             <span
               className={cn(
                 "font-semibold",
@@ -486,7 +486,7 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate, 
           </div>
           <div className="flex items-center justify-between pt-2 border-t border-dashed border-border">
             <div>
-              <span className="text-muted-foreground block">RockpoolProportion</span>
+              <span className="text-muted-foreground block">National Placement</span>
               <span className="text-foreground font-medium">
                 {proportionPercent ?? 0}% {percentileLabel ? `(${percentileLabel})` : ""}
               </span>

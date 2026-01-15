@@ -518,16 +518,16 @@ const IndicatorDashboard = () => {
         <div className="grid gap-4 lg:grid-cols-5">
           <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle>Rockpool vs national benchmark</CardTitle>
+              <CardTitle>Facility vs national benchmark</CardTitle>
               <CardDescription>
-                {(comparisonFacility?.name || "Rockpool facility")} compared to the national average for{" "}
+                {(comparisonFacility?.name || "Facility")} compared to the national average for{" "}
                 {getPeriodLabel(selectedPeriod)}.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-4">
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">RockpoolNumber</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Facility Metric</p>
                   <p className={`text-3xl font-semibold ${comparisonIsFavorable ? "text-success" : "text-destructive"}`}>
                     {indicatorComparison.rockpoolNumber}%
                   </p>
@@ -538,7 +538,7 @@ const IndicatorDashboard = () => {
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">RockpoolProportion</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">National Placement</p>
                   <p className="text-base font-semibold">
                     {proportionPercent}% {percentileLabel ? `(${percentileLabel})` : ""}
                   </p>
@@ -568,7 +568,7 @@ const IndicatorDashboard = () => {
             <CardHeader>
               <CardTitle>Proportion trend by facility</CardTitle>
               <CardDescription>
-                RockpoolProportion percentile trend across {trendRangeLabel}.
+                National Placement percentile trend across {trendRangeLabel}.
               </CardDescription>
             </CardHeader>
             <CardContent className="h-[320px]">

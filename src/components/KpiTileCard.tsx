@@ -37,6 +37,7 @@ interface KpiTileCardProps {
   onSelect: () => void;
   onNavigate: () => void;
   comparison?: IndicatorComparison;
+  facilityName?: string;
 }
 
 // Map indicator codes to icons
@@ -320,7 +321,7 @@ const toOrdinal = (value: number): string => {
   return `${safeValue}th`;
 };
 
-export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate, comparison }: KpiTileCardProps) => {
+export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate, comparison, facilityName }: KpiTileCardProps) => {
   const chartType = indicatorChartTypes[indicator.code];
   const icon = indicatorIcons[indicator.code];
   const description = indicatorDescriptions[indicator.code];
@@ -420,15 +421,7 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate, 
         <h3 className="font-medium text-sm text-foreground leading-tight pr-2">
           {indicator.name}
         </h3>
-        <div className="flex items-center gap-2">
-          {icon}
-          <span className={cn(
-            "text-[9px] px-1.5 py-0.5 rounded shrink-0",
-            kpi?.isComplete ? "bg-success/20 text-success" : "bg-warning/20 text-warning"
-          )}>
-            {kpi?.isComplete ? "Complete" : "Incomplete"}
-          </span>
-        </div>
+        {icon}
       </div>
       
       {/* Main value */}
@@ -470,7 +463,7 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate, 
       {comparison && (
         <div className="space-y-1 text-xs mb-3">
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Facility</span>
+            <span className="text-muted-foreground">{facilityName || "Facility"}</span>
             <span
               className={cn(
                 "font-semibold",
@@ -488,7 +481,7 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate, 
             <div>
               <span className="text-muted-foreground block">National Placement</span>
               <span className="text-foreground font-medium">
-                {proportionPercent ?? 0}% {percentileLabel ? `(${percentileLabel})` : ""}
+                {proportionPercent ?? 0}%
               </span>
             </div>
             <div className="flex items-center gap-1">

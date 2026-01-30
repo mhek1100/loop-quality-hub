@@ -51,6 +51,7 @@ const productGroups = [
         children: [
           { title: "Overview", url: "/care-minutes/overview" },
           { title: "Facilities", url: "/care-minutes/facilities" },
+          { title: "Performance Statement", url: "/care-minutes/performance-statement" },
           { title: "Submission", url: "/care-minutes/submission" },
           { title: "Past reports", url: "/care-minutes/past-reports" },
         ],

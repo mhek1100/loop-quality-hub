@@ -231,7 +231,7 @@ export default function CareMinutesFacilities() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-7 gap-1.5">
+          <div className="grid grid-cols-7 gap-1">
             {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
               <div key={day} className="text-center text-xs font-medium text-muted-foreground py-1">
                 {day}
@@ -239,17 +239,18 @@ export default function CareMinutesFacilities() {
             ))}
             {/* Add empty cells to align with correct day of week */}
             {Array.from({ length: dailyData[0] ? (new Date(dailyData[0].date).getDay() === 0 ? 6 : new Date(dailyData[0].date).getDay() - 1) : 0 }).map((_, i) => (
-              <div key={`empty-${i}`} className="aspect-square" />
+              <div key={`empty-${i}`} className="h-10" />
             ))}
             {dailyData.map((day) => (
               <div
                 key={day.date}
                 className={cn(
-                  "aspect-square rounded-md flex flex-col items-center justify-center text-white text-xs font-medium cursor-pointer transition-transform hover:scale-105 relative group",
+                  "h-10 rounded-md flex flex-col items-center justify-center text-white text-[10px] font-medium cursor-pointer transition-transform hover:scale-105 relative group",
                   getCalendarCellColor(day.complianceTotal)
                 )}
               >
-                <span>{day.dayOfMonth}</span>
+                <span className="font-semibold">{day.complianceTotal}%</span>
+                <span className="text-[8px] opacity-80">{day.dayOfMonth}</span>
                 {/* Tooltip on hover */}
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10">
                   <div className="bg-popover text-popover-foreground text-xs rounded-lg shadow-lg p-3 whitespace-nowrap border">

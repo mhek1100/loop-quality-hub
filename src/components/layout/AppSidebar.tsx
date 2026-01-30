@@ -142,7 +142,7 @@ export function AppSidebar() {
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild className="h-10">
                 <RouterNavLink
-                  to={item.url === "/settings" ? "/settings/api-variables" : item.url}
+                  to={item.url === "/settings" ? "/settings/account" : item.url}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
                     isActive(item.url)

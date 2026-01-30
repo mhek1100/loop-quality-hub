@@ -27,6 +27,9 @@ import CareMinutesFacilities from "./pages/care-minutes/Facilities";
 import CareMinutesSubmission from "./pages/care-minutes/Submission";
 import CareMinutesPastReports from "./pages/care-minutes/PastReports";
 
+// NQIP pages
+import NqipHelp from "./pages/nqip/NqipHelp";
+
 // RN24/7 pages
 import RN247Overview from "./pages/rn247/Overview";
 import RN247Reports from "./pages/rn247/Reports";
@@ -80,6 +83,7 @@ const App = () => {
                 <Route path="/nqip/kpi/indicator/:indicatorCode" element={<IndicatorDashboard />} />
                 <Route path="/nqip/submissions/:id" element={<SubmissionDetail />} />
                 <Route path="/nqip/submissions/:id/indicator/:indicatorCode" element={<QuestionnaireEditor />} />
+                <Route path="/nqip/help" element={<NqipHelp />} />
                 
                 {/* RN24/7 */}
                 <Route path="/rn247/overview" element={<RN247Overview />} />

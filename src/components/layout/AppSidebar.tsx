@@ -58,6 +58,7 @@ const productGroups = [
     children: [
       { title: "KPI Dashboard", url: "/nqip/kpi" },
       { title: "Submissions", url: "/nqip/submissions" },
+      { title: "NQIP Help", url: "/nqip/help" },
     ],
   },
   {

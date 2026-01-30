@@ -45,12 +45,22 @@ const productGroups = [
   {
     title: "Care minutes",
     icon: Clock,
-    children: [
-      { title: "Overview", url: "/care-minutes/overview" },
-      { title: "Overview Tableau", url: "/care-minutes/overview-tableau" },
-      { title: "Facilities", url: "/care-minutes/facilities" },
-      { title: "Submission", url: "/care-minutes/submission" },
-      { title: "Past reports", url: "/care-minutes/past-reports" },
+    sections: [
+      {
+        title: "Default",
+        children: [
+          { title: "Overview", url: "/care-minutes/overview" },
+          { title: "Facilities", url: "/care-minutes/facilities" },
+          { title: "Submission", url: "/care-minutes/submission" },
+          { title: "Past reports", url: "/care-minutes/past-reports" },
+        ],
+      },
+      {
+        title: "Tableau",
+        children: [
+          { title: "Overview", url: "/care-minutes/overview-tableau" },
+        ],
+      },
     ],
   },
   {
@@ -110,7 +120,15 @@ export function AppSidebar() {
   };
 
   const isGroupActive = (group: typeof productGroups[0]) => {
-    return group.children.some(child => isActive(child.url));
+    if ('sections' in group && group.sections) {
+      return group.sections.some(section => 
+        section.children.some(child => isActive(child.url))
+      );
+    }
+    if ('children' in group && group.children) {
+      return group.children.some(child => isActive(child.url));
+    }
+    return false;
   };
 
   return (
@@ -202,20 +220,46 @@ export function AppSidebar() {
               
               <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
                 <div className="ml-8 space-y-0.5 py-0.5">
-                  {group.children.map((child) => (
-                    <RouterNavLink
-                      key={child.url}
-                      to={child.url}
-                      className={cn(
-                        "block px-3 py-1.5 rounded-lg text-sm transition-all duration-150",
-                        isActive(child.url)
-                          ? "bg-primary/10 text-primary font-medium"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      )}
-                    >
-                      {child.title}
-                    </RouterNavLink>
-                  ))}
+                  {'sections' in group && group.sections ? (
+                    // Render sectioned navigation (e.g., Care Minutes with Default/Tableau)
+                    group.sections.map((section) => (
+                      <div key={section.title} className="mb-2">
+                        <div className="px-3 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          {section.title}
+                        </div>
+                        {section.children.map((child) => (
+                          <RouterNavLink
+                            key={child.url}
+                            to={child.url}
+                            className={cn(
+                              "block px-3 py-1.5 rounded-lg text-sm transition-all duration-150",
+                              isActive(child.url)
+                                ? "bg-primary/10 text-primary font-medium"
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                            )}
+                          >
+                            {child.title}
+                          </RouterNavLink>
+                        ))}
+                      </div>
+                    ))
+                  ) : 'children' in group && group.children ? (
+                    // Render flat children navigation
+                    group.children.map((child) => (
+                      <RouterNavLink
+                        key={child.url}
+                        to={child.url}
+                        className={cn(
+                          "block px-3 py-1.5 rounded-lg text-sm transition-all duration-150",
+                          isActive(child.url)
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        )}
+                      >
+                        {child.title}
+                      </RouterNavLink>
+                    ))
+                  ) : null}
                 </div>
               </CollapsibleContent>
             </Collapsible>

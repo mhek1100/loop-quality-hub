@@ -506,7 +506,7 @@ const SubmissionDetail = () => {
       <div className="flex flex-col items-center justify-center h-[60vh]">
         <h2 className="text-xl font-semibold">Submission not found</h2>
         <Button variant="outline" asChild className="mt-4">
-          <Link to="/">
+          <Link to="/nqip/submissions">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Submissions
           </Link>
@@ -532,7 +532,7 @@ const SubmissionDetail = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link to="/">
+            <Link to="/nqip/submissions">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>

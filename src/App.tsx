@@ -6,6 +6,11 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { UserProvider } from "@/contexts/UserContext";
 import { SubmissionsStoreProvider } from "@/contexts/SubmissionsStoreContext";
+
+// Pages
+import Home from "./pages/Home";
+import Marketplace from "./pages/Marketplace";
+import Workspace from "./pages/Workspace";
 import KpiDashboard from "./pages/KpiDashboard";
 import IndicatorDashboard from "./pages/IndicatorDashboard";
 import Submissions from "./pages/Submissions";
@@ -15,6 +20,21 @@ import AuditLog from "./pages/AuditLog";
 import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
 import QuestionnaireValidation from "./pages/QuestionnaireValidation";
+
+// Care minutes pages
+import CareMinutesOverview from "./pages/care-minutes/Overview";
+import CareMinutesFacilities from "./pages/care-minutes/Facilities";
+import CareMinutesSubmission from "./pages/care-minutes/Submission";
+import CareMinutesPastReports from "./pages/care-minutes/PastReports";
+
+// RN24/7 pages
+import RN247Overview from "./pages/rn247/Overview";
+import RN247Reports from "./pages/rn247/Reports";
+
+// Annual leave pages
+import AnnualLeaveOverview from "./pages/annual-leave/Overview";
+import AnnualLeaveRequests from "./pages/annual-leave/Requests";
+import AnnualLeaveCalendar from "./pages/annual-leave/Calendar";
 
 // Settings pages
 import SettingsLayout from "./pages/settings/SettingsLayout";
@@ -39,13 +59,41 @@ const App = () => {
             <BrowserRouter basename={basename}>
               <Routes>
               <Route element={<DashboardLayout />}>
-                <Route path="/" element={<Submissions />} />
-                <Route path="/kpi" element={<KpiDashboard />} />
-                <Route path="/kpi/indicator/:indicatorCode" element={<IndicatorDashboard />} />
-                <Route path="/submissions/:id" element={<SubmissionDetail />} />
-                <Route path="/submissions/:id/indicator/:indicatorCode" element={<QuestionnaireEditor />} />
-                <Route path="/audit" element={<AuditLog />} />
+                {/* Default redirect to Marketplace */}
+                <Route path="/" element={<Navigate to="/marketplace" replace />} />
+                
+                {/* Primary nav */}
+                <Route path="/home" element={<Home />} />
+                <Route path="/marketplace" element={<Marketplace />} />
+                <Route path="/workspace" element={<Workspace />} />
                 <Route path="/help" element={<Help />} />
+                
+                {/* Care minutes */}
+                <Route path="/care-minutes/overview" element={<CareMinutesOverview />} />
+                <Route path="/care-minutes/facilities" element={<CareMinutesFacilities />} />
+                <Route path="/care-minutes/submission" element={<CareMinutesSubmission />} />
+                <Route path="/care-minutes/past-reports" element={<CareMinutesPastReports />} />
+                
+                {/* NQIP - existing pages moved here */}
+                <Route path="/nqip/submissions" element={<Submissions />} />
+                <Route path="/nqip/kpi" element={<KpiDashboard />} />
+                <Route path="/nqip/kpi/indicator/:indicatorCode" element={<IndicatorDashboard />} />
+                <Route path="/nqip/submissions/:id" element={<SubmissionDetail />} />
+                <Route path="/nqip/submissions/:id/indicator/:indicatorCode" element={<QuestionnaireEditor />} />
+                
+                {/* RN24/7 */}
+                <Route path="/rn247/overview" element={<RN247Overview />} />
+                <Route path="/rn247/reports" element={<RN247Reports />} />
+                
+                {/* Annual leave */}
+                <Route path="/annual-leave/overview" element={<AnnualLeaveOverview />} />
+                <Route path="/annual-leave/requests" element={<AnnualLeaveRequests />} />
+                <Route path="/annual-leave/calendar" element={<AnnualLeaveCalendar />} />
+                
+                {/* Audit log */}
+                <Route path="/audit" element={<AuditLog />} />
+                
+                {/* Dev routes */}
                 <Route path="/dev/validation" element={<QuestionnaireValidation />} />
                 
                 {/* Settings routes */}

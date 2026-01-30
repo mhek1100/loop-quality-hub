@@ -306,7 +306,7 @@ const Submissions = () => {
     });
 
     setCreateDialogOpen(false);
-    navigate(`/submissions/${id}`);
+    navigate(`/nqip/submissions/${id}`);
     toast({ title: "Submission created", description: "Starting in Data Collection (Step 1)." });
   };
 
@@ -741,7 +741,7 @@ const Submissions = () => {
                       </td>
                       <td className="py-3 px-4 text-right">
                         <Button variant={actionVariant} size="sm" asChild>
-                          <Link to={`/submissions/${sub.id}`}>
+                          <Link to={`/nqip/submissions/${sub.id}`}>
                             <Eye className="mr-1 h-3 w-3" />
                             {actionLabel}
                           </Link>

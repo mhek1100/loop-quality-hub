@@ -370,7 +370,7 @@ const IndicatorDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => navigate("/kpi")} variant="outline">
+            <Button onClick={() => navigate("/nqip/kpi")} variant="outline">
               Back to KPI Dashboard
             </Button>
           </CardContent>
@@ -418,7 +418,7 @@ const IndicatorDashboard = () => {
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link to="/kpi">KPI Dashboard</Link>
+                  <Link to="/nqip/kpi">KPI Dashboard</Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
@@ -427,7 +427,7 @@ const IndicatorDashboard = () => {
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
-          <Button variant="ghost" className="gap-2" onClick={() => navigate("/kpi")}>
+          <Button variant="ghost" className="gap-2" onClick={() => navigate("/nqip/kpi")}>
             <ArrowLeft className="h-4 w-4" />
             Back to KPI Dashboard
           </Button>

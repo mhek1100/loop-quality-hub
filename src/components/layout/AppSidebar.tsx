@@ -56,8 +56,8 @@ const productGroups = [
     title: "NQIP",
     icon: BarChart3,
     children: [
-      { title: "Submissions", url: "/nqip/submissions" },
       { title: "KPI Dashboard", url: "/nqip/kpi" },
+      { title: "Submissions", url: "/nqip/submissions" },
     ],
   },
   {
@@ -86,10 +86,10 @@ export function AppSidebar() {
   
   // All product groups expanded by default
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
-    "Care minutes": true,
-    "NQIP": true,
-    "RN24/7": true,
-    "Annual leave": true,
+    "Care minutes": false,
+    "NQIP": false,
+    "RN24/7": false,
+    "Annual leave": false,
   });
 
   const toggleGroup = (title: string) => {

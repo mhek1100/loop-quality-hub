@@ -44,7 +44,7 @@ const QuestionnaireEditor = () => {
       <div className="flex flex-col items-center justify-center h-[60vh]">
         <h2 className="text-xl font-semibold">Questionnaire not found</h2>
         <Button variant="outline" asChild className="mt-4">
-          <Link to="/submissions">
+          <Link to="/nqip/submissions">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Submissions
           </Link>
@@ -149,7 +149,7 @@ const QuestionnaireEditor = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" asChild>
-              <Link to={`/submissions/${submission.id}`}>
+              <Link to={`/nqip/submissions/${submission.id}`}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
               </Link>
@@ -360,7 +360,7 @@ const QuestionnaireEditor = () => {
       {/* Bottom Actions */}
       <div className="flex items-center justify-between">
         <Button variant="outline" asChild>
-          <Link to={`/submissions/${submission.id}`}>
+          <Link to={`/nqip/submissions/${submission.id}`}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Submission
           </Link>

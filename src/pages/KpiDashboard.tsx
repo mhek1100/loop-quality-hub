@@ -123,7 +123,7 @@ const KpiDashboard = () => {
               kpi={kpi}
               isSelected={isSelected}
               onSelect={() => setSelectedIndicator(indicator.code)}
-              onNavigate={() => navigate(`/kpi/indicator/${indicator.code.toLowerCase()}`)}
+              onNavigate={() => navigate(`/nqip/kpi/indicator/${indicator.code.toLowerCase()}`)}
               comparison={comparison}
               facilityName={facilityName}
             />

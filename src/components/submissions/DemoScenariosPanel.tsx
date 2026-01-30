@@ -116,7 +116,7 @@ export const DemoScenariosPanel = () => {
                     )}
                   </div>
                   <Button variant="outline" size="sm" asChild className="shrink-0">
-                    <Link to={`/submissions/${scenario.submissionId}`}>Open</Link>
+                    <Link to={`/nqip/submissions/${scenario.submissionId}`}>Open</Link>
                   </Button>
                 </div>
               );

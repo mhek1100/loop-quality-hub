@@ -1,16 +1,17 @@
 import { Outlet, NavLink, useLocation } from "react-router-dom";
-import { User, Shield, Bell } from "lucide-react";
+import { Database, Users, Shield, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const settingsNav = [
-  { title: "Account", url: "/settings/account", icon: User },
-  { title: "Security", url: "/settings/security", icon: Shield },
-  { title: "Notification", url: "/settings/notification", icon: Bell },
+  { title: "API Variables", url: "/nqip/settings/api-variables", icon: Building2 },
+  { title: "CIS Data Pipeline", url: "/nqip/settings/pipeline", icon: Database },
+  { title: "Users & Roles", url: "/nqip/settings/users", icon: Users },
+  { title: "Conformance", url: "/nqip/settings/conformance", icon: Shield },
 ];
 
-export default function SettingsLayout() {
+export default function NqipSettingsLayout() {
   const location = useLocation();
-  const isSettingsRoot = location.pathname === "/settings";
+  const isSettingsRoot = location.pathname === "/nqip/settings";
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -29,6 +30,7 @@ export default function SettingsLayout() {
               )
             }
           >
+            <item.icon className="h-4 w-4" />
             {item.title}
           </NavLink>
         ))}

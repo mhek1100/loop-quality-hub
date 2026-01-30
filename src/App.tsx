@@ -29,6 +29,11 @@ import CareMinutesPastReports from "./pages/care-minutes/PastReports";
 
 // NQIP pages
 import NqipHelp from "./pages/nqip/NqipHelp";
+import NqipSettingsLayout from "./pages/nqip/NqipSettingsLayout";
+import NqipApiVariables from "./pages/nqip/settings/NqipApiVariables";
+import NqipPipeline from "./pages/nqip/settings/NqipPipeline";
+import NqipUsers from "./pages/nqip/settings/NqipUsers";
+import NqipConformance from "./pages/nqip/settings/NqipConformance";
 
 // RN24/7 pages
 import RN247Overview from "./pages/rn247/Overview";
@@ -39,12 +44,11 @@ import AnnualLeaveOverview from "./pages/annual-leave/Overview";
 import AnnualLeaveRequests from "./pages/annual-leave/Requests";
 import AnnualLeaveCalendar from "./pages/annual-leave/Calendar";
 
-// Settings pages
+// Settings pages (user account settings)
 import SettingsLayout from "./pages/settings/SettingsLayout";
-import ApiVariables from "./pages/settings/ApiVariables";
-import SettingsPipeline from "./pages/settings/SettingsPipeline";
-import SettingsUsers from "./pages/settings/SettingsUsers";
-import SettingsConformance from "./pages/settings/SettingsConformance";
+import SettingsAccount from "./pages/settings/SettingsAccount";
+import SettingsSecurity from "./pages/settings/SettingsSecurity";
+import SettingsNotification from "./pages/settings/SettingsNotification";
 
 const queryClient = new QueryClient();
 
@@ -77,13 +81,22 @@ const App = () => {
                 <Route path="/care-minutes/submission" element={<CareMinutesSubmission />} />
                 <Route path="/care-minutes/past-reports" element={<CareMinutesPastReports />} />
                 
-                {/* NQIP - existing pages moved here */}
+                {/* NQIP */}
                 <Route path="/nqip/submissions" element={<Submissions />} />
                 <Route path="/nqip/kpi" element={<KpiDashboard />} />
                 <Route path="/nqip/kpi/indicator/:indicatorCode" element={<IndicatorDashboard />} />
                 <Route path="/nqip/submissions/:id" element={<SubmissionDetail />} />
                 <Route path="/nqip/submissions/:id/indicator/:indicatorCode" element={<QuestionnaireEditor />} />
                 <Route path="/nqip/help" element={<NqipHelp />} />
+                
+                {/* NQIP Settings */}
+                <Route path="/nqip/settings" element={<NqipSettingsLayout />}>
+                  <Route index element={<Navigate to="/nqip/settings/api-variables" replace />} />
+                  <Route path="api-variables" element={<NqipApiVariables />} />
+                  <Route path="pipeline" element={<NqipPipeline />} />
+                  <Route path="users" element={<NqipUsers />} />
+                  <Route path="conformance" element={<NqipConformance />} />
+                </Route>
                 
                 {/* RN24/7 */}
                 <Route path="/rn247/overview" element={<RN247Overview />} />
@@ -100,13 +113,12 @@ const App = () => {
                 {/* Dev routes */}
                 <Route path="/dev/validation" element={<QuestionnaireValidation />} />
                 
-                {/* Settings routes */}
+                {/* User Settings routes (Account, Security, Notification) */}
                 <Route path="/settings" element={<SettingsLayout />}>
-                  <Route index element={<Navigate to="/settings/api-variables" replace />} />
-                  <Route path="api-variables" element={<ApiVariables />} />
-                  <Route path="pipeline" element={<SettingsPipeline />} />
-                  <Route path="users" element={<SettingsUsers />} />
-                  <Route path="conformance" element={<SettingsConformance />} />
+                  <Route index element={<Navigate to="/settings/account" replace />} />
+                  <Route path="account" element={<SettingsAccount />} />
+                  <Route path="security" element={<SettingsSecurity />} />
+                  <Route path="notification" element={<SettingsNotification />} />
                 </Route>
               </Route>
                 <Route path="*" element={<NotFound />} />

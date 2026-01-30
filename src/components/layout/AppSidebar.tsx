@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { 
   Home, 
   ShoppingBag, 
@@ -97,13 +97,27 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed";
   const location = useLocation();
   
-  // All product groups expanded by default
+  // All product groups collapsed by default
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     "Care minutes": false,
     "NQIP": false,
     "RN24/7": false,
     "Annual leave": false,
   });
+
+  // Sub-sections (e.g., Default/Tableau) collapsed by default
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+
+  const toggleSection = (sectionKey: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [sectionKey]: !prev[sectionKey],
+    }));
+  };
+
+  const isSectionActive = (section: { children: { url: string }[] }) => {
+    return section.children.some(child => isActive(child.url));
+  };
 
   const toggleGroup = (title: string) => {
     setExpandedGroups(prev => ({
@@ -222,27 +236,53 @@ export function AppSidebar() {
                 <div className="ml-8 space-y-0.5 py-0.5">
                   {'sections' in group && group.sections ? (
                     // Render sectioned navigation (e.g., Care Minutes with Default/Tableau)
-                    group.sections.map((section) => (
-                      <div key={section.title} className="mb-2">
-                        <div className="px-3 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                          {section.title}
-                        </div>
-                        {section.children.map((child) => (
-                          <RouterNavLink
-                            key={child.url}
-                            to={child.url}
-                            className={cn(
-                              "block px-3 py-1.5 rounded-lg text-sm transition-all duration-150",
-                              isActive(child.url)
-                                ? "bg-primary/10 text-primary font-medium"
-                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                            )}
-                          >
-                            {child.title}
-                          </RouterNavLink>
-                        ))}
-                      </div>
-                    ))
+                    group.sections.map((section) => {
+                      const sectionKey = `${group.title}-${section.title}`;
+                      const isSectionOpen = expandedSections[sectionKey] ?? isSectionActive(section);
+                      
+                      return (
+                        <Collapsible
+                          key={section.title}
+                          open={isSectionOpen}
+                          onOpenChange={() => toggleSection(sectionKey)}
+                          className="mb-1"
+                        >
+                          <CollapsibleTrigger asChild>
+                            <button
+                              className={cn(
+                                "w-full flex items-center justify-between px-3 py-1 text-[10px] font-semibold uppercase tracking-wider rounded transition-colors",
+                                isSectionActive(section)
+                                  ? "text-primary"
+                                  : "text-muted-foreground hover:text-foreground"
+                              )}
+                            >
+                              <span>{section.title}</span>
+                              {isSectionOpen ? (
+                                <ChevronUp className="h-3 w-3" />
+                              ) : (
+                                <ChevronDown className="h-3 w-3" />
+                              )}
+                            </button>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+                            {section.children.map((child) => (
+                              <RouterNavLink
+                                key={child.url}
+                                to={child.url}
+                                className={cn(
+                                  "block px-3 py-1.5 rounded-lg text-sm transition-all duration-150",
+                                  isActive(child.url)
+                                    ? "bg-primary/10 text-primary font-medium"
+                                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                )}
+                              >
+                                {child.title}
+                              </RouterNavLink>
+                            ))}
+                          </CollapsibleContent>
+                        </Collapsible>
+                      );
+                    })
                   ) : 'children' in group && group.children ? (
                     // Render flat children navigation
                     group.children.map((child) => (

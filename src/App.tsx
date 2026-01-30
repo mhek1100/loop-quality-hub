@@ -24,6 +24,7 @@ import QuestionnaireValidation from "./pages/QuestionnaireValidation";
 // Care minutes pages
 import CareMinutesOverview from "./pages/care-minutes/Overview";
 import CareMinutesOverviewTableau from "./pages/care-minutes/OverviewTableau";
+import CareMinutesFacilityViewTableau from "./pages/care-minutes/FacilityViewTableau";
 import CareMinutesFacilities from "./pages/care-minutes/Facilities";
 import CareMinutesPerformanceStatement from "./pages/care-minutes/PerformanceStatement";
 import CareMinutesSubmission from "./pages/care-minutes/Submission";
@@ -80,6 +81,7 @@ const App = () => {
                 {/* Care minutes */}
                 <Route path="/care-minutes/overview" element={<CareMinutesOverview />} />
                 <Route path="/care-minutes/overview-tableau" element={<CareMinutesOverviewTableau />} />
+                <Route path="/care-minutes/facility-view-tableau" element={<CareMinutesFacilityViewTableau />} />
                 <Route path="/care-minutes/facilities" element={<CareMinutesFacilities />} />
                 <Route path="/care-minutes/performance-statement" element={<CareMinutesPerformanceStatement />} />
                 <Route path="/care-minutes/submission" element={<CareMinutesSubmission />} />

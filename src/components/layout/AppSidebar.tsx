@@ -29,7 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import loopLogo from "@/assets/loop-logo.png";
+import loopLogo from "@/assets/loop-logo-full.svg";
 
 // Primary navigation items
 const primaryNavItems = [
@@ -122,13 +122,8 @@ export function AppSidebar() {
             <img 
               src={loopLogo} 
               alt="Loop" 
-              className="h-7 w-auto"
+              className="h-6 w-auto"
             />
-            {!isCollapsed && (
-              <span className="text-lg font-semibold text-foreground tracking-tight">
-                loop<span className="text-primary">.</span>
-              </span>
-            )}
           </div>
           {!isCollapsed && (
             <SidebarTrigger className="p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">

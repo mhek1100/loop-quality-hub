@@ -8,6 +8,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { FileDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Facilities
@@ -94,11 +96,22 @@ export default function PerformanceStatementTableau() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold">Care Minutes Performance Statement 2025-26</h1>
-        <p className="text-muted-foreground mt-1">
-          Quarterly labor cost and hours breakdown by facility
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Care Minutes Performance Statement 2025-26</h1>
+          <p className="text-muted-foreground mt-1">
+            Quarterly labor cost and hours breakdown by facility
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => window.print()}
+          className="print:hidden"
+        >
+          <FileDown className="h-4 w-4 mr-1.5" />
+          Export PDF
+        </Button>
       </div>
 
       {/* Labor Cost Table */}

@@ -15,7 +15,8 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { LineChart, Line, XAxis, YAxis, ReferenceLine, ResponsiveContainer } from "recharts";
-import { CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
+import { CheckCircle2, AlertTriangle, XCircle, FileDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 // Import shared data layer
@@ -109,20 +110,31 @@ export default function PerformanceStatement() {
             <p className="text-muted-foreground mt-1">Reporting Period: {reportingPeriod}</p>
             <p className="text-sm text-muted-foreground mt-0.5">{facilities.length} facilities included</p>
           </div>
-          <div className="text-right">
-            <Badge 
-              className={cn(
-                "text-sm px-3 py-1",
-                overallStatus.variant === "compliant" && "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
-                overallStatus.variant === "at-risk" && "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
-                overallStatus.variant === "non-compliant" && "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-              )}
-            >
+          <div className="text-right space-y-2">
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.print()}
+                className="print:hidden"
+              >
+                <FileDown className="h-4 w-4 mr-1.5" />
+                Export PDF
+              </Button>
+              <Badge 
+                className={cn(
+                  "text-sm px-3 py-1",
+                  overallStatus.variant === "compliant" && "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
+                  overallStatus.variant === "at-risk" && "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
+                  overallStatus.variant === "non-compliant" && "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                )}
+              >
               {overallStatus.variant === "compliant" && <CheckCircle2 className="h-4 w-4 mr-1.5" />}
               {overallStatus.variant === "at-risk" && <AlertTriangle className="h-4 w-4 mr-1.5" />}
               {overallStatus.variant === "non-compliant" && <XCircle className="h-4 w-4 mr-1.5" />}
               {overallStatus.label}
-            </Badge>
+              </Badge>
+            </div>
             <p className="text-xs text-muted-foreground mt-2">
               Generated: {currentDate.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}
             </p>

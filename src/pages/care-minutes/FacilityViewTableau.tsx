@@ -4,14 +4,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { TrendingUp, Calendar } from "lucide-react";
 import {
-  BarChart,
+  ComposedChart,
   Bar,
   XAxis,
   YAxis,
   ResponsiveContainer,
   Cell,
-  ReferenceLine,
   LabelList,
+  Rectangle,
 } from "recharts";
 
 // Facilities consistent with OverviewTableau
@@ -465,7 +465,7 @@ export default function FacilityViewTableau() {
             <CardContent>
               <div className="h-[240px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={capacityPlanningData} margin={{ top: 30, right: 20, left: 0, bottom: 5 }}>
+                  <ComposedChart data={capacityPlanningData} margin={{ top: 30, right: 20, left: 0, bottom: 5 }}>
                     <XAxis 
                       dataKey="date" 
                       axisLine={false} 
@@ -476,13 +476,38 @@ export default function FacilityViewTableau() {
                       axisLine={false} 
                       tickLine={false}
                       tick={{ fontSize: 12 }}
+                      domain={[0, 60]}
                       label={{ value: "Nb of Staff", angle: -90, position: "insideLeft", style: { fontSize: 11 } }}
                     />
-                    <ReferenceLine y={42} stroke="hsl(var(--destructive))" strokeWidth={2} strokeDasharray="0" />
-                    <Bar dataKey="staffNeeded" radius={[4, 4, 0, 0]} fill="hsl(var(--muted))">
-                      {capacityPlanningData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill="hsl(var(--muted))" />
-                      ))}
+                    <Bar 
+                      dataKey="staffNeeded" 
+                      fill="hsl(var(--muted))"
+                      shape={(props: any) => {
+                        const { x, y, width, height, payload } = props;
+                        const rosteredY = y + height - (payload.rostered / payload.staffNeeded) * height;
+                        return (
+                          <g>
+                            <Rectangle
+                              x={x}
+                              y={y}
+                              width={width}
+                              height={height}
+                              fill="hsl(var(--muted))"
+                              radius={[4, 4, 0, 0]}
+                            />
+                            {/* Red line at rostered level */}
+                            <line
+                              x1={x}
+                              y1={rosteredY}
+                              x2={x + width}
+                              y2={rosteredY}
+                              stroke="#dc2626"
+                              strokeWidth={2}
+                            />
+                          </g>
+                        );
+                      }}
+                    >
                       <LabelList
                         dataKey="gap"
                         position="top"
@@ -490,7 +515,7 @@ export default function FacilityViewTableau() {
                         style={{ fontSize: 11, fontWeight: 600, fill: "hsl(var(--foreground))" }}
                       />
                     </Bar>
-                  </BarChart>
+                  </ComposedChart>
                 </ResponsiveContainer>
               </div>
             </CardContent>

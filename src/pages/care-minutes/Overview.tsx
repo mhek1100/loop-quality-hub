@@ -1,585 +1,532 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { 
+  TrendingUp, 
+  TrendingDown, 
+  Minus, 
+  AlertTriangle, 
+  CheckCircle2, 
+  Users, 
+  Clock,
+  Activity,
+  ShieldCheck,
+  ShieldAlert,
+  Lightbulb
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { TrendingUp, TrendingDown, Users, Clock, Building2, AlertTriangle } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  ReferenceLine,
+  ComposedChart,
+  Area,
+} from "recharts";
 
-// Mock data for Australian aged care facilities
-const facilities = [
-  { name: "Johnsonchester", id: 1 },
-  { name: "New Ashleychester", id: 2 },
-  { name: "North Ryan", id: 3 },
-  { name: "Rileyville", id: 4 },
+// ============================================
+// MOCK DATA - Australian Aged Care (AN-ACC)
+// ============================================
+
+const portfolioKPIs = {
+  totalCareCompliance: 94.2,
+  rnCompliance: 87.5,
+  facilitiesMeetingCare: 3,
+  facilitiesMeetingRN: 2,
+  facilitiesAtRisk: 1,
+  totalFacilities: 4,
+};
+
+// Weekly compliance trend data (last 12 weeks)
+const complianceTrendData = [
+  { week: "W1", totalCare: 91.2, rn: 82.4, target: 100 },
+  { week: "W2", totalCare: 92.5, rn: 84.1, target: 100 },
+  { week: "W3", totalCare: 90.8, rn: 81.9, target: 100 },
+  { week: "W4", totalCare: 93.1, rn: 85.2, target: 100 },
+  { week: "W5", totalCare: 94.5, rn: 86.8, target: 100 },
+  { week: "W6", totalCare: 93.8, rn: 84.5, target: 100 },
+  { week: "W7", totalCare: 95.2, rn: 88.1, target: 100 },
+  { week: "W8", totalCare: 94.1, rn: 86.3, target: 100 },
+  { week: "W9", totalCare: 93.6, rn: 85.9, target: 100 },
+  { week: "W10", totalCare: 94.8, rn: 87.2, target: 100 },
+  { week: "W11", totalCare: 95.1, rn: 88.4, target: 100 },
+  { week: "W12", totalCare: 94.2, rn: 87.5, target: 100 },
 ];
 
-// KPI Summary data
-const kpiSummary = {
-  portfolioCompliance: { value: 94.2, status: "good" as const },
-  facilitiesMeetingTarget: { value: 75, count: 3, total: 4, status: "warning" as const },
-  avgDailyCareMinutes: { value: 207, target: 215, status: "warning" as const },
-  rnCompliance: { value: 88.5, status: "warning" as const },
-  facilitiesAtRisk: { value: 1, status: "danger" as const },
-  overallTrend: { value: 2.3, direction: "up" as const },
-};
+// Facility comparison data
+const facilityData = [
+  {
+    name: "Sunrise Gardens",
+    totalCareCompliance: 98.4,
+    rnCompliance: 96.2,
+    avgDailyMinutes: 207,
+    targetMinutes: 200,
+    trend: "up" as const,
+    riskStatus: "low" as const,
+    rnMinutes: 42,
+    nonRnMinutes: 165,
+    rnTarget: 40,
+  },
+  {
+    name: "Harbour View",
+    totalCareCompliance: 95.1,
+    rnCompliance: 91.8,
+    avgDailyMinutes: 198,
+    targetMinutes: 200,
+    trend: "flat" as const,
+    riskStatus: "medium" as const,
+    rnMinutes: 38,
+    nonRnMinutes: 160,
+    rnTarget: 40,
+  },
+  {
+    name: "Mountain Lodge",
+    totalCareCompliance: 92.8,
+    rnCompliance: 84.5,
+    avgDailyMinutes: 189,
+    targetMinutes: 200,
+    trend: "down" as const,
+    riskStatus: "high" as const,
+    rnMinutes: 32,
+    nonRnMinutes: 157,
+    rnTarget: 40,
+  },
+  {
+    name: "Coastal Haven",
+    totalCareCompliance: 96.7,
+    rnCompliance: 93.4,
+    avgDailyMinutes: 202,
+    targetMinutes: 200,
+    trend: "up" as const,
+    riskStatus: "low" as const,
+    rnMinutes: 41,
+    nonRnMinutes: 161,
+    rnTarget: 40,
+  },
+];
 
-// Star ratings for overview (1-5 scale)
-const overviewRatings: Record<string, Record<string, number>> = {
-  Johnsonchester: { thisWeek: 2, lastWeek: 5, thisMonth: 2, lastMonth: 2, last2Months: 3, thisQuarter: 2 },
-  "New Ashleychester": { thisWeek: 2, lastWeek: 5, thisMonth: 2, lastMonth: 1, last2Months: 4, thisQuarter: 2 },
-  "North Ryan": { thisWeek: 2, lastWeek: 5, thisMonth: 2, lastMonth: 1, last2Months: 4, thisQuarter: 2 },
-  Rileyville: { thisWeek: 2, lastWeek: 5, thisMonth: 2, lastMonth: 1, last2Months: 3, thisQuarter: 2 },
-};
+// RN vs Non-RN breakdown for stacked chart
+const rnBreakdownData = facilityData.map(f => ({
+  name: f.name.split(" ")[0], // Short name for chart
+  fullName: f.name,
+  rnMinutes: f.rnMinutes,
+  nonRnMinutes: f.nonRnMinutes,
+  rnTarget: f.rnTarget,
+  totalTarget: f.targetMinutes,
+}));
 
-// Performance summary data (percentages with status)
-const performanceSummary: Record<string, Record<string, { value: number; status: "good" | "warning" | "danger" }>> = {
-  Johnsonchester: {
-    thisWeek: { value: 103, status: "good" },
-    lastWeek: { value: 185, status: "good" },
-    thisMonth: { value: 100, status: "good" },
-    lastMonth: { value: 104, status: "good" },
-    last2Months: { value: 104, status: "good" },
-    thisQuarter: { value: 103, status: "good" },
+// Auto-generated insights
+const insights = [
+  {
+    type: "warning" as const,
+    message: "Mountain Lodge has shown continuous RN underperformance for 6 weeks, currently at 84.5% compliance.",
   },
-  "New Ashleychester": {
-    thisWeek: { value: 92, status: "danger" },
-    lastWeek: { value: 163, status: "good" },
-    thisMonth: { value: 89, status: "danger" },
-    lastMonth: { value: 92, status: "danger" },
-    last2Months: { value: 96, status: "danger" },
-    thisQuarter: { value: 92, status: "danger" },
+  {
+    type: "success" as const,
+    message: "3 of 4 facilities are meeting total care minute targets this month.",
   },
-  "North Ryan": {
-    thisWeek: { value: 88, status: "danger" },
-    lastWeek: { value: 153, status: "good" },
-    thisMonth: { value: 86, status: "danger" },
-    lastMonth: { value: 87, status: "danger" },
-    last2Months: { value: 90, status: "danger" },
-    thisQuarter: { value: 88, status: "danger" },
+  {
+    type: "warning" as const,
+    message: "2 facilities meet total care minutes but are failing RN minute targets — suggests skill mix adjustment needed.",
   },
-  Rileyville: {
-    thisWeek: { value: 98, status: "warning" },
-    lastWeek: { value: 180, status: "good" },
-    thisMonth: { value: 98, status: "warning" },
-    lastMonth: { value: 96, status: "danger" },
-    last2Months: { value: 99, status: "warning" },
-    thisQuarter: { value: 98, status: "warning" },
+  {
+    type: "info" as const,
+    message: "Overall portfolio compliance improved 3.0% since W1, but RN compliance improved only 5.1%.",
   },
-};
+  {
+    type: "success" as const,
+    message: "Sunrise Gardens leads portfolio performance with 98.4% total care and 96.2% RN compliance.",
+  },
+];
 
-// Care minutes delivered data
-const careMinutesDelivered: Record<string, Record<string, { delivered: number; overUnder: number }>> = {
-  Johnsonchester: {
-    thisWeek: { delivered: 161.57, overUnder: -53.43 },
-    lastWeek: { delivered: 317.45, overUnder: 102.45 },
-    thisMonth: { delivered: 160.22, overUnder: -54.78 },
-    lastMonth: { delivered: 147.67, overUnder: -67.33 },
-    last2Months: { delivered: 179.22, overUnder: -35.78 },
-    thisQuarter: { delivered: 161.57, overUnder: -53.43 },
-  },
-  "New Ashleychester": {
-    thisWeek: { delivered: 137.73, overUnder: -77.27 },
-    lastWeek: { delivered: 279.77, overUnder: 64.77 },
-    thisMonth: { delivered: 139.10, overUnder: -75.90 },
-    lastMonth: { delivered: 119.22, overUnder: -95.78 },
-    last2Months: { delivered: 164.33, overUnder: -50.67 },
-    thisQuarter: { delivered: 137.73, overUnder: -77.27 },
-  },
-  "North Ryan": {
-    thisWeek: { delivered: 138.05, overUnder: -76.95 },
-    lastWeek: { delivered: 263.38, overUnder: 48.38 },
-    thisMonth: { delivered: 138.62, overUnder: -76.38 },
-    lastMonth: { delivered: 124.02, overUnder: -90.98 },
-    last2Months: { delivered: 154.48, overUnder: -60.52 },
-    thisQuarter: { delivered: 138.05, overUnder: -76.95 },
-  },
-  Rileyville: {
-    thisWeek: { delivered: 153.39, overUnder: -61.61 },
-    lastWeek: { delivered: 308.67, overUnder: 93.67 },
-    thisMonth: { delivered: 157.08, overUnder: -57.92 },
-    lastMonth: { delivered: 137.48, overUnder: -77.52 },
-    last2Months: { delivered: 169.81, overUnder: -45.19 },
-    thisQuarter: { delivered: 153.39, overUnder: -61.61 },
-  },
-};
+// ============================================
+// HELPER COMPONENTS
+// ============================================
 
-// RN performance summary data
-const rnPerformanceSummary: Record<string, Record<string, { value: number; status: "good" | "warning" | "danger" }>> = {
-  Johnsonchester: {
-    thisWeek: { value: 85, status: "danger" },
-    lastWeek: { value: 208, status: "good" },
-    thisMonth: { value: 92, status: "danger" },
-    lastMonth: { value: 63, status: "danger" },
-    last2Months: { value: 106, status: "good" },
-    thisQuarter: { value: 85, status: "danger" },
-  },
-  "New Ashleychester": {
-    thisWeek: { value: 94, status: "danger" },
-    lastWeek: { value: 257, status: "good" },
-    thisMonth: { value: 102, status: "good" },
-    lastMonth: { value: 57, status: "danger" },
-    last2Months: { value: 143, status: "good" },
-    thisQuarter: { value: 94, status: "danger" },
-  },
-  "North Ryan": {
-    thisWeek: { value: 77, status: "danger" },
-    lastWeek: { value: 179, status: "good" },
-    thisMonth: { value: 82, status: "danger" },
-    lastMonth: { value: 55, status: "danger" },
-    last2Months: { value: 101, status: "good" },
-    thisQuarter: { value: 77, status: "danger" },
-  },
-  Rileyville: {
-    thisWeek: { value: 85, status: "danger" },
-    lastWeek: { value: 201, status: "good" },
-    thisMonth: { value: 89, status: "danger" },
-    lastMonth: { value: 62, status: "danger" },
-    last2Months: { value: 110, status: "good" },
-    thisQuarter: { value: 85, status: "danger" },
-  },
-};
-
-// RN minutes delivered data
-const rnMinutesDelivered: Record<string, Record<string, { delivered: number; overUnder: number }>> = {
-  Johnsonchester: {
-    thisWeek: { delivered: 37.34, overUnder: -6.66 },
-    lastWeek: { delivered: 91.45, overUnder: 47.45 },
-    thisMonth: { delivered: 40.54, overUnder: -3.46 },
-    lastMonth: { delivered: 27.70, overUnder: -16.30 },
-    last2Months: { delivered: 46.61, overUnder: 2.61 },
-    thisQuarter: { delivered: 37.34, overUnder: -6.66 },
-  },
-  "New Ashleychester": {
-    thisWeek: { delivered: 41.39, overUnder: -2.61 },
-    lastWeek: { delivered: 112.87, overUnder: 68.87 },
-    thisMonth: { delivered: 44.79, overUnder: 0.79 },
-    lastMonth: { delivered: 24.92, overUnder: -19.08 },
-    last2Months: { delivered: 62.94, overUnder: 18.94 },
-    thisQuarter: { delivered: 41.39, overUnder: -2.61 },
-  },
-  "North Ryan": {
-    thisWeek: { delivered: 34.08, overUnder: -9.92 },
-    lastWeek: { delivered: 78.93, overUnder: 34.93 },
-    thisMonth: { delivered: 36.11, overUnder: -7.89 },
-    lastMonth: { delivered: 24.19, overUnder: -19.81 },
-    last2Months: { delivered: 44.48, overUnder: 0.48 },
-    thisQuarter: { delivered: 34.08, overUnder: -9.92 },
-  },
-  Rileyville: {
-    thisWeek: { delivered: 37.38, overUnder: -6.62 },
-    lastWeek: { delivered: 88.24, overUnder: 44.24 },
-    thisMonth: { delivered: 39.15, overUnder: -4.85 },
-    lastMonth: { delivered: 27.27, overUnder: -16.73 },
-    last2Months: { delivered: 48.23, overUnder: 4.23 },
-    thisQuarter: { delivered: 37.38, overUnder: -6.62 },
-  },
-};
-
-const timePeriods = ["thisWeek", "lastWeek", "thisMonth", "lastMonth", "last2Months", "thisQuarter"] as const;
-const timePeriodLabels: Record<string, string> = {
-  thisWeek: "This Week",
-  lastWeek: "Last Week",
-  thisMonth: "This Month",
-  lastMonth: "Last Month",
-  last2Months: "Last 2 Months",
-  thisQuarter: "This Quarter",
-};
-
-// Star rating component
-const StarRating = ({ count, max = 5 }: { count: number; max?: number }) => {
-  return (
-    <span className="text-amber-500 tracking-tight">
-      {"★".repeat(count)}
-      <span className="text-muted-foreground/30">{"★".repeat(max - count)}</span>
-    </span>
-  );
-};
-
-// Status dot component
-const StatusDot = ({ status }: { status: "good" | "warning" | "danger" }) => {
-  return (
-    <span
-      className={cn(
-        "inline-block w-3 h-3 rounded-full",
-        status === "good" && "bg-emerald-500",
-        status === "warning" && "bg-amber-500",
-        status === "danger" && "bg-red-500"
-      )}
-    />
-  );
-};
-
-// KPI Card component
-const KpiCard = ({
-  title,
-  value,
-  suffix,
-  subtitle,
-  status,
-  icon: Icon,
-  trend,
-}: {
+interface KPICardProps {
   title: string;
   value: string | number;
-  suffix?: string;
   subtitle?: string;
   status: "good" | "warning" | "danger";
-  icon: React.ElementType;
-  trend?: { value: number; direction: "up" | "down" };
-}) => {
+  icon: React.ReactNode;
+}
+
+function KPICard({ title, value, subtitle, status, icon }: KPICardProps) {
+  const statusColors = {
+    good: "bg-emerald-500/10 text-emerald-600 border-emerald-200",
+    warning: "bg-amber-500/10 text-amber-600 border-amber-200",
+    danger: "bg-red-500/10 text-red-600 border-red-200",
+  };
+
+  const iconBgColors = {
+    good: "bg-emerald-100 text-emerald-600",
+    warning: "bg-amber-100 text-amber-600",
+    danger: "bg-red-100 text-red-600",
+  };
+
   return (
-    <Card className="relative overflow-hidden">
+    <Card className={cn("border-l-4", statusColors[status])}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">{title}</p>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold">{value}</span>
-              {suffix && <span className="text-lg text-muted-foreground">{suffix}</span>}
-            </div>
+            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            <p className="text-2xl font-bold">{value}</p>
             {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
-            {trend && (
-              <div
-                className={cn(
-                  "flex items-center gap-1 text-xs font-medium",
-                  trend.direction === "up" ? "text-emerald-600" : "text-red-600"
-                )}
-              >
-                {trend.direction === "up" ? (
-                  <TrendingUp className="h-3 w-3" />
-                ) : (
-                  <TrendingDown className="h-3 w-3" />
-                )}
-                {trend.value}% vs last period
-              </div>
-            )}
           </div>
-          <div
-            className={cn(
-              "p-2 rounded-lg",
-              status === "good" && "bg-emerald-100 text-emerald-600",
-              status === "warning" && "bg-amber-100 text-amber-600",
-              status === "danger" && "bg-red-100 text-red-600"
-            )}
-          >
-            <Icon className="h-5 w-5" />
+          <div className={cn("p-2 rounded-lg", iconBgColors[status])}>
+            {icon}
           </div>
         </div>
-        <div
-          className={cn(
-            "absolute bottom-0 left-0 right-0 h-1",
-            status === "good" && "bg-emerald-500",
-            status === "warning" && "bg-amber-500",
-            status === "danger" && "bg-red-500"
-          )}
-        />
       </CardContent>
     </Card>
   );
-};
+}
 
-const CareMinutesOverview = () => {
+function TrendIcon({ trend }: { trend: "up" | "down" | "flat" }) {
+  if (trend === "up") return <TrendingUp className="h-4 w-4 text-emerald-600" />;
+  if (trend === "down") return <TrendingDown className="h-4 w-4 text-red-600" />;
+  return <Minus className="h-4 w-4 text-amber-600" />;
+}
+
+function RiskBadge({ status }: { status: "low" | "medium" | "high" }) {
+  const styles = {
+    low: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    medium: "bg-amber-100 text-amber-700 border-amber-200",
+    high: "bg-red-100 text-red-700 border-red-200",
+  };
+  const labels = { low: "Low Risk", medium: "At Risk", high: "High Risk" };
+  
   return (
-    <div className="space-y-6 animate-fade-in">
+    <Badge variant="outline" className={cn("text-xs font-medium", styles[status])}>
+      {labels[status]}
+    </Badge>
+  );
+}
+
+function ComplianceBar({ value, showLabel = true }: { value: number; showLabel?: boolean }) {
+  const getColor = (v: number) => {
+    if (v >= 95) return "bg-emerald-500";
+    if (v >= 90) return "bg-amber-500";
+    return "bg-red-500";
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+        <div 
+          className={cn("h-full rounded-full transition-all", getColor(value))}
+          style={{ width: `${Math.min(value, 100)}%` }}
+        />
+      </div>
+      {showLabel && (
+        <span className={cn(
+          "text-sm font-medium min-w-[45px] text-right",
+          value >= 95 ? "text-emerald-600" : value >= 90 ? "text-amber-600" : "text-red-600"
+        )}>
+          {value.toFixed(1)}%
+        </span>
+      )}
+    </div>
+  );
+}
+
+function InsightItem({ type, message }: { type: "success" | "warning" | "info"; message: string }) {
+  const styles = {
+    success: { bg: "bg-emerald-50", border: "border-emerald-200", icon: <CheckCircle2 className="h-4 w-4 text-emerald-600" /> },
+    warning: { bg: "bg-amber-50", border: "border-amber-200", icon: <AlertTriangle className="h-4 w-4 text-amber-600" /> },
+    info: { bg: "bg-blue-50", border: "border-blue-200", icon: <Lightbulb className="h-4 w-4 text-blue-600" /> },
+  };
+
+  return (
+    <div className={cn("flex items-start gap-3 p-3 rounded-lg border", styles[type].bg, styles[type].border)}>
+      <div className="mt-0.5">{styles[type].icon}</div>
+      <p className="text-sm text-foreground">{message}</p>
+    </div>
+  );
+}
+
+// ============================================
+// MAIN COMPONENT
+// ============================================
+
+export default function CareMinutesOverview() {
+  return (
+    <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-semibold">Care Minutes Overview</h1>
-        <p className="text-muted-foreground mt-1">
-          Portfolio-wide compliance and performance across all facilities
+        <h1 className="text-2xl font-bold tracking-tight">Care Minutes Overview</h1>
+        <p className="text-muted-foreground">
+          Portfolio compliance and performance analysis • Current Month: January 2026
         </p>
       </div>
 
-      {/* Top Summary KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <KpiCard
-          title="Portfolio Compliance"
-          value={kpiSummary.portfolioCompliance.value}
-          suffix="%"
-          status={kpiSummary.portfolioCompliance.status}
-          icon={TrendingUp}
-          trend={{ value: 2.3, direction: "up" }}
-        />
-        <KpiCard
-          title="Facilities Meeting Target"
-          value={`${kpiSummary.facilitiesMeetingTarget.count}/${kpiSummary.facilitiesMeetingTarget.total}`}
-          subtitle={`${kpiSummary.facilitiesMeetingTarget.value}%`}
-          status={kpiSummary.facilitiesMeetingTarget.status}
-          icon={Building2}
-        />
-        <KpiCard
-          title="Avg Daily Care Mins"
-          value={kpiSummary.avgDailyCareMinutes.value}
-          subtitle={`Target: ${kpiSummary.avgDailyCareMinutes.target}`}
-          status={kpiSummary.avgDailyCareMinutes.status}
-          icon={Clock}
-        />
-        <KpiCard
-          title="RN Compliance"
-          value={kpiSummary.rnCompliance.value}
-          suffix="%"
-          status={kpiSummary.rnCompliance.status}
-          icon={Users}
-        />
-        <KpiCard
-          title="Facilities At Risk"
-          value={kpiSummary.facilitiesAtRisk.value}
-          subtitle="Requires attention"
-          status={kpiSummary.facilitiesAtRisk.status}
-          icon={AlertTriangle}
-        />
-        <KpiCard
-          title="Overall Trend"
-          value={`+${kpiSummary.overallTrend.value}`}
-          suffix="%"
-          subtitle="Improving"
-          status="good"
-          icon={TrendingUp}
-        />
-      </div>
+      {/* Section 1: Portfolio Health Summary */}
+      <section>
+        <h2 className="text-lg font-semibold mb-4">Portfolio Health Summary</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <KPICard
+            title="Total Care Compliance"
+            value={`${portfolioKPIs.totalCareCompliance}%`}
+            subtitle="Portfolio average"
+            status={portfolioKPIs.totalCareCompliance >= 95 ? "good" : portfolioKPIs.totalCareCompliance >= 90 ? "warning" : "danger"}
+            icon={<Activity className="h-5 w-5" />}
+          />
+          <KPICard
+            title="RN Minutes Compliance"
+            value={`${portfolioKPIs.rnCompliance}%`}
+            subtitle="Portfolio average"
+            status={portfolioKPIs.rnCompliance >= 95 ? "good" : portfolioKPIs.rnCompliance >= 90 ? "warning" : "danger"}
+            icon={<Users className="h-5 w-5" />}
+          />
+          <KPICard
+            title="Meeting Care Target"
+            value={`${portfolioKPIs.facilitiesMeetingCare} / ${portfolioKPIs.totalFacilities}`}
+            subtitle="Facilities"
+            status={portfolioKPIs.facilitiesMeetingCare === portfolioKPIs.totalFacilities ? "good" : portfolioKPIs.facilitiesMeetingCare >= 3 ? "warning" : "danger"}
+            icon={<ShieldCheck className="h-5 w-5" />}
+          />
+          <KPICard
+            title="Meeting RN Target"
+            value={`${portfolioKPIs.facilitiesMeetingRN} / ${portfolioKPIs.totalFacilities}`}
+            subtitle="Facilities"
+            status={portfolioKPIs.facilitiesMeetingRN === portfolioKPIs.totalFacilities ? "good" : portfolioKPIs.facilitiesMeetingRN >= 3 ? "warning" : "danger"}
+            icon={<Clock className="h-5 w-5" />}
+          />
+          <KPICard
+            title="At Compliance Risk"
+            value={portfolioKPIs.facilitiesAtRisk}
+            subtitle="Facilities requiring attention"
+            status={portfolioKPIs.facilitiesAtRisk === 0 ? "good" : portfolioKPIs.facilitiesAtRisk === 1 ? "warning" : "danger"}
+            icon={<ShieldAlert className="h-5 w-5" />}
+          />
+        </div>
+      </section>
 
-      {/* Care Minutes Overview - Star Ratings */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">Care Minutes Overview</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/30">
-                <TableHead className="w-[180px]">Location</TableHead>
-                {timePeriods.map((period) => (
-                  <TableHead key={period} className="text-center">
-                    {timePeriodLabels[period]}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {facilities.map((facility) => (
-                <TableRow key={facility.id}>
-                  <TableCell className="font-medium">{facility.name}</TableCell>
-                  {timePeriods.map((period) => (
-                    <TableCell key={period} className="text-center">
-                      <StarRating count={overviewRatings[facility.name]?.[period] || 0} />
-                    </TableCell>
+      {/* Section 2: Compliance Trend Over Time */}
+      <section>
+        <Card>
+          <CardHeader>
+            <CardTitle>Compliance Trend Over Time</CardTitle>
+            <CardDescription>Weekly portfolio compliance (last 12 weeks) • Target: 100%</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={complianceTrendData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis 
+                    dataKey="week" 
+                    tick={{ fontSize: 12 }}
+                    className="text-muted-foreground"
+                  />
+                  <YAxis 
+                    domain={[75, 105]} 
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(v) => `${v}%`}
+                    className="text-muted-foreground"
+                  />
+                  <Tooltip 
+                    formatter={(value: number) => [`${value.toFixed(1)}%`]}
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Legend />
+                  <ReferenceLine 
+                    y={100} 
+                    stroke="hsl(var(--primary))" 
+                    strokeDasharray="5 5" 
+                    label={{ value: "Target", position: "right", fontSize: 11 }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="totalCare" 
+                    name="Total Care Minutes" 
+                    fill="hsl(142 76% 36% / 0.2)" 
+                    stroke="hsl(142 76% 36%)"
+                    strokeWidth={2}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="rn" 
+                    name="RN Minutes" 
+                    stroke="hsl(221 83% 53%)"
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Section 3: Facility Comparison Matrix */}
+      <section>
+        <Card>
+          <CardHeader>
+            <CardTitle>Facility Comparison</CardTitle>
+            <CardDescription>Side-by-side performance across all facilities</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Facility</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Total Care Compliance</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">RN Compliance</th>
+                    <th className="text-center py-3 px-4 font-medium text-muted-foreground">Avg Daily (vs Target)</th>
+                    <th className="text-center py-3 px-4 font-medium text-muted-foreground">Trend</th>
+                    <th className="text-center py-3 px-4 font-medium text-muted-foreground">Risk Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {facilityData.map((facility) => (
+                    <tr key={facility.name} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                      <td className="py-4 px-4 font-medium">{facility.name}</td>
+                      <td className="py-4 px-4 w-48">
+                        <ComplianceBar value={facility.totalCareCompliance} />
+                      </td>
+                      <td className="py-4 px-4 w-48">
+                        <ComplianceBar value={facility.rnCompliance} />
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        <span className={cn(
+                          "font-medium",
+                          facility.avgDailyMinutes >= facility.targetMinutes ? "text-emerald-600" : "text-red-600"
+                        )}>
+                          {facility.avgDailyMinutes}
+                        </span>
+                        <span className="text-muted-foreground"> / {facility.targetMinutes} min</span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex justify-center">
+                          <TrendIcon trend={facility.trend} />
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex justify-center">
+                          <RiskBadge status={facility.riskStatus} />
+                        </div>
+                      </td>
+                    </tr>
                   ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
 
-      {/* Total Care Minutes Performance Summary */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">
-            Total Care Minutes Performance Summary{" "}
-            <span className="text-muted-foreground font-normal">(incl. RN Minutes)</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/30">
-                <TableHead className="w-[180px]">Location</TableHead>
-                {timePeriods.map((period) => (
-                  <TableHead key={period} className="text-center" colSpan={1}>
-                    {timePeriodLabels[period]}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {facilities.map((facility) => (
-                <TableRow key={facility.id}>
-                  <TableCell className="font-medium">{facility.name}</TableCell>
-                  {timePeriods.map((period) => {
-                    const data = performanceSummary[facility.name]?.[period];
-                    return (
-                      <TableCell key={period} className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <StatusDot status={data?.status || "danger"} />
-                          <span>{data?.value || 0}%</span>
-                        </div>
-                      </TableCell>
-                    );
-                  })}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {/* Section 4: RN vs Total Care Minutes Diagnosis */}
+      <section>
+        <Card>
+          <CardHeader>
+            <CardTitle>RN vs Non-RN Care Minutes Breakdown</CardTitle>
+            <CardDescription>
+              Understand whether shortfalls are driven by RN staffing or overall care minutes
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[320px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={rnBreakdownData} layout="vertical" barGap={0}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" horizontal={true} vertical={false} />
+                  <XAxis 
+                    type="number" 
+                    domain={[0, 220]}
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(v) => `${v} min`}
+                    className="text-muted-foreground"
+                  />
+                  <YAxis 
+                    type="category" 
+                    dataKey="name" 
+                    tick={{ fontSize: 12 }}
+                    width={80}
+                    className="text-muted-foreground"
+                  />
+                  <Tooltip 
+                    formatter={(value: number, name: string) => [
+                      `${value} min`,
+                      name === "rnMinutes" ? "RN Minutes" : "Non-RN Care Minutes"
+                    ]}
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Legend 
+                    formatter={(value) => value === "rnMinutes" ? "RN Minutes" : "Non-RN Care Minutes"}
+                  />
+                  <Bar 
+                    dataKey="rnMinutes" 
+                    stackId="a" 
+                    fill="hsl(221 83% 53%)" 
+                    radius={[0, 0, 0, 0]}
+                    name="rnMinutes"
+                  />
+                  <Bar 
+                    dataKey="nonRnMinutes" 
+                    stackId="a" 
+                    fill="hsl(142 76% 36%)" 
+                    radius={[0, 4, 4, 0]}
+                    name="nonRnMinutes"
+                  />
+                  <ReferenceLine 
+                    x={200} 
+                    stroke="hsl(var(--destructive))" 
+                    strokeDasharray="5 5"
+                    label={{ value: "Target: 200 min", position: "top", fontSize: 10 }}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="mt-4 flex gap-6 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded bg-blue-500" />
+                <span>RN Minutes (Target: 40 min/resident/day)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded bg-emerald-500" />
+                <span>Non-RN Care Minutes</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
 
-      {/* Total Care Minutes Delivered */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">
-            Total Care Minutes Delivered{" "}
-            <span className="text-muted-foreground font-normal">(Daily Avg. Target is 215)</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0 overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/30">
-                <TableHead className="w-[180px]" rowSpan={2}>
-                  Location
-                </TableHead>
-                {timePeriods.map((period) => (
-                  <TableHead key={period} className="text-center border-l" colSpan={2}>
-                    {timePeriodLabels[period]}
-                  </TableHead>
-                ))}
-              </TableRow>
-              <TableRow className="bg-muted/50">
-                {timePeriods.map((period) => (
-                  <>
-                    <TableHead key={`${period}-d`} className="text-center text-xs border-l bg-violet-100 text-violet-700">
-                      Delivered
-                    </TableHead>
-                    <TableHead key={`${period}-o`} className="text-center text-xs bg-violet-50 text-violet-600">
-                      Over/Under
-                    </TableHead>
-                  </>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {facilities.map((facility) => (
-                <TableRow key={facility.id}>
-                  <TableCell className="font-medium">{facility.name}</TableCell>
-                  {timePeriods.map((period) => {
-                    const data = careMinutesDelivered[facility.name]?.[period];
-                    return (
-                      <>
-                        <TableCell key={`${period}-d`} className="text-center border-l">
-                          {data?.delivered.toFixed(2)}
-                        </TableCell>
-                        <TableCell
-                          key={`${period}-o`}
-                          className={cn(
-                            "text-center font-medium",
-                            (data?.overUnder || 0) >= 0 ? "text-emerald-600" : "text-red-600"
-                          )}
-                        >
-                          {(data?.overUnder || 0) >= 0 ? "+" : ""}
-                          {data?.overUnder.toFixed(2)}
-                        </TableCell>
-                      </>
-                    );
-                  })}
-                </TableRow>
+      {/* Section 5: Action-Oriented Insights */}
+      <section>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lightbulb className="h-5 w-5 text-amber-500" />
+              Key Insights & Recommendations
+            </CardTitle>
+            <CardDescription>
+              Auto-generated observations based on current performance data
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3">
+              {insights.map((insight, index) => (
+                <InsightItem key={index} type={insight.type} message={insight.message} />
               ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* RN Minutes Performance Summary */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">RN Minutes Performance Summary</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/30">
-                <TableHead className="w-[180px]">Location</TableHead>
-                {timePeriods.map((period) => (
-                  <TableHead key={period} className="text-center">
-                    {timePeriodLabels[period]}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {facilities.map((facility) => (
-                <TableRow key={facility.id}>
-                  <TableCell className="font-medium">{facility.name}</TableCell>
-                  {timePeriods.map((period) => {
-                    const data = rnPerformanceSummary[facility.name]?.[period];
-                    return (
-                      <TableCell key={period} className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <StatusDot status={data?.status || "danger"} />
-                          <span>{data?.value || 0}%</span>
-                        </div>
-                      </TableCell>
-                    );
-                  })}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* RN Minutes Delivered */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">
-            RN Minutes Delivered{" "}
-            <span className="text-muted-foreground font-normal">(Daily Avg. Target is 44)</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0 overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/30">
-                <TableHead className="w-[180px]" rowSpan={2}>
-                  Location
-                </TableHead>
-                {timePeriods.map((period) => (
-                  <TableHead key={period} className="text-center border-l" colSpan={2}>
-                    {timePeriodLabels[period]}
-                  </TableHead>
-                ))}
-              </TableRow>
-              <TableRow className="bg-muted/50">
-                {timePeriods.map((period) => (
-                  <>
-                    <TableHead key={`${period}-d`} className="text-center text-xs border-l bg-violet-100 text-violet-700">
-                      Delivered
-                    </TableHead>
-                    <TableHead key={`${period}-o`} className="text-center text-xs bg-violet-50 text-violet-600">
-                      Over/Under
-                    </TableHead>
-                  </>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {facilities.map((facility) => (
-                <TableRow key={facility.id}>
-                  <TableCell className="font-medium">{facility.name}</TableCell>
-                  {timePeriods.map((period) => {
-                    const data = rnMinutesDelivered[facility.name]?.[period];
-                    return (
-                      <>
-                        <TableCell key={`${period}-d`} className="text-center border-l">
-                          {data?.delivered.toFixed(2)}
-                        </TableCell>
-                        <TableCell
-                          key={`${period}-o`}
-                          className={cn(
-                            "text-center font-medium",
-                            (data?.overUnder || 0) >= 0 ? "text-emerald-600" : "text-red-600"
-                          )}
-                        >
-                          {(data?.overUnder || 0) >= 0 ? "+" : ""}
-                          {data?.overUnder.toFixed(2)}
-                        </TableCell>
-                      </>
-                    );
-                  })}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
     </div>
   );
-};
-
-export default CareMinutesOverview;
+}

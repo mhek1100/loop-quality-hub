@@ -14,26 +14,18 @@ const faqCategories = [
     title: "Getting Started",
     description: "Everything you need to launch Loop and invite your team.",
     questions: [
-      { q: "How do I complete the onboarding flow?", a: "Navigate to the Home page and follow the step-by-step onboarding checklist. Complete each section to set up your workspace." },
-      { q: "How do I add new users?", a: "Go to Settings > Users & Roles, then click 'Add User' to invite team members via email." },
-      { q: "How do I update organisation details?", a: "Visit the Workspace page to update your organisation's name, logo, business details, and contact information." },
+      { q: "How do I complete the onboarding flow?", a: "Follow the guided steps to enter your organisation details, verify key contacts, and set up required integrations. Once all steps are complete, your workspace is ready to use." },
+      { q: "How do I add new users?", a: "Navigate to your organisation settings, select 'Users & Permissions', and click 'Invite User'. Enter their email address and assign appropriate roles. They'll receive an invitation email to join your workspace." },
+      { q: "How do I update organisation details?", a: "Go to Settings > Organisation, where you can update your organisation name, contact information, address, and other key details. Changes are saved automatically." },
     ],
   },
   {
-    title: "Products & Features",
-    description: "Learn about Care Minutes, NQIP, RN24/7 and more.",
+    title: "Security & Protection",
+    description: "Learn how Loop keeps your organisation's data safe.",
     questions: [
-      { q: "How do I access different products?", a: "Use the sidebar navigation under 'Products' to access Care Minutes, NQIP, RN24/7, and Annual Leave modules." },
-      { q: "Can I use multiple products at once?", a: "Yes, all products are available based on your subscription. Switch between them using the sidebar." },
-      { q: "Where can I find product-specific help?", a: "Each product has its own help section accessible from within that product's navigation menu." },
-    ],
-  },
-  {
-    title: "Account & Billing",
-    description: "Manage your subscription and payment details.",
-    questions: [
-      { q: "How do I update my billing information?", a: "Go to Settings and navigate to the billing section to update payment methods and view invoices." },
-      { q: "How do I change my subscription plan?", a: "Contact our support team to discuss plan changes and upgrades." },
+      { q: "Why do I need to complete identity verification?", a: "Identity verification ensures that only authorized individuals can access your organisation's sensitive data and perform critical actions. This helps protect against unauthorized access and maintains compliance with security standards." },
+      { q: "How is my data protected?", a: "We use industry-standard encryption for data at rest and in transit, implement multi-factor authentication, maintain regular security audits, and follow strict access controls to ensure your data remains secure at all times." },
+      { q: "What IP or device restrictions apply?", a: "Administrators can configure IP whitelisting to restrict access to specific locations and enable device management to control which devices can access your Loop workspace. These settings can be managed in Security Settings." },
     ],
   },
 ];

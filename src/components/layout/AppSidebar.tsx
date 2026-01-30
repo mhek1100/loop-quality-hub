@@ -47,6 +47,7 @@ const productGroups = [
     icon: Clock,
     children: [
       { title: "Overview", url: "/care-minutes/overview" },
+      { title: "Overview Tableau", url: "/care-minutes/overview-tableau" },
       { title: "Facilities", url: "/care-minutes/facilities" },
       { title: "Submission", url: "/care-minutes/submission" },
       { title: "Past reports", url: "/care-minutes/past-reports" },

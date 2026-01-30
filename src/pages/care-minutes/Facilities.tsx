@@ -1,108 +1,50 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   ReferenceLine,
   ComposedChart,
   Area,
+  Line,
+  BarChart,
+  Bar,
 } from "recharts";
 import {
-  CheckCircle2,
-  AlertTriangle,
-  XCircle,
-  TrendingUp,
-  TrendingDown,
-  Minus,
   Clock,
   Users,
   Activity,
   Calendar,
-  Lightbulb,
-  Target,
+  TrendingUp,
   UserCheck,
-  AlertCircle,
+  ChevronLeft,
 } from "lucide-react";
 
-// Mock facilities data (consistent with Overview v2)
-const facilities = [
-  { id: "north-ryan", name: "North Ryan Aged Care", target: 200, rnTarget: 44 },
-  { id: "evansville", name: "Evansville Manor", target: 200, rnTarget: 44 },
-  { id: "west-haven", name: "West Haven Lodge", target: 200, rnTarget: 44 },
-  { id: "sunrise-gardens", name: "Sunrise Gardens", target: 200, rnTarget: 44 },
-];
+// Import shared data layer
+import {
+  getPortfolioFacilities,
+  getFacilityById,
+  COMPLIANCE_TARGET,
+  generateDailyData,
+  generateFacilityMetrics,
+  generateStaffingData,
+  generateFacilityInsights,
+} from "@/lib/care-minutes";
 
-// Generate deterministic daily data for the last 30 days
-const generateDailyData = (facilityId: string) => {
-  const data = [];
-  const today = new Date();
-  
-  // Seed based on facility for consistent but varied data
-  const seed = facilityId.charCodeAt(0) + facilityId.charCodeAt(facilityId.length - 1);
-  
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
-    
-    // Create variation based on day and facility
-    const dayFactor = (date.getDay() === 0 || date.getDay() === 6) ? 0.85 : 1; // Weekends lower
-    const facilityFactor = 0.9 + (seed % 20) / 100; // 0.9 - 1.1 range
-    const randomFactor = 0.95 + ((i * seed) % 15) / 100; // Slight daily variation
-    
-    const baseTotal = 200;
-    const baseRn = 44;
-    
-    const actualTotal = Math.round(baseTotal * dayFactor * facilityFactor * randomFactor);
-    const actualRn = Math.round(baseRn * dayFactor * facilityFactor * randomFactor * (0.9 + ((i + seed) % 20) / 100));
-    const actualNonRn = actualTotal - actualRn;
-    
-    data.push({
-      date: date.toISOString().split('T')[0],
-      dayOfWeek: date.toLocaleDateString('en-AU', { weekday: 'short' }),
-      dayOfMonth: date.getDate(),
-      month: date.toLocaleDateString('en-AU', { month: 'short' }),
-      actualTotal,
-      actualRn,
-      actualNonRn,
-      targetTotal: 200,
-      targetRn: 44,
-      complianceTotal: Math.round((actualTotal / 200) * 100),
-      complianceRn: Math.round((actualRn / 44) * 100),
-    });
-  }
-  
-  return data;
-};
+// Import shared components
+import {
+  ComplianceKpiCard,
+  getKpiStatus,
+  InsightItem,
+} from "@/components/care-minutes";
 
-// Generate staffing data
-const generateStaffingData = (facilityId: string) => {
-  const seed = facilityId.charCodeAt(0);
-  return [
-    { role: "RN", planned: 4 + (seed % 2), required: 5, gap: -(1 - (seed % 2)), status: seed % 2 === 0 ? "shortfall" : "ok" },
-    { role: "EN", planned: 6, required: 6, gap: 0, status: "ok" },
-    { role: "PCW", planned: 12 + (seed % 3), required: 14, gap: -(2 - (seed % 3)), status: seed % 3 === 0 ? "ok" : "shortfall" },
-    { role: "Allied Health", planned: 2, required: 2, gap: 0, status: "ok" },
-  ];
-};
-
-// Status helpers
-const getComplianceStatus = (value: number) => {
-  if (value >= 100) return { status: "success", icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50" };
-  if (value >= 95) return { status: "warning", icon: AlertTriangle, color: "text-amber-600", bg: "bg-amber-50" };
-  return { status: "error", icon: XCircle, color: "text-red-600", bg: "bg-red-50" };
-};
-
+// Calendar cell color based on compliance
 const getCalendarCellColor = (compliance: number) => {
   if (compliance >= 100) return "bg-emerald-500";
   if (compliance >= 95) return "bg-amber-400";
@@ -110,89 +52,40 @@ const getCalendarCellColor = (compliance: number) => {
   return "bg-red-500";
 };
 
-const CareMinutesFacilities = () => {
-  const [selectedFacility, setSelectedFacility] = useState(facilities[0].id);
+// Staffing signal colors
+const getStaffingSignalColor = (status: string) => {
+  return status === "ok" 
+    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" 
+    : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+};
+
+export default function CareMinutesFacilities() {
+  const [searchParams] = useSearchParams();
+  const urlFacilityId = searchParams.get('id');
+  
+  // Get portfolio facilities (same as Overview for consistency)
+  const facilities = useMemo(() => getPortfolioFacilities(4), []);
+  
+  // Initialize with URL param or first facility
+  const [selectedFacility, setSelectedFacility] = useState(
+    urlFacilityId && facilities.some(f => f.id === urlFacilityId)
+      ? urlFacilityId 
+      : facilities[0].id
+  );
   const [dateRange, setDateRange] = useState("30");
 
-  const facility = facilities.find(f => f.id === selectedFacility) || facilities[0];
-  const dailyData = useMemo(() => generateDailyData(selectedFacility), [selectedFacility]);
+  // Update selection if URL param changes
+  useEffect(() => {
+    if (urlFacilityId && facilities.some(f => f.id === urlFacilityId)) {
+      setSelectedFacility(urlFacilityId);
+    }
+  }, [urlFacilityId, facilities]);
+
+  const facility = getFacilityById(selectedFacility) || facilities[0];
+  const dailyData = useMemo(() => generateDailyData(selectedFacility, parseInt(dateRange)), [selectedFacility, dateRange]);
+  const metrics = useMemo(() => generateFacilityMetrics(selectedFacility), [selectedFacility]);
   const staffingData = useMemo(() => generateStaffingData(selectedFacility), [selectedFacility]);
-
-  // Calculate KPIs from daily data
-  const kpis = useMemo(() => {
-    const avgTotal = dailyData.reduce((sum, d) => sum + d.actualTotal, 0) / dailyData.length;
-    const avgRn = dailyData.reduce((sum, d) => sum + d.actualRn, 0) / dailyData.length;
-    const daysBelowTarget = dailyData.filter(d => d.complianceTotal < 100).length;
-    const rnShortfallDays = dailyData.filter(d => d.complianceRn < 100).length;
-    
-    return {
-      totalCompliance: Math.round((avgTotal / 200) * 100),
-      rnCompliance: Math.round((avgRn / 44) * 100),
-      avgDailyMinutes: Math.round(avgTotal),
-      daysBelowTarget,
-      rnShortfallDays,
-    };
-  }, [dailyData]);
-
-  // Generate insights based on data
-  const insights = useMemo(() => {
-    const result = [];
-    
-    // Check RN compliance
-    if (kpis.rnCompliance < kpis.totalCompliance) {
-      result.push({
-        type: "warning",
-        title: "RN minutes are the primary constraint",
-        description: `RN compliance (${kpis.rnCompliance}%) is ${kpis.totalCompliance - kpis.rnCompliance}% lower than total care minutes. Consider prioritizing RN recruitment or agency coverage.`,
-        action: "Review RN rostering gaps",
-      });
-    }
-    
-    // Check weekend patterns
-    const weekendData = dailyData.filter(d => d.dayOfWeek === 'Sat' || d.dayOfWeek === 'Sun');
-    const weekendAvg = weekendData.reduce((sum, d) => sum + d.complianceTotal, 0) / weekendData.length;
-    if (weekendAvg < 95) {
-      result.push({
-        type: "alert",
-        title: "Weekend staffing underperformance",
-        description: `Weekend compliance averages ${Math.round(weekendAvg)}%, significantly below target. This pattern suggests rostering gaps on Saturdays and Sundays.`,
-        action: "Increase weekend RN coverage",
-      });
-    }
-    
-    // Check for persistent issues
-    if (kpis.daysBelowTarget > 10) {
-      result.push({
-        type: "critical",
-        title: "Persistent compliance shortfall",
-        description: `${kpis.daysBelowTarget} of the last 30 days were below target. This is a structural issue requiring workforce planning intervention.`,
-        action: "Schedule workforce planning review",
-      });
-    }
-    
-    // Skill mix observation
-    const avgRnRatio = dailyData.reduce((sum, d) => sum + (d.actualRn / d.actualTotal), 0) / dailyData.length;
-    if (avgRnRatio < 0.22) {
-      result.push({
-        type: "info",
-        title: "Skill mix adjustment recommended",
-        description: `RN minutes represent only ${Math.round(avgRnRatio * 100)}% of total care minutes (target: 22%). Consider rebalancing staff allocation.`,
-        action: "Adjust skill mix ratios",
-      });
-    }
-    
-    // Positive insight if applicable
-    if (kpis.totalCompliance >= 100 && kpis.rnCompliance >= 100) {
-      result.push({
-        type: "success",
-        title: "Facility meeting all targets",
-        description: "This facility is currently compliant across both total care and RN minutes. Maintain current staffing levels and rostering patterns.",
-        action: "Continue monitoring",
-      });
-    }
-    
-    return result.slice(0, 4);
-  }, [dailyData, kpis]);
+  const insights = useMemo(() => generateFacilityInsights(selectedFacility), [selectedFacility]);
 
   // Prepare weekly aggregated data for skill mix chart
   const weeklySkillMixData = useMemo(() => {
@@ -213,13 +106,24 @@ const CareMinutesFacilities = () => {
       week,
       rn: Math.round(data.rn / data.count),
       nonRn: Math.round(data.nonRn / data.count),
-      rnTarget: 44,
-      totalTarget: 200,
+      rnTarget: facility.targetRn,
+      totalTarget: facility.targetTotal,
     }));
-  }, [dailyData]);
+  }, [dailyData, facility]);
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Link 
+          to="/care-minutes/overview" 
+          className="flex items-center gap-1 hover:text-foreground transition-colors"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Back to Portfolio
+        </Link>
+      </div>
+
       {/* Page Header with Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -256,39 +160,39 @@ const CareMinutesFacilities = () => {
 
       {/* Section 1: Facility Health Summary */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <KpiCard
+        <ComplianceKpiCard
           title="Total Care Compliance"
-          value={`${kpis.totalCompliance}%`}
-          target="Target: 100%"
-          status={getComplianceStatus(kpis.totalCompliance)}
+          value={`${metrics.totalCareCompliance}%`}
+          target={`Target: ${COMPLIANCE_TARGET}%`}
+          status={getKpiStatus(metrics.totalCareCompliance)}
           icon={Activity}
         />
-        <KpiCard
+        <ComplianceKpiCard
           title="RN Minutes Compliance"
-          value={`${kpis.rnCompliance}%`}
-          target="Target: 100%"
-          status={getComplianceStatus(kpis.rnCompliance)}
+          value={`${metrics.rnCompliance}%`}
+          target={`Target: ${COMPLIANCE_TARGET}%`}
+          status={getKpiStatus(metrics.rnCompliance)}
           icon={UserCheck}
         />
-        <KpiCard
+        <ComplianceKpiCard
           title="Avg Daily Minutes"
-          value={`${kpis.avgDailyMinutes}`}
-          target="Target: 200 min"
-          status={getComplianceStatus((kpis.avgDailyMinutes / 200) * 100)}
+          value={`${metrics.avgDailyMinutes}`}
+          target={`Target: ${facility.targetTotal} min`}
+          status={getKpiStatus((metrics.avgDailyMinutes / facility.targetTotal) * 100)}
           icon={Clock}
         />
-        <KpiCard
+        <ComplianceKpiCard
           title="Days Below Target"
-          value={`${kpis.daysBelowTarget}`}
-          target="Last 30 days"
-          status={kpis.daysBelowTarget <= 3 ? getComplianceStatus(100) : kpis.daysBelowTarget <= 7 ? getComplianceStatus(96) : getComplianceStatus(90)}
+          value={`${metrics.daysBelowTarget}`}
+          target={`Last ${dateRange} days`}
+          status={metrics.daysBelowTarget <= 3 ? "good" : metrics.daysBelowTarget <= 7 ? "warning" : "danger"}
           icon={Calendar}
         />
-        <KpiCard
+        <ComplianceKpiCard
           title="RN Shortfall Days"
-          value={`${kpis.rnShortfallDays}`}
-          target="Last 30 days"
-          status={kpis.rnShortfallDays <= 3 ? getComplianceStatus(100) : kpis.rnShortfallDays <= 7 ? getComplianceStatus(96) : getComplianceStatus(90)}
+          value={`${metrics.rnShortfallDays}`}
+          target={`Last ${dateRange} days`}
+          status={metrics.rnShortfallDays <= 3 ? "good" : metrics.rnShortfallDays <= 7 ? "warning" : "danger"}
           icon={Users}
         />
       </div>
@@ -334,10 +238,10 @@ const CareMinutesFacilities = () => {
               </div>
             ))}
             {/* Add empty cells to align with correct day of week */}
-            {Array.from({ length: new Date(dailyData[0]?.date).getDay() === 0 ? 6 : new Date(dailyData[0]?.date).getDay() - 1 }).map((_, i) => (
+            {Array.from({ length: dailyData[0] ? (new Date(dailyData[0].date).getDay() === 0 ? 6 : new Date(dailyData[0].date).getDay() - 1) : 0 }).map((_, i) => (
               <div key={`empty-${i}`} className="aspect-square" />
             ))}
-            {dailyData.map((day, i) => (
+            {dailyData.map((day) => (
               <div
                 key={day.date}
                 className={cn(
@@ -388,7 +292,7 @@ const CareMinutesFacilities = () => {
                 />
                 <YAxis tick={{ fontSize: 12 }} domain={[0, 250]} />
                 <Tooltip
-                  content={({ active, payload, label }) => {
+                  content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
                     const data = payload[0]?.payload;
                     return (
@@ -408,8 +312,8 @@ const CareMinutesFacilities = () => {
                     );
                   }}
                 />
-                <ReferenceLine y={200} stroke="hsl(var(--primary))" strokeDasharray="5 5" label={{ value: "Total Target", position: "right", fontSize: 10 }} />
-                <ReferenceLine y={44} stroke="hsl(142.1 76.2% 36.3%)" strokeDasharray="5 5" label={{ value: "RN Target", position: "right", fontSize: 10 }} />
+                <ReferenceLine y={facility.targetTotal} stroke="hsl(var(--primary))" strokeDasharray="5 5" label={{ value: "Total Target", position: "right", fontSize: 10 }} />
+                <ReferenceLine y={facility.targetRn} stroke="hsl(142.1 76.2% 36.3%)" strokeDasharray="5 5" label={{ value: "RN Target", position: "right", fontSize: 10 }} />
                 <Area
                   type="monotone"
                   dataKey="actualTotal"
@@ -432,200 +336,104 @@ const CareMinutesFacilities = () => {
         </CardContent>
       </Card>
 
-      {/* Section 4: RN vs Non-RN Skill Mix */}
+      {/* Section 4: Weekly Skill Mix */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center gap-2">
             <Users className="h-5 w-5 text-muted-foreground" />
-            RN vs Non-RN Skill Mix Breakdown
+            Weekly Skill Mix Breakdown
           </CardTitle>
           <CardDescription>
-            Weekly average care minutes by staff type
+            RN vs Non-RN care minute distribution by week
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[280px]">
+          <div className="h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weeklySkillMixData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <BarChart data={weeklySkillMixData}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
                 <XAxis dataKey="week" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} domain={[0, 250]} />
+                <YAxis tick={{ fontSize: 12 }} domain={[0, 220]} />
                 <Tooltip
                   content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
                     const data = payload[0]?.payload;
-                    const total = (data?.rn || 0) + (data?.nonRn || 0);
-                    const rnRatio = Math.round(((data?.rn || 0) / total) * 100);
                     return (
                       <div className="bg-popover text-popover-foreground text-xs rounded-lg shadow-lg p-3 border">
                         <div className="font-semibold mb-2">{data?.week}</div>
                         <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                            <span>RN: {data?.rn} min ({rnRatio}%)</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-sky-500" />
-                            <span>Non-RN: {data?.nonRn} min ({100 - rnRatio}%)</span>
-                          </div>
-                          <div className="pt-1 border-t mt-1">
-                            Total: {total} min (Target: 200)
-                          </div>
+                          <div>RN: {data?.rn} min (target: {data?.rnTarget})</div>
+                          <div>Non-RN: {data?.nonRn} min</div>
+                          <div>Total: {data?.rn + data?.nonRn} min (target: {data?.totalTarget})</div>
                         </div>
                       </div>
                     );
                   }}
                 />
-                <Legend />
-                <ReferenceLine y={200} stroke="hsl(var(--muted-foreground))" strokeDasharray="5 5" />
-                <Bar dataKey="rn" stackId="a" fill="hsl(142.1 76.2% 36.3%)" name="RN Minutes" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="nonRn" stackId="a" fill="hsl(199 89% 48%)" name="Non-RN Minutes" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="rn" stackId="a" fill="hsl(221 83% 53%)" name="RN Minutes" />
+                <Bar dataKey="nonRn" stackId="a" fill="hsl(142 76% 36%)" name="Non-RN Minutes" radius={[4, 4, 0, 0]} />
+                <ReferenceLine y={facility.targetTotal} stroke="hsl(var(--primary))" strokeDasharray="5 5" />
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-4 flex items-center justify-center gap-8 text-sm">
+          <div className="flex items-center justify-center gap-6 mt-4 text-sm">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-emerald-500" />
-              <span className="text-muted-foreground">RN target: 44 min (22%)</span>
+              <div className="w-3 h-3 rounded" style={{ backgroundColor: "hsl(221 83% 53%)" }} />
+              <span className="text-muted-foreground">RN Minutes</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-sky-500" />
-              <span className="text-muted-foreground">Non-RN: 156 min (78%)</span>
+              <div className="w-3 h-3 rounded" style={{ backgroundColor: "hsl(142 76% 36%)" }} />
+              <span className="text-muted-foreground">Non-RN Minutes</span>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Section 5: Staffing & Capacity Signals */}
+      {/* Section 5: Staffing Signals */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Target className="h-5 w-5 text-muted-foreground" />
-            Staffing & Capacity Signals
-          </CardTitle>
-          <CardDescription>
-            Current staffing levels vs requirements
-          </CardDescription>
+          <CardTitle className="text-lg">Current Staffing Signals</CardTitle>
+          <CardDescription>Today's rostered vs required staff by role</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {staffingData.map((role) => (
-              <div
-                key={role.role}
+            {staffingData.map((staff) => (
+              <div 
+                key={staff.role}
                 className={cn(
                   "p-4 rounded-lg border",
-                  role.status === "shortfall" ? "border-red-200 bg-red-50" : "border-border bg-muted/30"
+                  getStaffingSignalColor(staff.status)
                 )}
               >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium">{role.role}</span>
-                  {role.status === "shortfall" ? (
-                    <AlertCircle className="h-4 w-4 text-red-500" />
-                  ) : (
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  )}
-                </div>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Planned:</span>
-                    <span className="font-medium">{role.planned}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Required:</span>
-                    <span className="font-medium">{role.required}</span>
-                  </div>
-                  <div className="flex justify-between pt-1 border-t">
-                    <span className="text-muted-foreground">Gap:</span>
-                    <span className={cn(
-                      "font-semibold",
-                      role.gap < 0 ? "text-red-600" : "text-emerald-600"
-                    )}>
-                      {role.gap === 0 ? "—" : role.gap > 0 ? `+${role.gap}` : role.gap}
-                    </span>
-                  </div>
-                </div>
+                <p className="text-sm font-medium">{staff.role}</p>
+                <p className="text-2xl font-bold mt-1">
+                  {staff.planned} / {staff.required}
+                </p>
+                <p className="text-xs mt-1">
+                  {staff.gap === 0 ? "Fully staffed" : `${Math.abs(staff.gap)} ${staff.gap < 0 ? "under" : "over"}`}
+                </p>
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* Section 6: Actionable Insights & Recommendations */}
+      {/* Section 6: Actionable Insights */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-amber-500" />
-            Actionable Insights & Recommendations
-          </CardTitle>
-          <CardDescription>
-            Auto-generated observations based on current data
-          </CardDescription>
+          <CardTitle className="text-lg">Actionable Insights</CardTitle>
+          <CardDescription>System-generated recommendations based on facility data</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {insights.map((insight, index) => (
-              <div
-                key={index}
-                className={cn(
-                  "p-4 rounded-lg border flex gap-4",
-                  insight.type === "critical" && "border-red-200 bg-red-50",
-                  insight.type === "warning" && "border-amber-200 bg-amber-50",
-                  insight.type === "alert" && "border-orange-200 bg-orange-50",
-                  insight.type === "info" && "border-sky-200 bg-sky-50",
-                  insight.type === "success" && "border-emerald-200 bg-emerald-50"
-                )}
-              >
-                <div className="flex-shrink-0 mt-0.5">
-                  {insight.type === "critical" && <XCircle className="h-5 w-5 text-red-600" />}
-                  {insight.type === "warning" && <AlertTriangle className="h-5 w-5 text-amber-600" />}
-                  {insight.type === "alert" && <AlertCircle className="h-5 w-5 text-orange-600" />}
-                  {insight.type === "info" && <Lightbulb className="h-5 w-5 text-sky-600" />}
-                  {insight.type === "success" && <CheckCircle2 className="h-5 w-5 text-emerald-600" />}
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium mb-1">{insight.title}</div>
-                  <p className="text-sm text-muted-foreground mb-2">{insight.description}</p>
-                  <Badge variant="outline" className="text-xs">
-                    Suggested: {insight.action}
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
+        <CardContent className="space-y-3">
+          {insights.length > 0 ? (
+            insights.map((insight, index) => (
+              <InsightItem key={index} insight={insight} />
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground">No significant insights to report.</p>
+          )}
         </CardContent>
       </Card>
     </div>
   );
-};
-
-// KPI Card Component
-interface KpiCardProps {
-  title: string;
-  value: string;
-  target: string;
-  status: ReturnType<typeof getComplianceStatus>;
-  icon: React.ElementType;
 }
-
-const KpiCard = ({ title, value, target, status, icon: Icon }: KpiCardProps) => {
-  const StatusIcon = status.icon;
-  
-  return (
-    <Card className={cn("relative overflow-hidden", status.bg)}>
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <p className="text-xs font-medium text-muted-foreground mb-1">{title}</p>
-            <p className={cn("text-2xl font-bold", status.color)}>{value}</p>
-            <p className="text-xs text-muted-foreground mt-1">{target}</p>
-          </div>
-          <div className={cn("p-2 rounded-full", status.bg)}>
-            <StatusIcon className={cn("h-5 w-5", status.color)} />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-export default CareMinutesFacilities;

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -14,90 +15,89 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { LineChart, Line, XAxis, YAxis, ReferenceLine, ResponsiveContainer } from "recharts";
-import { CheckCircle2, AlertTriangle, XCircle, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Mock facility data consistent with Overview v2 and Facility Drill-Down v2
-const facilities = [
-  { id: 1, name: "Sunrise Aged Care", totalCompliance: 98.2, rnCompliance: 96.5, totalVariance: 12, rnVariance: -8, status: "compliant" },
-  { id: 2, name: "Harbour View Lodge", totalCompliance: 95.1, rnCompliance: 92.3, totalVariance: -22, rnVariance: -35, status: "partial" },
-  { id: 3, name: "Mountain Rest Home", totalCompliance: 101.5, rnCompliance: 104.2, totalVariance: 45, rnVariance: 18, status: "compliant" },
-  { id: 4, name: "Coastal Care Centre", totalCompliance: 88.4, rnCompliance: 78.9, totalVariance: -68, rnVariance: -95, status: "non-compliant" },
-  { id: 5, name: "Valley Gardens", totalCompliance: 99.8, rnCompliance: 101.1, totalVariance: 5, rnVariance: 4, status: "compliant" },
-  { id: 6, name: "Riverside Manor", totalCompliance: 94.2, rnCompliance: 89.7, totalVariance: -28, rnVariance: -42, status: "partial" },
-  { id: 7, name: "Parkview Residence", totalCompliance: 102.3, rnCompliance: 98.9, totalVariance: 52, rnVariance: -5, status: "compliant" },
-  { id: 8, name: "Greenfield House", totalCompliance: 97.6, rnCompliance: 95.8, totalVariance: -12, rnVariance: -18, status: "compliant" },
-];
+// Import shared data layer
+import {
+  getAllFacilities,
+  getFacilityById,
+  COMPLIANCE_TARGET,
+  generateAllFacilityMetrics,
+  generateMonthlyTrends,
+  generateExecutiveCommentary,
+  getComplianceStatus,
+  calculatePortfolioSummary,
+} from "@/lib/care-minutes";
 
-// Trend data for the reporting period
-const trendData = [
-  { month: "Jul", totalCompliance: 94.2, rnCompliance: 91.5 },
-  { month: "Aug", totalCompliance: 95.8, rnCompliance: 93.2 },
-  { month: "Sep", totalCompliance: 96.1, rnCompliance: 92.8 },
-  { month: "Oct", totalCompliance: 97.3, rnCompliance: 94.5 },
-  { month: "Nov", totalCompliance: 96.8, rnCompliance: 93.9 },
-  { month: "Dec", totalCompliance: 97.1, rnCompliance: 94.8 },
-];
+// Import shared components
+import {
+  ComplianceStatusBadge,
+  FacilityLink,
+  TrendIcon,
+} from "@/components/care-minutes";
 
-// RN shortfall facilities
-const rnShortfallFacilities = [
-  { name: "Coastal Care Centre", shortfallDays: 18, trend: "worsening", duration: "3 months" },
-  { name: "Riverside Manor", shortfallDays: 8, trend: "stable", duration: "6 weeks" },
-  { name: "Harbour View Lodge", shortfallDays: 5, trend: "improving", duration: "2 weeks" },
-];
-
-// Executive commentary statements
-const executiveStatements = [
-  "The portfolio achieved 96.9% compliance with total care minute requirements for the reporting period, meeting the 95% target threshold.",
-  "RN minutes compliance was 93.8% across the portfolio, with two facilities (Coastal Care Centre and Riverside Manor) consistently below target.",
-  "Non-compliance events were concentrated on weekends and public holiday periods, accounting for 72% of shortfall days.",
-  "Coastal Care Centre requires immediate attention with 18 days of RN shortfall and a worsening trend over the past quarter.",
-  "Five of eight facilities (62.5%) achieved full compliance across both total care and RN minute requirements.",
-];
-
-// Calculate portfolio metrics
-const portfolioMetrics = {
-  totalCompliance: 96.9,
-  rnCompliance: 93.8,
-  facilitiesFullyCompliant: 5,
-  facilitiesTotal: 8,
-  facilitiesWithRnShortfall: 3,
-  daysNonCompliance: 31,
-};
-
-function getOverallStatus() {
-  if (portfolioMetrics.totalCompliance >= 95 && portfolioMetrics.rnCompliance >= 95) {
-    return { label: "Compliant", variant: "compliant" as const };
-  } else if (portfolioMetrics.totalCompliance >= 90 && portfolioMetrics.rnCompliance >= 85) {
-    return { label: "Partial Compliance", variant: "partial" as const };
-  }
-  return { label: "Non-Compliant", variant: "non-compliant" as const };
-}
-
-function StatusBadge({ status }: { status: "compliant" | "partial" | "non-compliant" }) {
-  const config = {
-    compliant: { label: "Met", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400" },
-    partial: { label: "Partial", className: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400" },
-    "non-compliant": { label: "Not Met", className: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
-  };
-  
-  return (
-    <Badge className={cn("font-medium", config[status].className)}>
-      {config[status].label}
-    </Badge>
-  );
-}
-
-function TrendIcon({ trend }: { trend: string }) {
-  if (trend === "improving") return <TrendingUp className="h-4 w-4 text-emerald-600" />;
-  if (trend === "worsening") return <TrendingDown className="h-4 w-4 text-red-600" />;
-  return <Minus className="h-4 w-4 text-muted-foreground" />;
-}
+import type { ComplianceStatus } from "@/lib/care-minutes/types";
 
 export default function PerformanceStatement() {
-  const overallStatus = getOverallStatus();
+  // Get all facilities for the Performance Statement
+  const facilities = useMemo(() => getAllFacilities(), []);
+  const facilityIds = useMemo(() => facilities.map(f => f.id), [facilities]);
+  
+  // Generate metrics for all facilities
+  const facilityMetrics = useMemo(() => generateAllFacilityMetrics(facilityIds), [facilityIds]);
+  
+  // Calculate portfolio summary
+  const portfolioMetrics = useMemo(() => 
+    calculatePortfolioSummary(facilityMetrics, facilities.length), 
+    [facilityMetrics, facilities.length]
+  );
+
+  // Monthly trend data
+  const trendData = useMemo(() => generateMonthlyTrends(6), []);
+  
+  // Facilities with RN shortfall
+  const rnShortfallFacilities = useMemo(() => {
+    return facilityMetrics
+      .filter(m => m.rnCompliance < COMPLIANCE_TARGET)
+      .sort((a, b) => b.rnShortfallDays - a.rnShortfallDays)
+      .slice(0, 3)
+      .map(m => {
+        const facility = getFacilityById(m.facilityId);
+        const trend = m.rnShortfallDays > 10 ? "worsening" : m.rnShortfallDays > 5 ? "stable" : "improving";
+        return {
+          id: m.facilityId,
+          name: facility?.name || "Unknown",
+          shortfallDays: m.rnShortfallDays,
+          trend,
+          duration: m.rnShortfallDays > 10 ? "3+ months" : m.rnShortfallDays > 5 ? "6 weeks" : "2 weeks",
+        };
+      });
+  }, [facilityMetrics]);
+  
+  // Executive commentary (dynamically generated)
+  const executiveStatements = useMemo(() => 
+    generateExecutiveCommentary(facilityMetrics), 
+    [facilityMetrics]
+  );
+
+  // Get overall status
+  const overallStatus = useMemo((): { label: string; variant: ComplianceStatus } => {
+    if (portfolioMetrics.totalCareCompliance >= COMPLIANCE_TARGET && portfolioMetrics.rnCompliance >= COMPLIANCE_TARGET) {
+      return { label: "Compliant", variant: "compliant" };
+    } else if (portfolioMetrics.totalCareCompliance >= 95 && portfolioMetrics.rnCompliance >= 90) {
+      return { label: "At Risk", variant: "at-risk" };
+    }
+    return { label: "Non-Compliant", variant: "non-compliant" };
+  }, [portfolioMetrics]);
+
   const currentDate = new Date();
-  const reportingPeriod = `Q2 FY2024-25 (Oct – Dec 2024)`;
+  const reportingPeriod = "Q4 FY2025-26 (Jan – Mar 2026)";
+
+  // Fully compliant count
+  const fullyCompliantCount = facilityMetrics.filter(m => 
+    m.totalCareCompliance >= COMPLIANCE_TARGET && m.rnCompliance >= COMPLIANCE_TARGET
+  ).length;
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-12">
@@ -114,12 +114,12 @@ export default function PerformanceStatement() {
               className={cn(
                 "text-sm px-3 py-1",
                 overallStatus.variant === "compliant" && "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
-                overallStatus.variant === "partial" && "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
+                overallStatus.variant === "at-risk" && "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
                 overallStatus.variant === "non-compliant" && "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
               )}
             >
               {overallStatus.variant === "compliant" && <CheckCircle2 className="h-4 w-4 mr-1.5" />}
-              {overallStatus.variant === "partial" && <AlertTriangle className="h-4 w-4 mr-1.5" />}
+              {overallStatus.variant === "at-risk" && <AlertTriangle className="h-4 w-4 mr-1.5" />}
               {overallStatus.variant === "non-compliant" && <XCircle className="h-4 w-4 mr-1.5" />}
               {overallStatus.label}
             </Badge>
@@ -138,10 +138,10 @@ export default function PerformanceStatement() {
             <CardContent className="pt-4 pb-3">
               <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Care Compliance</p>
               <p className={cn(
-                "text-2xl font-semibold mt-1",
-                portfolioMetrics.totalCompliance >= 95 ? "text-emerald-600" : "text-amber-600"
+                "text-2xl font-semibold mt-1 tabular-nums",
+                portfolioMetrics.totalCareCompliance >= COMPLIANCE_TARGET ? "text-emerald-600" : "text-amber-600"
               )}>
-                {portfolioMetrics.totalCompliance}%
+                {portfolioMetrics.totalCareCompliance}%
               </p>
             </CardContent>
           </Card>
@@ -149,8 +149,8 @@ export default function PerformanceStatement() {
             <CardContent className="pt-4 pb-3">
               <p className="text-xs text-muted-foreground uppercase tracking-wide">RN Compliance</p>
               <p className={cn(
-                "text-2xl font-semibold mt-1",
-                portfolioMetrics.rnCompliance >= 95 ? "text-emerald-600" : "text-amber-600"
+                "text-2xl font-semibold mt-1 tabular-nums",
+                portfolioMetrics.rnCompliance >= COMPLIANCE_TARGET ? "text-emerald-600" : "text-amber-600"
               )}>
                 {portfolioMetrics.rnCompliance}%
               </p>
@@ -159,8 +159,8 @@ export default function PerformanceStatement() {
           <Card className="bg-card">
             <CardContent className="pt-4 pb-3">
               <p className="text-xs text-muted-foreground uppercase tracking-wide">Fully Compliant</p>
-              <p className="text-2xl font-semibold mt-1 text-foreground">
-                {portfolioMetrics.facilitiesFullyCompliant} / {portfolioMetrics.facilitiesTotal}
+              <p className="text-2xl font-semibold mt-1 text-foreground tabular-nums">
+                {fullyCompliantCount} / {facilities.length}
               </p>
             </CardContent>
           </Card>
@@ -168,10 +168,10 @@ export default function PerformanceStatement() {
             <CardContent className="pt-4 pb-3">
               <p className="text-xs text-muted-foreground uppercase tracking-wide">RN Shortfalls</p>
               <p className={cn(
-                "text-2xl font-semibold mt-1",
-                portfolioMetrics.facilitiesWithRnShortfall > 0 ? "text-amber-600" : "text-foreground"
+                "text-2xl font-semibold mt-1 tabular-nums",
+                rnShortfallFacilities.length > 0 ? "text-amber-600" : "text-foreground"
               )}>
-                {portfolioMetrics.facilitiesWithRnShortfall} facilities
+                {rnShortfallFacilities.length} facilities
               </p>
             </CardContent>
           </Card>
@@ -179,7 +179,7 @@ export default function PerformanceStatement() {
             <CardContent className="pt-4 pb-3">
               <p className="text-xs text-muted-foreground uppercase tracking-wide">Non-Compliance Days</p>
               <p className={cn(
-                "text-2xl font-semibold mt-1",
+                "text-2xl font-semibold mt-1 tabular-nums",
                 portfolioMetrics.daysNonCompliance > 20 ? "text-red-600" : "text-amber-600"
               )}>
                 {portfolioMetrics.daysNonCompliance}
@@ -205,38 +205,48 @@ export default function PerformanceStatement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {facilities.map((facility) => (
-                <TableRow key={facility.id} className="hover:bg-muted/30">
-                  <TableCell className="font-medium">{facility.name}</TableCell>
-                  <TableCell className={cn(
-                    "text-right tabular-nums",
-                    facility.totalCompliance < 95 && "text-red-600 font-medium"
-                  )}>
-                    {facility.totalCompliance.toFixed(1)}%
-                  </TableCell>
-                  <TableCell className={cn(
-                    "text-right tabular-nums",
-                    facility.rnCompliance < 95 && "text-red-600 font-medium"
-                  )}>
-                    {facility.rnCompliance.toFixed(1)}%
-                  </TableCell>
-                  <TableCell className={cn(
-                    "text-right tabular-nums",
-                    facility.totalVariance < 0 ? "text-red-600" : "text-emerald-600"
-                  )}>
-                    {facility.totalVariance > 0 ? "+" : ""}{facility.totalVariance} min
-                  </TableCell>
-                  <TableCell className={cn(
-                    "text-right tabular-nums",
-                    facility.rnVariance < 0 ? "text-red-600" : "text-emerald-600"
-                  )}>
-                    {facility.rnVariance > 0 ? "+" : ""}{facility.rnVariance} min
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <StatusBadge status={facility.status as "compliant" | "partial" | "non-compliant"} />
-                  </TableCell>
-                </TableRow>
-              ))}
+              {facilityMetrics.map((metrics) => {
+                const facility = getFacilityById(metrics.facilityId);
+                const status = getComplianceStatus(Math.min(metrics.totalCareCompliance, metrics.rnCompliance));
+                
+                return (
+                  <TableRow key={metrics.facilityId} className="hover:bg-muted/30">
+                    <TableCell>
+                      <FacilityLink 
+                        facilityId={metrics.facilityId} 
+                        facilityName={facility?.name || "Unknown"} 
+                      />
+                    </TableCell>
+                    <TableCell className={cn(
+                      "text-right tabular-nums",
+                      metrics.totalCareCompliance < COMPLIANCE_TARGET && "text-red-600 font-medium"
+                    )}>
+                      {metrics.totalCareCompliance.toFixed(1)}%
+                    </TableCell>
+                    <TableCell className={cn(
+                      "text-right tabular-nums",
+                      metrics.rnCompliance < COMPLIANCE_TARGET && "text-red-600 font-medium"
+                    )}>
+                      {metrics.rnCompliance.toFixed(1)}%
+                    </TableCell>
+                    <TableCell className={cn(
+                      "text-right tabular-nums",
+                      metrics.totalVariance < 0 ? "text-red-600" : "text-emerald-600"
+                    )}>
+                      {metrics.totalVariance > 0 ? "+" : ""}{metrics.totalVariance} min
+                    </TableCell>
+                    <TableCell className={cn(
+                      "text-right tabular-nums",
+                      metrics.rnVariance < 0 ? "text-red-600" : "text-emerald-600"
+                    )}>
+                      {metrics.rnVariance > 0 ? "+" : ""}{metrics.rnVariance} min
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <ComplianceStatusBadge status={status} size="sm" />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </Card>
@@ -270,10 +280,10 @@ export default function PerformanceStatement() {
                     tickFormatter={(value) => `${value}%`}
                   />
                   <ReferenceLine 
-                    y={95} 
+                    y={COMPLIANCE_TARGET} 
                     stroke="hsl(var(--muted-foreground))" 
                     strokeDasharray="4 4" 
-                    label={{ value: "Target 95%", position: "right", fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                    label={{ value: `Target ${COMPLIANCE_TARGET}%`, position: "right", fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                   />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Line 
@@ -306,7 +316,7 @@ export default function PerformanceStatement() {
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-6 border-t-2 border-dashed border-muted-foreground" />
-                <span className="text-muted-foreground">95% Target</span>
+                <span className="text-muted-foreground">{COMPLIANCE_TARGET}% Target</span>
               </div>
             </div>
           </CardContent>
@@ -314,52 +324,56 @@ export default function PerformanceStatement() {
       </section>
 
       {/* 5. RN Minutes Compliance Focus */}
-      <section>
-        <h2 className="text-lg font-medium text-foreground mb-4">RN Minutes Compliance Focus</h2>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground mb-4">
-              Facilities with persistent RN minute shortfalls requiring oversight attention.
-            </p>
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="font-medium">Facility</TableHead>
-                  <TableHead className="text-right font-medium">Shortfall Days</TableHead>
-                  <TableHead className="text-right font-medium">Duration</TableHead>
-                  <TableHead className="text-center font-medium">Trend</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rnShortfallFacilities.map((facility) => (
-                  <TableRow key={facility.name} className="hover:bg-muted/30">
-                    <TableCell className="font-medium">{facility.name}</TableCell>
-                    <TableCell className="text-right tabular-nums text-red-600 font-medium">
-                      {facility.shortfallDays} days
-                    </TableCell>
-                    <TableCell className="text-right text-muted-foreground">
-                      {facility.duration}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-center gap-1.5">
-                        <TrendIcon trend={facility.trend} />
-                        <span className={cn(
-                          "text-sm capitalize",
-                          facility.trend === "improving" && "text-emerald-600",
-                          facility.trend === "worsening" && "text-red-600",
-                          facility.trend === "stable" && "text-muted-foreground"
-                        )}>
-                          {facility.trend}
-                        </span>
-                      </div>
-                    </TableCell>
+      {rnShortfallFacilities.length > 0 && (
+        <section>
+          <h2 className="text-lg font-medium text-foreground mb-4">RN Minutes Compliance Focus</h2>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm text-muted-foreground mb-4">
+                Facilities with persistent RN minute shortfalls requiring oversight attention.
+              </p>
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="font-medium">Facility</TableHead>
+                    <TableHead className="text-right font-medium">Shortfall Days</TableHead>
+                    <TableHead className="text-right font-medium">Duration</TableHead>
+                    <TableHead className="text-center font-medium">Trend</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </section>
+                </TableHeader>
+                <TableBody>
+                  {rnShortfallFacilities.map((facility) => (
+                    <TableRow key={facility.id} className="hover:bg-muted/30">
+                      <TableCell>
+                        <FacilityLink facilityId={facility.id} facilityName={facility.name} />
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-red-600 font-medium">
+                        {facility.shortfallDays} days
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                        {facility.duration}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <TrendIcon direction={facility.trend === "improving" ? "up" : facility.trend === "worsening" ? "down" : "flat"} />
+                          <span className={cn(
+                            "text-sm capitalize",
+                            facility.trend === "improving" && "text-emerald-600",
+                            facility.trend === "worsening" && "text-red-600",
+                            facility.trend === "stable" && "text-muted-foreground"
+                          )}>
+                            {facility.trend}
+                          </span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </section>
+      )}
 
       {/* 6. Executive Commentary */}
       <section>
@@ -379,8 +393,9 @@ export default function PerformanceStatement() {
       </section>
 
       {/* Footer */}
-      <div className="border-t pt-4 text-xs text-muted-foreground">
-        <p>This statement is generated from operational data and is subject to final reconciliation. Data sources: Care minutes rostering system, AN-ACC classification records.</p>
+      <div className="border-t pt-6 text-center text-xs text-muted-foreground">
+        <p>This statement has been prepared in accordance with the Quality of Care Principles 2014.</p>
+        <p className="mt-1">Care minutes data sourced from Loop Care Minutes Module • Target threshold: {COMPLIANCE_TARGET}%</p>
       </div>
     </div>
   );

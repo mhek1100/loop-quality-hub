@@ -71,7 +71,7 @@ const App = () => {
               <Routes>
               <Route element={<DashboardLayout />}>
                 {/* Default redirect to Marketplace */}
-                <Route path="/" element={<Navigate to="/marketplace" replace />} />
+                <Route path="/" element={<Navigate to="/home" replace />} />
                 
                 {/* Primary nav */}
                 <Route path="/home" element={<Home />} />

@@ -1,18 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { 
-  Home, 
-  ShoppingBag, 
-  Compass, 
-  Settings, 
-  HelpCircle,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
   ChevronUp,
-  Clock,
-  BarChart3,
-  Heart,
-  Calendar
 } from "lucide-react";
 import { NavLink as RouterNavLink, useLocation } from "react-router-dom";
 import {
@@ -30,68 +21,7 @@ import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import loopLogo from "@/assets/loop-logo-full.svg";
-
-// Primary navigation items
-const primaryNavItems = [
-  { title: "Home", url: "/home", icon: Home },
-  { title: "Marketplace", url: "/marketplace", icon: ShoppingBag },
-  { title: "Workspace", url: "/workspace", icon: Compass },
-  { title: "Settings", url: "/settings", icon: Settings },
-  { title: "Help & Support", url: "/help", icon: HelpCircle },
-];
-
-// Product groups with children
-const productGroups = [
-  {
-    title: "Care minutes",
-    icon: Clock,
-    sections: [
-      {
-        title: "Default",
-        children: [
-          { title: "Overview", url: "/care-minutes/overview" },
-          { title: "Facilities", url: "/care-minutes/facilities" },
-          { title: "Performance Statement", url: "/care-minutes/performance-statement" },
-        ],
-      },
-      {
-        title: "Tableau",
-        children: [
-          { title: "Overview", url: "/care-minutes/overview-tableau" },
-          { title: "Facility View", url: "/care-minutes/facility-view-tableau" },
-          { title: "Performance Statement", url: "/care-minutes/performance-statement-tableau" },
-        ],
-      },
-    ],
-  },
-  {
-    title: "NQIP",
-    icon: BarChart3,
-    children: [
-      { title: "KPI Dashboard", url: "/nqip/kpi" },
-      { title: "Submissions", url: "/nqip/submissions" },
-      { title: "NQIP Settings", url: "/nqip/settings" },
-      { title: "NQIP Help", url: "/nqip/help" },
-    ],
-  },
-  {
-    title: "RN24/7",
-    icon: Heart,
-    children: [
-      { title: "Overview", url: "/rn247/overview" },
-      { title: "Reports", url: "/rn247/reports" },
-    ],
-  },
-  {
-    title: "Annual leave",
-    icon: Calendar,
-    children: [
-      { title: "Overview", url: "/annual-leave/overview" },
-      { title: "Requests", url: "/annual-leave/requests" },
-      { title: "Calendar", url: "/annual-leave/calendar" },
-    ],
-  },
-];
+import { primaryNavItems, productGroups } from "@/lib/nav-config";
 
 export function AppSidebar() {
   const { state } = useSidebar();

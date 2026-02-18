@@ -1,114 +1,77 @@
-# Care Minutes Default Section Review - IMPLEMENTED ✅
 
-## Executive Summary
+# Home Page Implementation Plan
 
-The three pages under **Products > Care Minutes > Default** (Overview, Facilities, and Performance Statement) have been refactored to use a shared data layer and unified components for consistency.
+## What the Screenshot Shows
 
----
+The Home page from the reference screenshot has three main sections:
 
-## Implementation Complete
+**Left/Centre Column:**
+1. **Welcome header** — "Welcome, [User Name]!"
+2. **Notifications/Alerts banner** — A highlighted card showing system maintenance notices
+3. **Action Items** — Two rows: "Care Minutes submission for Q1 is due in 5 days" and "Your PRODA device will expire in 12 days", each with a CTA button
+4. **Your Products section** — 2x2 grid of product cards (Care Minutes, NQIP, Annual Leave, RN 24/7), each with:
+   - A colourful gradient image/illustration area at the top
+   - Product name as a large heading
+   - Short description text
+   - "Go to [Product] Dashboard" button
 
-### Phase 1: Shared Data Layer ✅
-
-Created centralized data modules in `src/lib/care-minutes/`:
-
-| File | Purpose |
-|------|---------|
-| `types.ts` | TypeScript interfaces for all Care Minutes data |
-| `facilities.ts` | Single source of truth for 8 facility definitions |
-| `metrics.ts` | Compliance calculations and status helpers |
-| `mock-data.ts` | Seeded deterministic data generation |
-| `index.ts` | Barrel export for all modules |
-
-**Key Benefits Delivered**:
-- ✅ Consistent facility names and IDs across all pages
-- ✅ Unified compliance threshold of 100% (COMPLIANCE_TARGET constant)
-- ✅ Derived metrics that stay in sync via shared calculation functions
-- ✅ Seeded random data generation for deterministic but varied values
-
-### Phase 2: Unified Component Library ✅
-
-Created reusable components in `src/components/care-minutes/`:
-
-| Component | Purpose |
-|-----------|---------|
-| `ComplianceKpiCard.tsx` | Consistent KPI tile with status styling |
-| `ComplianceStatusBadge.tsx` | Unified status labeling (Compliant/At Risk/Non-Compliant) |
-| `ComplianceBar.tsx` | Horizontal progress bar with color coding |
-| `FacilityLink.tsx` | Clickable facility name that navigates to drill-down |
-| `TrendIcon.tsx` | Up/Down/Flat trend indicator |
-| `InsightItem.tsx` | Styled insight cards with type-based colors |
-| `index.ts` | Barrel export for all components |
-
-### Phase 3: Page Updates ✅
-
-#### Overview (`Overview.tsx`)
-- ✅ Uses shared `getPortfolioFacilities(4)` for first 4 facilities
-- ✅ Uses `generateAllFacilityMetrics()` for data
-- ✅ Uses `calculatePortfolioSummary()` for KPIs
-- ✅ Uses `ComplianceKpiCard` component
-- ✅ Facility names are clickable via `FacilityLink`
-- ✅ Insights auto-generated via `generatePortfolioInsights()`
-
-#### Facilities (`Facilities.tsx`)
-- ✅ Reads `?id=` URL parameter to pre-select facility
-- ✅ Uses same `getPortfolioFacilities(4)` for consistency
-- ✅ Added "Back to Portfolio" breadcrumb
-- ✅ Uses shared `generateDailyData()`, `generateFacilityMetrics()`, etc.
-- ✅ Uses `ComplianceKpiCard` and `InsightItem` components
-
-#### Performance Statement (`PerformanceStatement.tsx`)
-- ✅ Uses `getAllFacilities()` for all 8 facilities
-- ✅ Compliance target aligned to 100% (was 95%)
-- ✅ Facility names are clickable via `FacilityLink`
-- ✅ Executive commentary dynamically generated
-- ✅ Uses `ComplianceStatusBadge` component
-
-### Phase 4: Analytics Goal Alignment ✅
-
-| Page | Primary Audience | Key Question Answered |
-|------|------------------|----------------------|
-| Overview | Operations Manager | "How is my portfolio performing right now?" |
-| Facilities | Facility Manager | "Why is this facility underperforming?" |
-| Performance Statement | Board/Regulator | "Are we compliant for the reporting period?" |
+**Right Column (sidebar panel):**
+1. **Complete your setup** — Progress bar + checklist items (PRODA Setup, B2G Credentials)
+2. **Invite team members** — Card with an icon and CTA
+3. **Quick links** — Submit a support ticket, View documentation, Share feedback
 
 ---
 
-## Technical Summary
+## Implementation Approach
 
-### Files Created (12 new files)
-- `src/lib/care-minutes/types.ts`
-- `src/lib/care-minutes/facilities.ts`
-- `src/lib/care-minutes/metrics.ts`
-- `src/lib/care-minutes/mock-data.ts`
-- `src/lib/care-minutes/index.ts`
-- `src/components/care-minutes/ComplianceKpiCard.tsx`
-- `src/components/care-minutes/ComplianceStatusBadge.tsx`
-- `src/components/care-minutes/ComplianceBar.tsx`
-- `src/components/care-minutes/FacilityLink.tsx`
-- `src/components/care-minutes/TrendIcon.tsx`
-- `src/components/care-minutes/InsightItem.tsx`
-- `src/components/care-minutes/index.ts`
+### Product Cards with Gradient Illustrations
 
-### Files Modified (3 pages)
-- `src/pages/care-minutes/Overview.tsx`
-- `src/pages/care-minutes/Facilities.tsx`
-- `src/pages/care-minutes/PerformanceStatement.tsx`
+Since the cards in the screenshot show blank/placeholder image areas, the user wants actual images or illustrations added. Rather than using uploaded images, I'll create visually distinct gradient + icon compositions using Tailwind CSS and Lucide icons — matching the colourful gradient style visible in the screenshot (purple for Care Minutes, blue-purple for NQIP, green for Annual Leave, teal for RN 24/7).
+
+Each card's "image area" will be a rounded gradient panel with a relevant decorative icon/illustration, consistent with the Loop brand palette (lavender, jordy-blue, mauve, thistle from the CSS variables).
+
+### User Name
+
+Pull the user's name from `useUser()` context (already available via `UserContext`).
+
+### Navigation
+
+Product card buttons will use `useNavigate()` from `react-router-dom` to link to each product's primary page:
+- Care Minutes → `/care-minutes/overview`
+- NQIP → `/nqip/kpi`
+- Annual Leave → `/annual-leave/overview`
+- RN 24/7 → `/rn247/overview`
 
 ---
 
-## Consistent Facilities (8 Total)
+## Files to Modify
 
-| ID | Name | Short Name |
-|----|------|------------|
-| sunrise-gardens | Sunrise Gardens | Sunrise |
-| harbour-view | Harbour View Lodge | Harbour |
-| mountain-lodge | Mountain Lodge | Mountain |
-| coastal-haven | Coastal Haven | Coastal |
-| valley-gardens | Valley Gardens | Valley |
-| riverside-manor | Riverside Manor | Riverside |
-| parkview-residence | Parkview Residence | Parkview |
-| greenfield-house | Greenfield House | Greenfield |
+**`src/pages/Home.tsx`** — Full replacement with the complete Home page layout:
 
-**Overview & Facilities** use the first 4 (Sunrise, Harbour, Mountain, Coastal).
-**Performance Statement** uses all 8 facilities.
+```
+src/pages/Home.tsx
+├── Welcome header (uses useUser for name)
+├── Alerts section
+│   ├── System maintenance banner (amber/warning tone)
+│   └── Action items (submission due, PRODA expiry)
+├── Your Products section
+│   └── 2x2 grid of ProductCards
+│       ├── Gradient illustration area (CSS gradient + icon)
+│       ├── Title + description
+│       └── CTA button → navigate to product
+└── Right sidebar panel
+    ├── Complete your setup (progress bar + checklist)
+    ├── Invite team members card
+    └── Quick links (support, docs, feedback)
+```
+
+---
+
+## Technical Details
+
+- **Layout**: Use a 2-column CSS grid (`grid-cols-1 lg:grid-cols-[1fr_320px]`) — main content left, sidebar right — matching the screenshot layout
+- **Brand colours**: Use existing CSS variables (`--lavender`, `--mauve`, `--jordy-blue`, `--thistle`) for the card gradient backgrounds
+- **Product card images**: Styled `div` elements with `bg-gradient-to-br` using brand palette colours + a large decorative Lucide icon (Clock for Care Minutes, BarChart3 for NQIP, Calendar for Annual Leave, Heart for RN24/7)
+- **Progress bar**: Use shadcn/ui `Progress` component already installed
+- **Action badges**: Use `Badge` component for "5 days" and "12 days" urgency indicators
+- **No new dependencies needed** — everything is already installed

@@ -1,0 +1,116 @@
+category,api_field_id,gold_column,description,api_type,api_required,status,source,blocker
+Pressure Injury,PI-01,pi_01_assessed,Assessed for pressure injuries,integer,TRUE,Computed,"fact_assessmentform — forms: 'Skin, Hair and Nails Assessment'; 'Complex Wound Assessment' (Wound Type LIKE '%pressure injury%'); 'Wound Assessment and Management Plan' (reason LIKE '%pressure injury%')",
+Pressure Injury,PI-02,pi_02_excluded_consent,Excluded — withheld consent,integer,TRUE,NULL,,No data source for consent withholding in CM DW
+Pressure Injury,PI-03,pi_03_excluded_absence,Excluded — absent from funded care,integer,TRUE,NULL,,No leave/absence data source in CM DW
+Pressure Injury,PI-04,pi_04_with_pressure_injury,With ≥1 pressure injury,integer,TRUE,Computed,"dw_fact_chartobservation — Wound Chart; fact_chartobservationresponse — question 'Pressure injury classification' LIKE any stage pattern",
+Pressure Injury,PI-05,pi_05_stage1_count,Stage 1 pressure injury count,integer,TRUE,Computed,Same as PI-04 — classification LIKE 'stage 1%',
+Pressure Injury,PI-06,pi_06_stage2_count,Stage 2 pressure injury count,integer,TRUE,Computed,Same as PI-04 — classification LIKE 'stage 2%',
+Pressure Injury,PI-07,pi_07_stage3_count,Stage 3 pressure injury count,integer,TRUE,Computed,Same as PI-04 — classification LIKE 'stage 3%',
+Pressure Injury,PI-08,pi_08_stage4_count,Stage 4 pressure injury count,integer,TRUE,Computed,Same as PI-04 — classification LIKE 'stage 4%',
+Pressure Injury,PI-09,pi_09_unstageable_count,Unstageable pressure injury count,integer,TRUE,Computed,Same as PI-04 — classification LIKE 'unstageable%',
+Pressure Injury,PI-10,pi_10_suspected_dti_count,Suspected DTI count,integer,TRUE,Computed,Same as PI-04 — classification LIKE 'suspected deep tissue%',
+Pressure Injury,PI-11,pi_11_acquired_offsite,With ≥1 PI acquired outside facility,integer,TRUE,Computed,"Same as PI-04 + fact_chartobservationresponse — question 'Where was the wound acquired?' = 'Acquired outside facility'",
+Pressure Injury,PI-12,pi_12_stage1_offsite,Stage 1 offsite,integer,TRUE,Computed,Same as PI-11 + classification LIKE 'stage 1%',
+Pressure Injury,PI-13,pi_13_stage2_offsite,Stage 2 offsite,integer,TRUE,Computed,Same as PI-11 + classification LIKE 'stage 2%',
+Pressure Injury,PI-14,pi_14_stage3_offsite,Stage 3 offsite,integer,TRUE,Computed,Same as PI-11 + classification LIKE 'stage 3%',
+Pressure Injury,PI-15,pi_15_stage4_offsite,Stage 4 offsite,integer,TRUE,Computed,Same as PI-11 + classification LIKE 'stage 4%',
+Pressure Injury,PI-16,pi_16_unstageable_offsite,Unstageable offsite,integer,TRUE,Computed,Same as PI-11 + classification LIKE 'unstageable%',
+Pressure Injury,PI-17,pi_17_suspected_dti_offsite,Suspected DTI offsite,integer,TRUE,Computed,Same as PI-11 + classification LIKE 'suspected deep tissue%',
+Restrictive Practices,PR-02,rp_02_assessed,Assessed for restrictive practices (excl. chemical restraint),integer,TRUE,NULL,,No data source found in Telstra Health warehouse; Restrictive Practice Chart is not helpful. Check new CM platform.
+Restrictive Practices,PR-03,rp_03_excluded_absence,Excluded — absent from funded care,integer,TRUE,NULL,,Blocked by PR-02 having no data source
+Restrictive Practices,PR-04,rp_04_subjected,Subjected to restrictive practices,integer,TRUE,NULL,,Blocked by PR-02 having no data source
+Restrictive Practices,PR-05,rp_05_subjected_secured_area,Subjected — only in a secured area,integer,TRUE,NULL,,Blocked by PR-02 having no data source
+Unplanned Weight Loss,UPWL-01,upwl_01_assessed,Assessed for significant weight loss (any weight recorded),integer,TRUE,Computed,dw_fact_chartobservation — Weight Chart; fact_chartobservationresponse — question 'Weight' (any value exists),
+Unplanned Weight Loss,UPWL-02,upwl_02_refused_finishing,Excluded — withheld consent on finishing weight date,integer,TRUE,Computed,"Same as UPWL-01 — FinishingReason matches '%refus%', '%withhold%', or '%consent%'",
+Unplanned Weight Loss,UPWL-03,upwl_03_eol_excluded,Excluded — end-of-life care,integer,TRUE,NULL,,"specialNeeds column in cm_dw_th.resident is free-text; not reliable. Confirm with Ian."
+Unplanned Weight Loss,UPWL-04,upwl_04_missing_prev_finish,Previous or finishing weight not recorded (excl. refusals),integer,TRUE,Computed,Same as UPWL-01 — PreviousWeight IS NULL OR FinishingWeight IS NULL (excluding refusal cases),
+Unplanned Weight Loss,UPWL-05,upwl_05_5pct_loss,≥5% weight decrease from previous to finishing,integer,TRUE,Computed,"Same as UPWL-01 — ((Previous - Finishing) / Previous) * 100 >= 5",
+Unplanned Weight Loss,UPWL-06,(omit),Comments,string,FALSE,NULL,,Not a count metric — free text comments field
+Unplanned Weight Loss,UPWL-07,upwl_08_assessed_consecutive,Assessed for consecutive weight loss (all 4 weights),integer,TRUE,Computed,Same as UPWL-01 — denominator for consecutive section (any weight data exists),
+Unplanned Weight Loss,UPWL-08,upwl_09_refused_any,Excluded — withheld consent on any weight date,integer,TRUE,Computed,"Same as UPWL-01 — any of 4 month reasons matches '%refus%', '%withhold%', or '%consent%'",
+Unplanned Weight Loss,UPWL-09,upwl_10_eol_excluded,Excluded — end-of-life care (consecutive section),integer,TRUE,NULL,,"Same blocker as UPWL-03 — free-text specialNeeds. Confirm with Ian."
+Unplanned Weight Loss,UPWL-10,upwl_11_missing_any_required,Any required weight not recorded (excl. refusals),integer,TRUE,Computed,Same as UPWL-01 — any of 4 monthly weights IS NULL (excluding refusal cases),
+Unplanned Weight Loss,UPWL-11,upwl_12_any_decrease,Any consecutive weight decrease across 4 months,integer,TRUE,Computed,"Same as UPWL-01 — Starting<Previous OR Middle<Starting OR Finishing<Middle OR Finishing<Previous. ⚠️ UNTESTED — previous engineer noted results 'looking weird'",Results not validated; review manually for a known resident before trusting
+Falls & Major Injury,FMI-01,fmi_01_assessed,Assessed for falls risk (FRAT completed),integer,TRUE,Computed,fact_assessmentform — form 'Falls Risk Assessment Tool (FRAT)',
+Falls & Major Injury,FMI-02,fmi_02_excluded_consent,Excluded — withheld consent,integer,TRUE,NULL,,No data source for consent withholding
+Falls & Major Injury,FMI-03,fmi_03_with_fall,With ≥1 fall,integer,TRUE,Computed,"fact_assessmentformresponse — form 'Accident / Incident Report'; question 'Type of incident' IN: 'Fall', 'Fall - With Major Injury', 'Fall - Without Injury', 'Fall - Near Miss', 'Fall - With Major Injury (Fracture...)', 'Fall - With Injury'",
+Falls & Major Injury,FMI-04,fmi_04_with_major_injury,With ≥1 fall causing major injury,integer,TRUE,Computed,"Same as FMI-03 — answer IN: 'Fall - With Major Injury', 'Fall - With Major Injury (Fracture, dislocation or closed head injury)'",
+Activities of Daily Living,ADL-01,adl_01_assessed,Assessed for ADL function (Barthel Index),integer,TRUE,Computed,fact_assessmentform — form 'Barthel Index',
+Activities of Daily Living,ADL-02,adl_02_eol_excluded,Excluded — end-of-life care,integer,TRUE,NULL,,"Same blocker as UPWL-03 — specialNeeds is free-text. Confirm with Ian."
+Activities of Daily Living,ADL-03,adl_03_excluded_absence,Excluded — absent from funded care throughout period,integer,TRUE,NULL,,No leave/absence data source in CM DW
+Activities of Daily Living,ADL-04,adl_04_no_prev_assessment,Excluded — no previous period assessment recorded,integer,TRUE,NULL,,Needs previous quarter Barthel Index scores stored and accessible
+Activities of Daily Living,ADL-05,adl_05_prev_score_zero,Excluded — previous ADL total score was zero,integer,TRUE,NULL,,Same as ADL-04 — needs previous quarter data
+Activities of Daily Living,ADL-06,adl_06_decline,Experienced ADL decline (−1 or more points from previous period),integer,TRUE,NULL,,Same as ADL-04 — needs previous quarter Barthel comparison
+Incontinence Care,IAD-01,iad_01_assessed,Assessed for incontinence care,integer,TRUE,Computed,"fact_assessmentform — forms 'Toileting and Continence Care Assessment' OR 'Toileting Care Needs Assessment - Complex'",
+Incontinence Care,IAD-02,iad_02_excluded_absence,Excluded — absent from funded care,integer,TRUE,NULL,,No leave/absence data source in CM DW
+Incontinence Care,IAD-03,iad_03_excluded_no_incontinence,Excluded — does not have incontinence,integer,TRUE,NULL,,No structured data for ruling out incontinence
+Incontinence Care,IAD-04,iad_04_has_incontinence,Has incontinence,integer,TRUE,Computed,"dw_fact_chartobservation — Urinary Chart OR Bowel Chart (⚠️ ASSUMPTION: chart entry = incontinence; confirm with Ian)",Assumption unconfirmed with Ian
+Incontinence Care,IAD-05,iad_05_has_iad,Has incontinence AND IAD,integer,TRUE,NULL,,Ghent grading data not found in Urinary/Bowel charts; investigation query exists but no match
+Incontinence Care,IAD-06,iad_06_grade_1a,Grade 1A: persistent redness without infection,integer,TRUE,NULL,,Same as IAD-05
+Incontinence Care,IAD-07,iad_07_grade_1b,Grade 1B: persistent redness with infection,integer,TRUE,NULL,,Same as IAD-05
+Incontinence Care,IAD-08,iad_08_grade_2a,Grade 2A: skin loss without infection,integer,TRUE,NULL,,Same as IAD-05
+Incontinence Care,IAD-09,iad_09_grade_2b,Grade 2B: skin loss with infection,integer,TRUE,NULL,,Same as IAD-05
+Hospitalisation,HP-01,hsp_01_assessed,Assessed for hospitalisation,integer,TRUE,NULL,,Not in Telstra Health warehouse; check new CM platform with Ian
+Hospitalisation,HP-02,hsp_02_excluded_absence,Excluded — absent from funded care,integer,TRUE,NULL,,Blocked by HP-01 having no data source
+Hospitalisation,HP-03,hsp_03_ed_presentation,With ≥1 ED presentation,integer,TRUE,NULL,,Not in Telstra Health warehouse
+Hospitalisation,HP-04,hsp_04_ed_or_admission,With ≥1 ED presentation OR hospital admission,integer,TRUE,NULL,,Not in Telstra Health warehouse
+Workforce,WF-01,wf_01_sm_any_hrs,Service managers — worked any hours in quarter,integer,TRUE,Computed,"humanforce_silver.silver_hf_payrun — RoleName matches 'facility manager', 'clinical manager', 'service manager', 'hospitality manager'; qualifying paytypes",
+Workforce,WF-02,wf_02_rn_any_hrs,Registered nurses — worked any hours,integer,TRUE,Computed,"humanforce_silver.silver_hf_payrun — RoleName matches 'registered nurse', 'rn supervisor', 'nurse practitioner', '\brn\b'",
+Workforce,WF-03,wf_03_en_any_hrs,Enrolled nurses — worked any hours,integer,TRUE,Computed,"humanforce_silver.silver_hf_payrun — RoleName matches 'enrolled nurse', '\ben\b'",
+Workforce,WF-04,wf_04_pcw_any_hrs,Personal care workers — worked any hours,integer,TRUE,Computed,"humanforce_silver.silver_hf_payrun — RoleName matches 'personal carer', 'care worker', 'nursing assistant', 'pcw'",
+Workforce,WF-05,wf_05_sm_120hrs,Service managers with ≥120h in previous quarter,integer,TRUE,Computed,Same as WF-01 — self-join to previous quarter; filter hrs_prev_q >= 120,
+Workforce,WF-06,wf_06_rn_120hrs,RNs with ≥120h in previous quarter,integer,TRUE,Computed,Same as WF-02 — self-join to previous quarter; filter hrs_prev_q >= 120,
+Workforce,WF-07,wf_07_en_120hrs,ENs with ≥120h in previous quarter,integer,TRUE,Computed,Same as WF-03 — self-join to previous quarter; filter hrs_prev_q >= 120,
+Workforce,WF-08,wf_08_pcw_120hrs,PCWs with ≥120h in previous quarter,integer,TRUE,Computed,Same as WF-04 — self-join to previous quarter; filter hrs_prev_q >= 120,
+Workforce,WF-09,wf_09_sm_no_60days,Service managers (eligible) — no ≥60-day work gap,integer,TRUE,Computed,Same source — from eligible pool (≥120h prev quarter); LAG-based 60-day consecutive gap detection,
+Workforce,WF-10,wf_10_rn_no_60days,RNs (eligible) — no ≥60-day work gap,integer,TRUE,Computed,Same as WF-09 for RN role,
+Workforce,WF-11,wf_11_en_no_60days,ENs (eligible) — no ≥60-day work gap,integer,TRUE,Computed,Same as WF-09 for EN role,
+Workforce,WF-12,wf_12_pcw_no_60days,PCWs (eligible) — no ≥60-day work gap,integer,TRUE,Computed,Same as WF-09 for PCW role,
+Medication Management,MM-02,mm_02_assessed_polypharmacy,Assessed for polypharmacy,integer,TRUE,Not implemented,,Medication data lives in Medisphere (separate system); not in CM DW. Need Medisphere extract added to Databricks or alternative source confirmed with Ian.
+Medication Management,MM-03,mm_03_excluded_absence,Excluded — absent from funded care,integer,TRUE,Not implemented,,Blocked by MM-02 having no data source
+Medication Management,MM-04,mm_04_nine_plus_medications,Prescribed ≥9 medications on collection date,integer,TRUE,Not implemented,,Cannot implement without Medisphere extract
+Medication Management,MM-07,mm_07_assessed_antipsychotics,Assessed for antipsychotic medication use,integer,TRUE,Not implemented,,"'Psychotropic Medication Self-Assessment Record' exists in CM DW but is free-text; not reliable as a structured source. Confirm with Ian."
+Medication Management,MM-08,mm_08_excluded_hospital,Excluded — hospitalised ≥6 days prior to collection date,integer,TRUE,Not implemented,,Blocked; also requires hospitalisation data (same blocker as HP category)
+Medication Management,MM-09,mm_09_excluded_absence,Excluded — absent from funded care,integer,TRUE,Not implemented,,No leave/absence data source
+Medication Management,MM-10,mm_10_received_antipsychotic,Received antipsychotic on collection date,integer,TRUE,Not implemented,,"Possibly partial from 'Psychotropic Medication Self-Assessment Record' (free text) — unconfirmed with Ian"
+Medication Management,MM-11,mm_11_antipsychotic_psychosis,Received antipsychotic for medically prescribed psychosis,integer,TRUE,Not implemented,,Same as MM-10 plus diagnosis structured data not available
+Consumer Experience,CE-01,ce_01_total_completed,Total who completed Consumer Experience Assessment,integer,TRUE,Not implemented,,External survey platform — not in CM or Humanforce. Confirm data source with Ian / senior DE.
+Consumer Experience,CE-02,ce_02_excluded_absence,Excluded — absent from funded care,integer,TRUE,Not implemented,,Blocked by CE-01 having no data source
+Consumer Experience,CE-03,ce_03_opted_out,Opted out of completing CEA,integer,TRUE,Not implemented,,Same blocker
+Consumer Experience,CE-04,ce_04_self_excellent,Self-completion: Excellent (score 22–24),integer,TRUE,Not implemented,,Same blocker
+Consumer Experience,CE-05,ce_05_self_good,Self-completion: Good (score 15–21),integer,TRUE,Not implemented,,Same blocker
+Consumer Experience,CE-06,ce_06_self_moderate,Self-completion: Moderate (score 10–14),integer,TRUE,Not implemented,,Same blocker
+Consumer Experience,CE-07,ce_07_self_poor,Self-completion: Poor (score 8–13),integer,TRUE,Not implemented,,Same blocker
+Consumer Experience,CE-08,ce_08_self_very_poor,Self-completion: Very Poor (score 0–7),integer,TRUE,Not implemented,,Same blocker
+Consumer Experience,CE-09,ce_09_fac_excellent,Facilitated: Excellent,integer,TRUE,Not implemented,,Same blocker
+Consumer Experience,CE-10,ce_10_fac_good,Facilitated: Good,integer,TRUE,Not implemented,,Same blocker
+Consumer Experience,CE-11,ce_11_fac_moderate,Facilitated: Moderate,integer,TRUE,Not implemented,,Same blocker
+Consumer Experience,CE-12,ce_12_fac_poor,Facilitated: Poor,integer,TRUE,Not implemented,,Same blocker
+Consumer Experience,CE-13,ce_13_fac_very_poor,Facilitated: Very Poor,integer,TRUE,Not implemented,,Same blocker
+Consumer Experience,CE-14 to CE-18,(to be confirmed),Proxy-completion results (exact breakdown TBC),integer,TRUE,Not implemented,,API spec not yet confirmed for proxy sub-fields
+Quality of Life,QOL-01,qol_01_self_completed,Undertook QOL assessment (self-completion),integer,TRUE,Not implemented,,External survey platform — not in CM or Humanforce. Confirm data source with Ian / senior DE.
+Quality of Life,QOL-02,qol_02_excluded_absence,Excluded — absent from funded care,integer,TRUE,Not implemented,,Blocked by QOL-01 having no data source
+Quality of Life,QOL-03,qol_03_opted_out,Opted out of QOL assessment,integer,TRUE,Not implemented,,Same blocker
+Quality of Life,QOL-04,qol_04_self_excellent,Self-completion: Excellent (score 22–24),integer,TRUE,Not implemented,,Same blocker
+Quality of Life,QOL-05,qol_05_self_good,Self-completion: Good (score 19–21),integer,TRUE,Not implemented,,Same blocker
+Quality of Life,QOL-06,qol_06_self_moderate,Self-completion: Moderate (score 14–18),integer,TRUE,Not implemented,,Same blocker
+Quality of Life,QOL-07,qol_07_self_poor,Self-completion: Poor (score 8–13),integer,TRUE,Not implemented,,Same blocker
+Quality of Life,QOL-08,qol_08_self_very_poor,Self-completion: Very Poor (score 0–7),integer,TRUE,Not implemented,,Same blocker
+Quality of Life,QOL-09,qol_09_int_excellent,Interviewer-facilitated: Excellent,integer,TRUE,Not implemented,,Same blocker
+Quality of Life,QOL-10,qol_10_int_good,Interviewer-facilitated: Good,integer,TRUE,Not implemented,,Same blocker
+Quality of Life,QOL-11,qol_11_int_moderate,Interviewer-facilitated: Moderate,integer,TRUE,Not implemented,,Same blocker
+Quality of Life,QOL-12,qol_12_int_poor,Interviewer-facilitated: Poor,integer,TRUE,Not implemented,,Same blocker
+Quality of Life,QOL-13,qol_13_int_very_poor,Interviewer-facilitated: Very Poor,integer,TRUE,Not implemented,,Same blocker
+Quality of Life,QOL-14 to QOL-17,(to be confirmed),Proxy-completion results (exact breakdown TBC),integer,TRUE,Not implemented,,API spec not yet confirmed for proxy sub-fields
+Allied Health,AH-02,ah_02_excluded_absence,Excluded — absent from funded care,integer,TRUE,Not implemented,,No code yet; awaiting data source confirmation
+Allied Health,AH-03,ah_03_physio_recommended,Physiotherapy recommended in care plan,integer,TRUE,Not implemented,"Candidate source: fact_assessmentformresponse — 'Allied Health Referral - General' (Type='Physiotherapy') OR 'Allied Health Referral - Physiotherapy'","Confirm with Ian: are referral forms the right proxy for 'recommended in care plan'?"
+Allied Health,AH-04,ah_04_ot_recommended,Occupational therapy recommended,integer,TRUE,Not implemented,"Candidate source: 'Allied Health Referral - General' (Type IN ('Occupational Therapy', 'Occupational Therapist'))","Same as AH-03 — confirm referral form = care plan recommendation"
+Allied Health,AH-05,ah_05_speech_recommended,Speech pathology recommended,integer,TRUE,Not implemented,"Candidate source: 'Allied Health Referral - General' (Type='Speech Therapy')",Same as AH-03
+Allied Health,AH-06,ah_06_dietetics_recommended,Dietetics recommended,integer,TRUE,Not implemented,"Candidate source: 'Allied Health Referral - General' (Type='Dietician')",Same as AH-03
+Allied Health,AH-07,ah_07_podiatry_recommended,Podiatry recommended,integer,TRUE,Not implemented,"Candidate source: 'Allied Health Referral - General' (Type='Podiatrist') OR 'Podiatry Assessment' form completed",Same as AH-03
+Allied Health,AH-08,ah_08_physio_received,Physiotherapy recommended AND received,integer,TRUE,Not implemented,"Candidate source: 'Physiotherapy Assessment Form' completed in quarter (= received)","Confirm with Ian. Also confirm API field numbering for AH-08 through AH-17."
+Allied Health,AH-09 to AH-13,(TBC — OT received),OT recommended AND received,integer,TRUE,Not implemented,,No 'received' assessment form found for OT in CM DW. Blocker.
+Allied Health,AH-09 to AH-13,(TBC — speech received),Speech recommended AND received,integer,TRUE,Not implemented,,No 'received' assessment form found for speech in CM DW. Blocker.
+Allied Health,AH-09 to AH-13,(TBC — dietetics received),Dietetics recommended AND received,integer,TRUE,Not implemented,,No 'received' assessment form found for dietetics in CM DW. Blocker.
+Allied Health,AH-14 to AH-17,(TBC — podiatry received),Podiatry recommended AND received,integer,TRUE,Not implemented,"Candidate source: 'Podiatry Assessment Form' OR 'Podiatry Assessment' completed in quarter","Confirm with Ian; confirm API field mapping"
+Allied Health,AH-18,ah_18_other_received,Other allied health recommended AND received,integer,TRUE,Not implemented,,No clear data source; API discipline mapping for AH-08 to AH-17 must be confirmed first

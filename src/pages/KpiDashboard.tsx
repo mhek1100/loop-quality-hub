@@ -61,9 +61,9 @@ const KpiDashboard = () => {
     
     return {
       ...indicatorData[0],
-      value: Number(avgValue.toFixed(1)),
-      previousValue: Number(avgPrevValue.toFixed(1)),
-      delta: Number((avgValue - avgPrevValue).toFixed(1)),
+      value: Math.round(avgValue),
+      previousValue: Math.round(avgPrevValue),
+      delta: Math.round(avgValue - avgPrevValue),
       deltaPercent: Number(((avgValue - avgPrevValue) / avgPrevValue * 100).toFixed(1))
     };
   };

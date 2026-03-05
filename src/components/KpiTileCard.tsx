@@ -146,12 +146,12 @@ const DualGaugeChart = ({ value1, value2, label1, label2 }: { value1: number; va
     <div className="flex items-center justify-center gap-4">
       <div className="flex flex-col items-center">
         <GaugeChart value={value1} color="#a78bfa" size="small" />
-        <span className="text-[10px] text-muted-foreground mt-1">{value1}%</span>
+        <span className="text-[10px] text-muted-foreground mt-1">{value1}</span>
         <span className="text-[9px] text-muted-foreground">{label1}</span>
       </div>
       <div className="flex flex-col items-center">
         <GaugeChart value={value2} color="#c4b5fd" size="small" />
-        <span className="text-[10px] text-muted-foreground mt-1">{value2}%</span>
+        <span className="text-[10px] text-muted-foreground mt-1">{value2}</span>
         <span className="text-[9px] text-muted-foreground">{label2}</span>
       </div>
     </div>
@@ -225,7 +225,7 @@ const PillsChart = ({ items }: { items: { value: number; label: string; color: s
           className="text-xs px-3 py-1 rounded-full text-white font-medium"
           style={{ backgroundColor: item.color }}
         >
-          {item.value}% {item.label}
+          {item.value} {item.label}
         </span>
       ))}
     </div>
@@ -251,7 +251,7 @@ const GradientBar = ({ value, variant = "green", showPercentage = false }: { val
             }} 
           />
         </div>
-        {showPercentage && <span className="text-xs text-muted-foreground">{value}%</span>}
+        {showPercentage && <span className="text-xs text-muted-foreground">{value}</span>}
       </div>
       {variant === "rainbow" && (
         <div className="flex justify-between text-[10px] text-muted-foreground">
@@ -384,7 +384,7 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate, 
     }
   };
   
-  const deltaValue = kpi ? Math.abs(kpi.deltaPercent) : 0;
+  const deltaValue = kpi ? Math.abs(kpi.delta) : 0;
   const isLowerBetter = lowerIsBetterIndicators.includes(indicator.code);
   
   // Determine if the change is positive (good) for this specific indicator
@@ -426,7 +426,7 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate, 
       
       {/* Main value */}
       <p className="text-3xl font-bold text-foreground mb-3">
-        {kpi?.value ?? "--"}<span className="text-xl">%</span>
+        {kpi?.value ?? "--"}
       </p>
       
       {/* Mini chart */}
@@ -448,7 +448,7 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate, 
           deltaValue > 0 ? (
             <span className={cn(isPositiveChange ? "text-success" : "text-destructive", "flex items-center gap-1")}>
               {isIncreasing ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-              {deltaValue.toFixed(1)}% vs previous quarter
+              {deltaValue} vs previous quarter
             </span>
           ) : (
             <span className="flex items-center gap-1 text-muted-foreground">
@@ -470,12 +470,12 @@ export const KpiTileCard = ({ indicator, kpi, isSelected, onSelect, onNavigate, 
                 comparisonIsFavorable ? "text-success" : "text-destructive"
               )}
             >
-              {comparison.rockpoolNumber}%
+              {comparison.rockpoolNumber}
             </span>
           </div>
           <div className="flex items-center justify-between text-muted-foreground">
             <span>National avg</span>
-            <span>{comparison.benchmarkValue}%</span>
+            <span>{comparison.benchmarkValue}</span>
           </div>
           <div className="flex items-center justify-between pt-2 border-t border-dashed border-border">
             <div>

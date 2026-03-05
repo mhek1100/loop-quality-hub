@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { QuintileStars } from "@/components/QuintileStars";
-import { facilities, getAllKpiData, reportingPeriods, DEFAULT_COMPARISON_FACILITY_ID, getIndicatorComparison } from "@/lib/mock/data";
+import { facilities, getAllKpiData, reportingPeriods, DEFAULT_COMPARISON_FACILITY_ID, getIndicatorComparison, getRpDailyData, RpDailyEntry, getIndicatorDetailData } from "@/lib/mock/data";
 import { getIndicatorByCode, isHigherBetter } from "@/lib/mock/indicators";
 import { IndicatorCode, KpiData } from "@/lib/types";
 import {
@@ -37,7 +37,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ArrowLeft, AlertCircle, TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowLeft, AlertCircle } from "lucide-react";
 
 type MixSegment = { label: string; value: number; color: string };
 
@@ -211,13 +211,111 @@ const aggregateRecords = (records: KpiData[]): AggregatedMetrics | null => {
   const delta = value - previous;
   const deltaPercent = previous !== 0 ? (delta / previous) * 100 : 0;
   return {
-    value: Number(value.toFixed(1)),
-    previous: Number(previous.toFixed(1)),
-    delta: Number(delta.toFixed(1)),
+    value: Math.round(value),
+    previous: Math.round(previous),
+    delta: Math.round(delta),
     deltaPercent: Number(deltaPercent.toFixed(1)),
     completionRate: Number(completionRate.toFixed(1)),
     count,
   };
+};
+
+interface TileConfig {
+  id: string;
+  label: string;
+  value: string;
+  helper: string;
+}
+
+const getIndicatorTiles = (
+  code: IndicatorCode,
+  fields: Record<string, number> | null
+): TileConfig[] => {
+  if (!fields) {
+    return [
+      { id: "t1", label: "—", value: "-", helper: "No data" },
+      { id: "t2", label: "—", value: "-", helper: "No data" },
+      { id: "t3", label: "—", value: "-", helper: "No data" },
+      { id: "t4", label: "—", value: "-", helper: "No data" },
+    ];
+  }
+  const f = (key: string) => fields[key] ?? 0;
+  const rate = (num: number, denom: number) =>
+    denom > 0 ? `${((num / denom) * 100).toFixed(1)}%` : "N/A";
+  const ofLabel = (num: number, denom: number) => `${num} of ${denom}`;
+
+  switch (code) {
+    case "PI":
+      return [
+        { id: "t1", label: "Residents with PI", value: ofLabel(f("PI-04"), f("PI-01")), helper: "PI-04 of PI-01 assessed" },
+        { id: "t2", label: "PI Rate", value: rate(f("PI-04"), f("PI-01") - f("PI-02") - f("PI-03")), helper: "After exclusions" },
+        { id: "t3", label: "Severe (Stage 3+)", value: `${f("PI-07") + f("PI-08") + f("PI-09") + f("PI-10")}`, helper: "PI-07 + PI-08 + PI-09 + PI-10" },
+        { id: "t4", label: "Acquired Offsite", value: `${f("PI-11")}`, helper: "PI-11" },
+      ];
+    case "RP":
+      return [
+        { id: "t1", label: "Subjected to RP", value: ofLabel(f("PR-04"), f("PR-02")), helper: "PR-04 of PR-02 assessed" },
+        { id: "t2", label: "RP Rate", value: rate(f("PR-04"), f("PR-02") - f("PR-03")), helper: "After exclusions" },
+        { id: "t3", label: "Secured Area Only", value: `${f("PR-05")}`, helper: "PR-05" },
+        { id: "t4", label: "Non-Secured RP", value: `${f("PR-04") - f("PR-05")}`, helper: "PR-04 − PR-05" },
+      ];
+    case "FALL":
+      return [
+        { id: "t1", label: "Residents Who Fell", value: ofLabel(f("FMI-03"), f("FMI-01")), helper: "FMI-03 of FMI-01 assessed" },
+        { id: "t2", label: "Falls Rate", value: rate(f("FMI-03"), f("FMI-01") - f("FMI-02")), helper: "After exclusions" },
+        { id: "t3", label: "Major Injury", value: `${f("FMI-04")}`, helper: "FMI-04" },
+        { id: "t4", label: "Injury Proportion", value: ofLabel(f("FMI-04"), f("FMI-03")), helper: "Major injuries of falls" },
+      ];
+    case "UPWL":
+      return [
+        { id: "t1", label: "Significant Weight Loss", value: ofLabel(f("UPWL-05"), f("UPWL-01")), helper: "≥5% weight loss" },
+        { id: "t2", label: "Consecutive Weight Loss", value: ofLabel(f("UPWL-12"), f("UPWL-08")), helper: "UPWL-12 of UPWL-08" },
+        { id: "t3", label: "Missing Weights", value: `${f("UPWL-04")}`, helper: "Data quality flag" },
+        { id: "t4", label: "Consent Refused", value: `${f("UPWL-02")}`, helper: "UPWL-02" },
+      ];
+    case "MM":
+      return [
+        { id: "t1", label: "On 9+ Medications", value: ofLabel(f("MM-04"), f("MM-02")), helper: "Polypharmacy" },
+        { id: "t2", label: "On Antipsychotics", value: ofLabel(f("MM-10"), f("MM-08")), helper: "MM-10 of MM-08" },
+        { id: "t3", label: "Unjustified Antipsychotics", value: `${f("MM-10") - f("MM-11")}`, helper: "MM-10 − MM-11" },
+        { id: "t4", label: "Polypharmacy Rate", value: rate(f("MM-04"), f("MM-02") - f("MM-03")), helper: "After exclusions" },
+      ];
+    case "ADL":
+      return [
+        { id: "t1", label: "ADL Decline", value: ofLabel(f("ADL-06"), f("ADL-01")), helper: "ADL-06 of ADL-01 assessed" },
+        { id: "t2", label: "ADL Decline Rate", value: rate(f("ADL-06"), f("ADL-01") - f("ADL-02") - f("ADL-03") - f("ADL-04") - f("ADL-05")), helper: "After exclusions" },
+        { id: "t3", label: "No Previous Assessment", value: `${f("ADL-04")}`, helper: "ADL-04" },
+        { id: "t4", label: "Total Exclusions", value: `${f("ADL-02") + f("ADL-03") + f("ADL-04") + f("ADL-05")}`, helper: "ADL-02 + ADL-03 + ADL-04 + ADL-05" },
+      ];
+    case "IC":
+      return [
+        { id: "t1", label: "With Incontinence", value: ofLabel(f("IAD-04"), f("IAD-01")), helper: "IAD-04 of IAD-01 assessed" },
+        { id: "t2", label: "With IAD", value: ofLabel(f("IAD-05"), f("IAD-04")), helper: "IAD-05 of IAD-04" },
+        { id: "t3", label: "Severe IAD (Grade 2)", value: `${f("IAD-08") + f("IAD-09")}`, helper: "IAD-08 + IAD-09" },
+        { id: "t4", label: "IAD with Infection", value: `${f("IAD-07") + f("IAD-09")}`, helper: "IAD-07 + IAD-09" },
+      ];
+    case "HP":
+      return [
+        { id: "t1", label: "ED Presentations", value: ofLabel(f("HP-03"), f("HP-01")), helper: "HP-03 of HP-01 assessed" },
+        { id: "t2", label: "ED or Admission", value: ofLabel(f("HP-04"), f("HP-01")), helper: "HP-04 of HP-01" },
+        { id: "t3", label: "Admitted (not just ED)", value: `${f("HP-04") - f("HP-03")}`, helper: "HP-04 − HP-03" },
+        { id: "t4", label: "HP Rate", value: rate(f("HP-04"), f("HP-01") - f("HP-02")), helper: "After exclusions" },
+      ];
+    case "WF":
+      return [
+        { id: "t1", label: "Total Staff", value: `${f("WF-01") + f("WF-02") + f("WF-03") + f("WF-04")}`, helper: "All roles" },
+        { id: "t2", label: "Retention Rate", value: rate(f("WF-09") + f("WF-10") + f("WF-11") + f("WF-12"), f("WF-05") + f("WF-06") + f("WF-07") + f("WF-08")), helper: "Continuity / FTE" },
+        { id: "t3", label: "RN Continuity", value: ofLabel(f("WF-10"), f("WF-06")), helper: "WF-10 of WF-06 FTE" },
+        { id: "t4", label: "PCW Continuity", value: ofLabel(f("WF-12"), f("WF-08")), helper: "WF-12 of WF-08 FTE" },
+      ];
+    default:
+      return [
+        { id: "t1", label: "—", value: "-", helper: "No indicator-specific data" },
+        { id: "t2", label: "—", value: "-", helper: "No indicator-specific data" },
+        { id: "t3", label: "—", value: "-", helper: "No indicator-specific data" },
+        { id: "t4", label: "—", value: "-", helper: "No indicator-specific data" },
+      ];
+  }
 };
 
 const getPeriodLabel = (periodId: string) => {
@@ -257,6 +355,11 @@ const IndicatorDashboard = () => {
   );
 
   const summary = aggregateRecords(periodRecords);
+  const detailData = useMemo(
+    () => getIndicatorDetailData(normalizedCode, selectedFacility, selectedPeriod),
+    [normalizedCode, selectedFacility, selectedPeriod]
+  );
+  const indicatorTiles = getIndicatorTiles(normalizedCode, detailData?.fields ?? null);
   const sortedPeriodsAsc = useMemo(
     () =>
       [...reportingPeriods].sort(
@@ -277,19 +380,25 @@ const IndicatorDashboard = () => {
   }, []);
   const proportionTrendData = useMemo(() => {
     if (!indicator) return [];
-    return trendPeriods.map((period, index) => {
+    // Use actual KpiData.trend arrays — one record per facility for the selected period
+    const periodRecordsAllFacilities = indicatorRecords.filter(
+      record => record.periodId === selectedPeriod
+    );
+    if (periodRecordsAllFacilities.length === 0) return [];
+    return trendPeriods.map(period => {
       const row: Record<string, number | string> = { period: period.quarter };
-      facilities.forEach((facility, facilityIndex) => {
-        const indicatorSeed = indicator.code.charCodeAt(0) + indicator.code.charCodeAt(1);
-        const base = 12 + ((indicatorSeed + facilityIndex * 5) % 30);
-        const slope = ((indicatorSeed + facilityIndex) % 7) - 3;
-        const seasonal = Math.sin((index + facilityIndex) * 1.2) * 6;
-        const value = Math.max(4, Math.min(95, base + slope * index + seasonal));
-        row[facility.id] = Number(value.toFixed(1));
+      facilities.forEach(facility => {
+        const facilityRecord = periodRecordsAllFacilities.find(r => r.facilityId === facility.id);
+        if (facilityRecord) {
+          const trendIdx = facilityRecord.trendPeriods.indexOf(period.quarter);
+          if (trendIdx !== -1) {
+            row[facility.id] = facilityRecord.trend[trendIdx];
+          }
+        }
       });
       return row;
     });
-  }, [indicator, trendPeriods]);
+  }, [indicator, indicatorRecords, selectedPeriod, trendPeriods]);
   const highlightedFacility = selectedFacility === "all" ? comparisonFacilityId : selectedFacility;
   const trendRangeLabel =
     rangeOptions.find(option => option.value === trendWindow)?.label?.toLowerCase() || "recent quarters";
@@ -303,8 +412,8 @@ const IndicatorDashboard = () => {
       return {
         facility: facility.name.split(" ")[0],
         fullName: facility.name,
-        current: Number(match.value.toFixed(1)),
-        previous: Number(match.previousValue.toFixed(1)),
+        current: Math.round(match.value),
+        previous: Math.round(match.previousValue),
         facilityId: facility.id,
       };
     })
@@ -333,11 +442,18 @@ const IndicatorDashboard = () => {
   const bestFacility = ranking[0];
   const worstFacility = ranking[ranking.length - 1];
 
+  // Restrictive Practices: daily collection data
+  const rpDailyData = useMemo(() => {
+    if (normalizedCode !== "RP") return null;
+    const facilityId = selectedFacility === "all" ? DEFAULT_COMPARISON_FACILITY_ID : selectedFacility;
+    return getRpDailyData(facilityId, selectedPeriod);
+  }, [normalizedCode, selectedFacility, selectedPeriod]);
+
   const insights: string[] = [];
   if (summary) {
     const direction = summary.delta >= 0 ? "increased" : "decreased";
     insights.push(
-      `${getPeriodLabel(selectedPeriod)} average ${direction} to ${summary.value}% (${Math.abs(summary.delta).toFixed(1)} pts vs prior).`
+      `${getPeriodLabel(selectedPeriod)} average ${direction} to ${Math.round(summary.value)} residents (${Math.abs(Math.round(summary.delta))} vs prior quarter).`
     );
     insights.push(
       `${summary.completionRate}% of submissions were complete (${summary.count} facility records).`
@@ -345,7 +461,7 @@ const IndicatorDashboard = () => {
   }
   if (bestFacility && worstFacility && bestFacility !== worstFacility) {
     insights.push(
-      `${bestFacility.fullName} ${higherIsBetter ? "leads" : "shows the lowest rate"} at ${bestFacility.current}% while ${worstFacility.fullName} is at ${worstFacility.current}%.`
+      `${bestFacility.fullName} ${higherIsBetter ? "leads" : "shows the lowest count"} at ${Math.round(bestFacility.current)} while ${worstFacility.fullName} is at ${Math.round(worstFacility.current)}.`
     );
   }
 
@@ -379,33 +495,6 @@ const IndicatorDashboard = () => {
     );
   }
 
-  const summaryCards = [
-    {
-      id: "current",
-      label: "Current value",
-      value: summary ? `${summary.value}%` : "-",
-      helper: getPeriodLabel(selectedPeriod),
-    },
-    {
-      id: "delta",
-      label: summary && summary.delta >= 0 ? "Quarterly lift" : "Quarterly reduction",
-      value: summary ? `${summary.delta >= 0 ? "+" : ""}${summary.delta.toFixed(1)} pts` : "-",
-      helper: `vs ${getPreviousPeriodLabel(selectedPeriod) ?? "prior quarter"}`,
-      isPositive: summary ? (higherIsBetter ? summary.delta >= 0 : summary.delta < 0) : undefined,
-    },
-    {
-      id: "completion",
-      label: "Completion rate",
-      value: summary ? `${summary.completionRate}%` : "-",
-      helper: `${summary?.count ?? 0} contributing facilities`,
-    },
-    {
-      id: "leader",
-      label: higherIsBetter ? "Leading facility" : "Lowest rate facility",
-      value: bestFacility ? bestFacility.current.toFixed(1) + "%" : "-",
-      helper: bestFacility?.fullName ?? "Not enough data",
-    },
-  ];
 
   const mixTitle = mixConfig?.title ?? "Breakdown";
   const mixSubtitle = mixConfig?.subtitle ?? "Distribution of related activity";
@@ -492,23 +581,16 @@ const IndicatorDashboard = () => {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {summaryCards.map(card => (
-          <Card key={card.id}>
+        {indicatorTiles.map(tile => (
+          <Card key={tile.id}>
             <CardHeader className="pb-2">
-              <CardDescription>{card.label}</CardDescription>
+              <CardDescription>{tile.label}</CardDescription>
               <CardTitle className="text-3xl font-semibold">
-                {card.value}
+                {tile.value}
               </CardTitle>
             </CardHeader>
-            <CardContent className="text-sm text-muted-foreground flex items-center gap-2">
-              {card.id === "delta" && summary && (
-                card.isPositive ? (
-                  <TrendingUp className="h-4 w-4 text-success" />
-                ) : (
-                  <TrendingDown className="h-4 w-4 text-destructive" />
-                )
-              )}
-              <span>{card.helper}</span>
+            <CardContent className="text-sm text-muted-foreground">
+              <span>{tile.helper}</span>
             </CardContent>
           </Card>
         ))}
@@ -529,10 +611,10 @@ const IndicatorDashboard = () => {
                 <div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wide">Facility Metric</p>
                   <p className={`text-3xl font-semibold ${comparisonIsFavorable ? "text-success" : "text-destructive"}`}>
-                    {indicatorComparison.rockpoolNumber}%
+                    {indicatorComparison.rockpoolNumber}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    National avg: {indicatorComparison.benchmarkValue}% (
+                    National avg: {indicatorComparison.benchmarkValue} (
                     {comparisonDelta >= 0 ? "+" : ""}
                     {comparisonDelta} pts)
                   </p>
@@ -568,7 +650,7 @@ const IndicatorDashboard = () => {
             <CardHeader>
               <CardTitle>Proportion trend by facility</CardTitle>
               <CardDescription>
-                National Placement percentile trend across {trendRangeLabel}.
+                Facility comparison trend across {trendRangeLabel}.
               </CardDescription>
             </CardHeader>
             <CardContent className="h-[320px]">
@@ -577,11 +659,11 @@ const IndicatorDashboard = () => {
                   <LineChart data={proportionTrendData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="period" stroke="hsl(var(--muted-foreground))" />
-                    <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={v => `${v}%`} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" />
                     <Tooltip
                       formatter={(value: number, key: string) => {
                         const facility = facilities.find(f => f.id === key);
-                        return [`${value}%`, facility?.name || key];
+                        return [`${value}`, facility?.name || key];
                       }}
                     />
                     <Legend formatter={(value: string) => facilities.find(f => f.id === value)?.name.split(" ")[0] || value} />
@@ -607,6 +689,60 @@ const IndicatorDashboard = () => {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {rpDailyData && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Restrictive practices count per day</CardTitle>
+            <CardDescription>
+              Daily count of residents subjected to restrictive practices this quarter.
+              The highlighted window shows the <strong>3 consecutive days with the fewest RP incidents</strong> — use these as your collection days for NQIP reporting (PR-01).
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={rpDailyData.entries} barCategoryGap="10%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                  <XAxis
+                    dataKey="date"
+                    stroke="hsl(var(--muted-foreground))"
+                    tick={{ fontSize: 11 }}
+                    interval={6}
+                  />
+                  <YAxis stroke="hsl(var(--muted-foreground))" allowDecimals={false} width={30} />
+                  <Tooltip
+                    formatter={(value: number, _key: string, props: { payload?: RpDailyEntry }) => {
+                      const isOptimal = props.payload?.isOptimalWindow;
+                      return [value, isOptimal ? "RP count (recommended day)" : "RP count"];
+                    }}
+                    labelFormatter={(label: string) => `Date: ${label}`}
+                  />
+                  <Bar dataKey="count" radius={[2, 2, 0, 0]}>
+                    {rpDailyData.entries.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.isOptimalWindow ? "#22c55e" : "#fcd34d"}
+                        opacity={entry.isOptimalWindow ? 1 : 0.7}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <span className="inline-block h-3 w-3 rounded-sm bg-[#22c55e]" />
+                <span>Recommended collection window (lowest 3 consecutive days)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="inline-block h-3 w-3 rounded-sm bg-[#fcd34d] opacity-70" />
+                <span>Other days</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">

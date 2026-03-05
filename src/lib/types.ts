@@ -241,6 +241,13 @@ export interface KpiData {
   isComplete: boolean;
 }
 
+export interface IndicatorDetailData {
+  indicatorCode: IndicatorCode;
+  facilityId: string;
+  periodId: string;
+  fields: Record<string, number>; // e.g. { "PI-01": 85, "PI-04": 7 }
+}
+
 export interface PipelineConfig {
   id: string;
   facilityId: string;

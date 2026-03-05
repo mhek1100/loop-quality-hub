@@ -1,9 +1,9 @@
-import { 
-  Facility, 
-  ReportingPeriod, 
-  Submission, 
-  User, 
-  Role, 
+import {
+  Facility,
+  ReportingPeriod,
+  Submission,
+  User,
+  Role,
   AuditLogEntry,
   QuestionnaireResponse,
   QuestionAnswer,
@@ -12,7 +12,8 @@ import {
   SyncJob,
   KpiData,
   DataSource,
-  IndicatorComparison
+  IndicatorComparison,
+  IndicatorDetailData
 } from "../types";
 import { INDICATORS, INDICATOR_QUESTIONS, getIndicatorCategory, isHigherBetter } from "./indicators";
 
@@ -1240,76 +1241,83 @@ const generateStableKpiData = (): KpiData[] => {
   
   const quarterLabels = allPeriods.map(p => p.label);
   
+  // Values are integer counts (residents/staff), NOT percentages.
+  // PI-04: residents with ≥1 pressure injury | RP-PR-04: residents subjected to RP
+  // UPWL-05: residents with ≥5% weight loss | FALL-FMI-03: residents with ≥1 fall
+  // MM-04: residents on 9+ meds | ADL-06: residents with ADL decline
+  // IC-IAD-04: residents with incontinence | HP-03: residents with ≥1 ED presentation
+  // WF: staff who worked any hours | CE/QOL: residents who completed assessment
+  // AH/EN/LO: staff/resident counts
   const historicalData: Record<string, Record<string, number[]>> = {
-    "PI": { 
-      "fac-001": [10.5, 9.8, 9.2, 8.8, 8.5, 8.2, 7.9, 8.2],
-      "fac-002": [11.2, 10.5, 10.1, 9.6, 9.2, 8.8, 8.5, 8.7],
-      "fac-003": [9.8, 9.2, 8.8, 8.5, 8.1, 7.8, 7.5, 7.6]
+    "PI": {
+      "fac-001": [11, 10, 9, 9, 8, 8, 7, 8],
+      "fac-002": [12, 11, 10, 10, 9, 9, 8, 9],
+      "fac-003": [10, 9, 9, 8, 8, 7, 7, 7]
     },
-    "RP": { 
-      "fac-001": [14.2, 13.5, 13.1, 12.8, 12.6, 12.5, 12.3, 12.5],
-      "fac-002": [15.1, 14.2, 13.8, 13.4, 13.1, 12.8, 12.5, 12.8],
-      "fac-003": [13.5, 12.8, 12.4, 12.1, 11.8, 11.5, 11.2, 11.4]
+    "RP": {
+      "fac-001": [14, 13, 13, 12, 12, 12, 11, 12],
+      "fac-002": [15, 14, 14, 13, 13, 12, 12, 13],
+      "fac-003": [13, 12, 12, 11, 11, 11, 10, 11]
     },
-    "UPWL": { 
-      "fac-001": [17.2, 16.8, 16.1, 15.9, 15.8, 15.6, 15.3, 15.3],
-      "fac-002": [18.5, 17.8, 17.2, 16.8, 16.5, 16.2, 15.8, 15.9],
-      "fac-003": [16.1, 15.6, 15.2, 14.9, 14.6, 14.3, 14.1, 14.2]
+    "UPWL": {
+      "fac-001": [17, 17, 16, 16, 15, 15, 15, 15],
+      "fac-002": [18, 18, 17, 17, 16, 16, 16, 16],
+      "fac-003": [16, 15, 15, 14, 14, 14, 14, 14]
     },
-    "FALL": { 
-      "fac-001": [28.2, 27.1, 26.5, 25.8, 25.2, 24.8, 24.6, 24.6],
-      "fac-002": [30.5, 29.2, 28.5, 27.8, 27.2, 26.8, 26.4, 26.2],
-      "fac-003": [26.8, 25.5, 24.8, 24.2, 23.8, 23.4, 23.1, 22.8]
+    "FALL": {
+      "fac-001": [28, 27, 26, 26, 25, 25, 24, 24],
+      "fac-002": [30, 29, 28, 28, 27, 27, 26, 26],
+      "fac-003": [27, 25, 25, 24, 24, 23, 23, 23]
     },
-    "MM": { 
-      "fac-001": [45.2, 44.5, 43.8, 43.1, 42.5, 42.1, 41.8, 42.1],
-      "fac-002": [48.5, 47.2, 46.5, 45.8, 45.2, 44.8, 44.2, 44.5],
-      "fac-003": [42.8, 42.1, 41.5, 40.9, 40.4, 40.1, 39.8, 40.2]
+    "MM": {
+      "fac-001": [45, 44, 44, 43, 42, 42, 42, 42],
+      "fac-002": [48, 47, 46, 46, 45, 45, 44, 44],
+      "fac-003": [43, 42, 41, 41, 40, 40, 40, 40]
     },
-    "ADL": { 
-      "fac-001": [20.5, 19.8, 19.2, 18.8, 18.5, 18.2, 17.9, 18.4],
-      "fac-002": [22.1, 21.2, 20.5, 20.1, 19.8, 19.4, 19.1, 19.5],
-      "fac-003": [18.8, 18.2, 17.8, 17.4, 17.1, 16.8, 16.5, 16.8]
+    "ADL": {
+      "fac-001": [20, 20, 19, 19, 18, 18, 18, 18],
+      "fac-002": [22, 21, 20, 20, 20, 19, 19, 19],
+      "fac-003": [19, 18, 18, 17, 17, 17, 16, 17]
     },
-    "IC": { 
-      "fac-001": [24.2, 23.5, 22.8, 22.3, 21.8, 21.5, 22.1, 22.3],
-      "fac-002": [26.5, 25.8, 25.1, 24.5, 24.1, 23.8, 24.2, 24.5],
-      "fac-003": [22.1, 21.5, 21.1, 20.6, 20.2, 19.8, 20.2, 20.4]
+    "IC": {
+      "fac-001": [24, 23, 23, 22, 22, 21, 22, 22],
+      "fac-002": [26, 26, 25, 24, 24, 24, 24, 24],
+      "fac-003": [22, 21, 21, 20, 20, 20, 20, 20]
     },
-    "HP": { 
-      "fac-001": [16.2, 15.8, 15.2, 14.8, 14.5, 14.2, 13.9, 14.8],
-      "fac-002": [18.5, 17.8, 17.2, 16.8, 16.4, 16.1, 15.8, 16.5],
-      "fac-003": [14.8, 14.2, 13.8, 13.4, 13.1, 12.8, 12.5, 13.2]
+    "HP": {
+      "fac-001": [16, 16, 15, 15, 14, 14, 14, 15],
+      "fac-002": [18, 18, 17, 17, 16, 16, 16, 16],
+      "fac-003": [15, 14, 14, 13, 13, 13, 12, 13]
     },
-    "WF": { 
-      "fac-001": [18.5, 17.8, 17.2, 16.8, 16.4, 16.2, 15.9, 16.2],
-      "fac-002": [20.2, 19.5, 18.8, 18.2, 17.8, 17.4, 17.1, 17.5],
-      "fac-003": [16.8, 16.2, 15.8, 15.4, 15.1, 14.8, 14.5, 14.8]
+    "WF": {
+      "fac-001": [18, 18, 17, 17, 16, 16, 16, 16],
+      "fac-002": [20, 19, 19, 18, 18, 17, 17, 17],
+      "fac-003": [17, 16, 16, 15, 15, 15, 14, 15]
     },
-    "CE": { 
-      "fac-001": [82.1, 83.5, 84.8, 85.6, 86.4, 87.3, 87.5, 87.5],
-      "fac-002": [78.5, 80.2, 81.5, 82.8, 83.8, 84.5, 85.2, 85.8],
-      "fac-003": [84.2, 85.5, 86.8, 87.5, 88.2, 88.8, 89.2, 89.5]
+    "CE": {
+      "fac-001": [62, 65, 68, 71, 74, 77, 79, 79],
+      "fac-002": [58, 61, 65, 68, 72, 75, 78, 80],
+      "fac-003": [65, 68, 72, 75, 78, 81, 83, 85]
     },
-    "QOL": { 
-      "fac-001": [78.8, 79.5, 80.2, 81.2, 81.8, 82.3, 82.3, 82.3],
-      "fac-002": [75.5, 76.8, 78.1, 79.2, 80.1, 80.8, 81.2, 81.5],
-      "fac-003": [80.2, 81.5, 82.5, 83.2, 83.8, 84.2, 84.5, 84.8]
+    "QOL": {
+      "fac-001": [58, 61, 64, 68, 71, 74, 76, 76],
+      "fac-002": [54, 58, 61, 65, 68, 71, 74, 76],
+      "fac-003": [61, 64, 68, 71, 74, 77, 79, 81]
     },
-    "AH": { 
-      "fac-001": [74.2, 75.1, 76.5, 77.8, 78.2, 78.6, 78.6, 78.6],
-      "fac-002": [70.5, 72.1, 73.8, 75.2, 76.5, 77.2, 77.8, 78.2],
-      "fac-003": [76.8, 77.5, 78.5, 79.5, 80.2, 80.8, 81.2, 81.5]
+    "AH": {
+      "fac-001": [54, 56, 59, 63, 66, 69, 70, 70],
+      "fac-002": [49, 53, 57, 60, 64, 67, 69, 71],
+      "fac-003": [57, 60, 64, 68, 71, 74, 76, 77]
     },
-    "EN": { 
-      "fac-001": [72.5, 73.2, 74.1, 75.5, 76.1, 76.8, 77.2, 77.2],
-      "fac-002": [68.8, 70.2, 71.8, 73.2, 74.5, 75.5, 76.2, 76.8],
-      "fac-003": [74.5, 75.5, 76.5, 77.8, 78.5, 79.2, 79.8, 80.2]
+    "EN": {
+      "fac-001": [52, 54, 57, 60, 63, 65, 67, 67],
+      "fac-002": [48, 51, 55, 58, 62, 65, 67, 69],
+      "fac-003": [54, 57, 61, 64, 67, 70, 72, 74]
     },
-    "LO": { 
-      "fac-001": [68.2, 69.8, 71.5, 73.1, 74.7, 75.3, 75.8, 75.8],
-      "fac-002": [64.5, 66.5, 68.5, 70.2, 72.1, 73.5, 74.5, 75.2],
-      "fac-003": [70.5, 72.2, 74.1, 75.8, 77.2, 78.1, 78.8, 79.2]
+    "LO": {
+      "fac-001": [48, 51, 55, 59, 63, 66, 68, 68],
+      "fac-002": [44, 48, 53, 57, 62, 65, 68, 70],
+      "fac-003": [51, 55, 59, 63, 67, 71, 73, 75]
     }
   };
   
@@ -1329,13 +1337,13 @@ const generateStableKpiData = (): KpiData[] => {
           indicatorCode: indicator.code,
           facilityId: facility.id,
           periodId: period.id,
-          value: Number(currentValue.toFixed(1)),
-          previousValue: Number(prevValue.toFixed(1)),
-          delta: Number(delta.toFixed(1)),
+          value: Math.round(currentValue),
+          previousValue: Math.round(prevValue),
+          delta: Math.round(delta),
           deltaPercent: Number(deltaPercent.toFixed(1)),
-          trend: trendValues,
+          trend: trendValues.map(v => Math.round(v)),
           trendPeriods: trendLabels,
-          unit: indicator.code === "WF" ? "%" : "per 1,000 bed days",
+          unit: ["CE", "QOL", "AH", "EN", "LO"].includes(indicator.code) ? "residents" : indicator.code === "WF" ? "staff" : "residents",
           isComplete: !(facility.id === "fac-002" && indicator.code === "PI" && period.id === "rp-q4-2025")
         });
       });
@@ -1457,8 +1465,8 @@ const buildComparisonRecord = (
     indicatorCode,
     facilityId,
     periodId,
-    rockpoolNumber: Number(facilityValue.toFixed(1)),
-    benchmarkValue: Number(benchmarkValue.toFixed(1)),
+    rockpoolNumber: Math.round(facilityValue),
+    benchmarkValue: Math.round(benchmarkValue),
     rockpoolProportion: Number(safePercentile.toFixed(4)),
     quintile,
   };
@@ -1512,4 +1520,308 @@ export const createEmptySubmissionQuestionnaires = (submissionId: string): Quest
 
 export const getDemoScenarios = (): DemoScenario[] => {
   return demoScenarios;
+};
+
+// --- Restrictive Practices daily data ---
+
+export interface RpDailyEntry {
+  date: string;   // "DD MMM" e.g. "01 Jan"
+  count: number;  // residents subjected to RP on this day
+  isOptimalWindow: boolean;
+}
+
+export interface RpDailyResult {
+  entries: RpDailyEntry[];
+  optimalWindowStart: number; // index of first day in optimal 3-day window
+}
+
+const quarterStartMonths: Record<string, number> = {
+  "q1": 0,  // January
+  "q2": 3,  // April
+  "q3": 6,  // July
+  "q4": 9,  // October
+};
+
+// Seeded RNG for deterministic daily counts
+const seededRng = (seed: number): number => {
+  const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x);
+};
+
+// Quarter has 90 days; generate realistic daily RP counts (0-8) with weekly rhythm
+const generateDailyCounts = (facilityId: string, periodId: string): number[] => {
+  const facilityOffset = facilityId === "fac-001" ? 0 : facilityId === "fac-002" ? 100 : 200;
+  const periodOffset = hashString(periodId);
+  const days = 90;
+  return Array.from({ length: days }, (_, i) => {
+    const seed = facilityOffset + periodOffset + i;
+    const base = seededRng(seed);
+    // Weekend suppression: days 5,6,12,13... have lower counts
+    const weekdayFactor = (i % 7 < 5) ? 1.0 : 0.5;
+    // Slow downward trend over the quarter
+    const trendFactor = 1 - (i / days) * 0.1;
+    const raw = base * 8 * weekdayFactor * trendFactor;
+    return Math.round(raw);
+  });
+};
+
+// Find the 3 consecutive days with the lowest total count
+const findOptimalWindow = (counts: number[]): number => {
+  let bestStart = 0;
+  let bestSum = Infinity;
+  for (let i = 0; i <= counts.length - 3; i++) {
+    const sum = counts[i] + counts[i + 1] + counts[i + 2];
+    if (sum < bestSum) {
+      bestSum = sum;
+      bestStart = i;
+    }
+  }
+  return bestStart;
+};
+
+export const getRpDailyData = (facilityId: string, periodId: string): RpDailyResult => {
+  // Derive year and quarter from periodId e.g. "rp-q2-2025"
+  const parts = periodId.split("-");
+  const quarterKey = parts[1] ?? "q1";
+  const year = parseInt(parts[2] ?? "2025", 10);
+  const startMonth = quarterStartMonths[quarterKey] ?? 0;
+  const startDate = new Date(year, startMonth, 1);
+
+  const counts = generateDailyCounts(facilityId, periodId);
+  const optimalWindowStart = findOptimalWindow(counts);
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  const entries: RpDailyEntry[] = counts.map((count, i) => {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + i);
+    const day = String(d.getDate()).padStart(2, "0");
+    const mon = monthNames[d.getMonth()];
+    return {
+      date: `${day} ${mon}`,
+      count,
+      isOptimalWindow: i >= optimalWindowStart && i < optimalWindowStart + 3,
+    };
+  });
+
+  return { entries, optimalWindowStart };
+};
+
+// --- Indicator Detail Data (NQIP field-level counts) ---
+
+const seededRand = (seed: number): number => {
+  const x = Math.sin(seed * 7919) * 10000;
+  return x - Math.floor(x);
+};
+
+const randInt = (seed: number, min: number, max: number): number =>
+  min + Math.floor(seededRand(seed) * (max - min + 1));
+
+const generateIndicatorDetailData = (): IndicatorDetailData[] => {
+  const result: IndicatorDetailData[] = [];
+
+  reportingPeriods.forEach((period, periodIdx) => {
+    facilities.forEach((facility, facIdx) => {
+      const base = hashString(`${facility.id}-${period.id}`);
+
+      // --- PI (Pressure Injuries) ---
+      const piTotal = randInt(base + 1, 75, 130);
+      const piExcl2 = randInt(base + 2, 1, 5);
+      const piExcl3 = randInt(base + 3, 1, 4);
+      const piDenom = Math.max(1, piTotal - piExcl2 - piExcl3);
+      // Use actual KpiData value for PI-04 for consistency
+      const piKpi = stableKpiData.find(k => k.indicatorCode === "PI" && k.facilityId === facility.id && k.periodId === period.id);
+      const piWith = piKpi ? piKpi.value : randInt(base + 4, 3, Math.floor(piDenom * 0.15));
+      const piSevere = Math.min(piWith, randInt(base + 5, 1, Math.max(1, Math.floor(piWith * 0.5))));
+      const pi07 = Math.min(piSevere, randInt(base + 6, 0, piSevere));
+      const pi08 = Math.min(piSevere - pi07, randInt(base + 7, 0, piSevere - pi07));
+      const pi09 = Math.min(piSevere - pi07 - pi08, randInt(base + 8, 0, piSevere - pi07 - pi08));
+      const pi10 = piSevere - pi07 - pi08 - pi09;
+      const pi11 = Math.min(piWith, randInt(base + 9, 0, Math.max(0, Math.floor(piWith * 0.3))));
+      result.push({
+        indicatorCode: "PI",
+        facilityId: facility.id,
+        periodId: period.id,
+        fields: {
+          "PI-01": piTotal, "PI-02": piExcl2, "PI-03": piExcl3,
+          "PI-04": piWith, "PI-07": pi07, "PI-08": pi08, "PI-09": pi09, "PI-10": pi10, "PI-11": pi11
+        }
+      });
+
+      // --- RP (Restrictive Practices) ---
+      const rpTotal = randInt(base + 10, 80, 120);
+      const rpExcl = randInt(base + 11, 1, 6);
+      const rpDenom = Math.max(1, rpTotal - rpExcl);
+      const rpKpi = stableKpiData.find(k => k.indicatorCode === "RP" && k.facilityId === facility.id && k.periodId === period.id);
+      const rpWith = rpKpi ? rpKpi.value : randInt(base + 12, 5, Math.floor(rpDenom * 0.2));
+      const rpSecured = Math.min(rpWith, randInt(base + 13, 1, Math.max(1, Math.floor(rpWith * 0.6))));
+      result.push({
+        indicatorCode: "RP",
+        facilityId: facility.id,
+        periodId: period.id,
+        fields: {
+          "PR-02": rpTotal, "PR-03": rpExcl, "PR-04": rpWith, "PR-05": rpSecured
+        }
+      });
+
+      // --- FALL (Falls & Major Injury) ---
+      const fallTotal = randInt(base + 20, 80, 120);
+      const fallExcl = randInt(base + 21, 1, 5);
+      const fallDenom = Math.max(1, fallTotal - fallExcl);
+      const fallKpi = stableKpiData.find(k => k.indicatorCode === "FALL" && k.facilityId === facility.id && k.periodId === period.id);
+      const fallWith = fallKpi ? fallKpi.value : randInt(base + 22, 5, Math.floor(fallDenom * 0.25));
+      const fallMajor = Math.min(fallWith, randInt(base + 23, 0, Math.max(0, Math.floor(fallWith * 0.3))));
+      result.push({
+        indicatorCode: "FALL",
+        facilityId: facility.id,
+        periodId: period.id,
+        fields: {
+          "FMI-01": fallTotal, "FMI-02": fallExcl, "FMI-03": fallWith, "FMI-04": fallMajor
+        }
+      });
+
+      // --- UPWL (Unplanned Weight Loss) ---
+      const upwlTotal = randInt(base + 30, 70, 115);
+      const upwlRefused = randInt(base + 31, 1, 4);
+      const upwlMissing = randInt(base + 32, 1, 6);
+      const upwlKpi = stableKpiData.find(k => k.indicatorCode === "UPWL" && k.facilityId === facility.id && k.periodId === period.id);
+      const upwlSig = upwlKpi ? upwlKpi.value : randInt(base + 33, 3, Math.floor(upwlTotal * 0.15));
+      const upwlConsecTotal = randInt(base + 34, 60, 100);
+      const upwlConsecKpi = Math.min(upwlConsecTotal, randInt(base + 35, 2, Math.floor(upwlConsecTotal * 0.12)));
+      result.push({
+        indicatorCode: "UPWL",
+        facilityId: facility.id,
+        periodId: period.id,
+        fields: {
+          "UPWL-01": upwlTotal, "UPWL-02": upwlRefused, "UPWL-04": upwlMissing,
+          "UPWL-05": upwlSig, "UPWL-08": upwlConsecTotal, "UPWL-12": upwlConsecKpi
+        }
+      });
+
+      // --- MM (Medication Management) ---
+      const mmPolyTotal = randInt(base + 40, 80, 120);
+      const mmPolyExcl = randInt(base + 41, 1, 5);
+      const mmPolyDenom = Math.max(1, mmPolyTotal - mmPolyExcl);
+      const mmKpi = stableKpiData.find(k => k.indicatorCode === "MM" && k.facilityId === facility.id && k.periodId === period.id);
+      const mmPoly = mmKpi ? mmKpi.value : randInt(base + 42, 10, Math.floor(mmPolyDenom * 0.4));
+      const mmApTotal = randInt(base + 43, 80, 120);
+      const mmAp = Math.min(mmApTotal, randInt(base + 44, 5, Math.floor(mmApTotal * 0.25)));
+      const mmApJustified = Math.min(mmAp, randInt(base + 45, Math.floor(mmAp * 0.5), mmAp));
+      result.push({
+        indicatorCode: "MM",
+        facilityId: facility.id,
+        periodId: period.id,
+        fields: {
+          "MM-02": mmPolyTotal, "MM-03": mmPolyExcl, "MM-04": mmPoly,
+          "MM-08": mmApTotal, "MM-10": mmAp, "MM-11": mmApJustified
+        }
+      });
+
+      // --- ADL (Activities of Daily Living) ---
+      const adlTotal = randInt(base + 50, 80, 120);
+      const adl02 = randInt(base + 51, 1, 4); // new admit
+      const adl03 = randInt(base + 52, 1, 3); // palliative
+      const adl04 = randInt(base + 53, 2, 8); // no previous assessment
+      const adl05 = randInt(base + 54, 1, 3); // other exclusion
+      const adlDenom = Math.max(1, adlTotal - adl02 - adl03 - adl04 - adl05);
+      const adlKpi = stableKpiData.find(k => k.indicatorCode === "ADL" && k.facilityId === facility.id && k.periodId === period.id);
+      const adlDecline = adlKpi ? adlKpi.value : randInt(base + 55, 3, Math.floor(adlDenom * 0.2));
+      result.push({
+        indicatorCode: "ADL",
+        facilityId: facility.id,
+        periodId: period.id,
+        fields: {
+          "ADL-01": adlTotal, "ADL-02": adl02, "ADL-03": adl03,
+          "ADL-04": adl04, "ADL-05": adl05, "ADL-06": adlDecline
+        }
+      });
+
+      // --- IC (Incontinence Care / IAD) ---
+      const icTotal = randInt(base + 60, 80, 120);
+      const icContinent = Math.min(icTotal, randInt(base + 61, 30, Math.floor(icTotal * 0.65)));
+      const icIad = Math.min(icContinent, randInt(base + 62, 2, Math.floor(icContinent * 0.2)));
+      const icInfect = Math.min(icIad, randInt(base + 63, 0, Math.max(0, Math.floor(icIad * 0.3))));
+      const icSevereNoInfect = Math.min(icIad - icInfect, randInt(base + 64, 0, Math.max(0, Math.floor((icIad - icInfect) * 0.4))));
+      const icSevereInfect = Math.min(icInfect, randInt(base + 65, 0, Math.floor(icInfect * 0.5)));
+      result.push({
+        indicatorCode: "IC",
+        facilityId: facility.id,
+        periodId: period.id,
+        fields: {
+          "IAD-01": icTotal, "IAD-04": icContinent, "IAD-05": icIad,
+          "IAD-07": icInfect, "IAD-08": icSevereNoInfect, "IAD-09": icSevereInfect
+        }
+      });
+
+      // --- HP (Hospitalisation) ---
+      const hpTotal = randInt(base + 70, 80, 120);
+      const hpExcl = randInt(base + 71, 1, 5);
+      const hpDenom = Math.max(1, hpTotal - hpExcl);
+      const hpKpi = stableKpiData.find(k => k.indicatorCode === "HP" && k.facilityId === facility.id && k.periodId === period.id);
+      const hpEdOrAdm = hpKpi ? hpKpi.value : randInt(base + 72, 3, Math.floor(hpDenom * 0.15));
+      const hpEd = Math.min(hpEdOrAdm, randInt(base + 73, Math.floor(hpEdOrAdm * 0.4), hpEdOrAdm));
+      result.push({
+        indicatorCode: "HP",
+        facilityId: facility.id,
+        periodId: period.id,
+        fields: {
+          "HP-01": hpTotal, "HP-02": hpExcl, "HP-03": hpEd, "HP-04": hpEdOrAdm
+        }
+      });
+
+      // --- WF (Workforce) ---
+      const wfRN = randInt(base + 80, 8, 20);
+      const wfEN = randInt(base + 81, 4, 12);
+      const wfPCW = randInt(base + 82, 20, 45);
+      const wfOther = randInt(base + 83, 5, 15);
+      const wfRNFte = randInt(base + 84, 5, wfRN);
+      const wfENFte = randInt(base + 85, 3, wfEN);
+      const wfPCWFte = randInt(base + 86, 15, wfPCW);
+      const wfOtherFte = randInt(base + 87, 3, wfOther);
+      const wfRNCont = randInt(base + 88, Math.floor(wfRNFte * 0.5), wfRNFte);
+      const wfENCont = randInt(base + 89, Math.floor(wfENFte * 0.5), wfENFte);
+      const wfPCWCont = randInt(base + 90, Math.floor(wfPCWFte * 0.5), wfPCWFte);
+      const wfOtherCont = randInt(base + 91, Math.floor(wfOtherFte * 0.5), wfOtherFte);
+      result.push({
+        indicatorCode: "WF",
+        facilityId: facility.id,
+        periodId: period.id,
+        fields: {
+          "WF-01": wfRN, "WF-02": wfEN, "WF-03": wfPCW, "WF-04": wfOther,
+          "WF-05": wfRNFte, "WF-06": wfENFte, "WF-07": wfPCWFte, "WF-08": wfOtherFte,
+          "WF-09": wfRNCont, "WF-10": wfENCont, "WF-11": wfPCWCont, "WF-12": wfOtherCont
+        }
+      });
+
+      void periodIdx; void facIdx;
+    });
+  });
+
+  return result;
+};
+
+const stableDetailData = generateIndicatorDetailData();
+
+export const getIndicatorDetailData = (
+  indicatorCode: IndicatorCode,
+  facilityId: string,
+  periodId: string
+): IndicatorDetailData | null => {
+  if (facilityId === "all") {
+    const records = stableDetailData.filter(
+      d => d.indicatorCode === indicatorCode && d.periodId === periodId
+    );
+    if (records.length === 0) return null;
+    const aggregated: Record<string, number> = {};
+    records.forEach(record => {
+      Object.entries(record.fields).forEach(([key, val]) => {
+        aggregated[key] = (aggregated[key] ?? 0) + val;
+      });
+    });
+    return { indicatorCode, facilityId: "all", periodId, fields: aggregated };
+  }
+  return stableDetailData.find(
+    d => d.indicatorCode === indicatorCode && d.facilityId === facilityId && d.periodId === periodId
+  ) ?? null;
 };

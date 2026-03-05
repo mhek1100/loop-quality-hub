@@ -1248,76 +1248,78 @@ const generateStableKpiData = (): KpiData[] => {
   // IC-IAD-04: residents with incontinence | HP-03: residents with ≥1 ED presentation
   // WF: staff who worked any hours | CE/QOL: residents who completed assessment
   // AH/EN/LO: staff/resident counts
+  // Values per facility across 8 quarters: Q1 2024 → Q4 2025
+  // Facilities have meaningful spread to create realistic variation in benchmarks
   const historicalData: Record<string, Record<string, number[]>> = {
     "PI": {
-      "fac-001": [11, 10, 9, 9, 8, 8, 7, 8],
-      "fac-002": [12, 11, 10, 10, 9, 9, 8, 9],
-      "fac-003": [10, 9, 9, 8, 8, 7, 7, 7]
+      "fac-001": [12, 11, 10, 9, 9, 8, 7, 6],   // Best performer, steady decline
+      "fac-002": [22, 20, 19, 18, 17, 16, 15, 14], // Worst performer, high burden
+      "fac-003": [14, 13, 12, 12, 11, 10, 9, 9]   // Mid performer
     },
     "RP": {
-      "fac-001": [14, 13, 13, 12, 12, 12, 11, 12],
-      "fac-002": [15, 14, 14, 13, 13, 12, 12, 13],
-      "fac-003": [13, 12, 12, 11, 11, 11, 10, 11]
+      "fac-001": [15, 14, 13, 13, 12, 11, 10, 9],
+      "fac-002": [24, 22, 21, 20, 19, 19, 18, 18],
+      "fac-003": [18, 17, 16, 15, 14, 14, 13, 13]
     },
     "UPWL": {
-      "fac-001": [17, 17, 16, 16, 15, 15, 15, 15],
-      "fac-002": [18, 18, 17, 17, 16, 16, 16, 16],
-      "fac-003": [16, 15, 15, 14, 14, 14, 14, 14]
+      "fac-001": [17, 16, 15, 14, 14, 13, 12, 11],
+      "fac-002": [26, 25, 24, 23, 22, 22, 21, 20],
+      "fac-003": [21, 20, 19, 18, 17, 17, 16, 15]
     },
     "FALL": {
-      "fac-001": [28, 27, 26, 26, 25, 25, 24, 24],
-      "fac-002": [30, 29, 28, 28, 27, 27, 26, 26],
-      "fac-003": [27, 25, 25, 24, 24, 23, 23, 23]
+      "fac-001": [27, 25, 24, 23, 22, 21, 20, 18],
+      "fac-002": [42, 40, 38, 37, 36, 35, 34, 32],
+      "fac-003": [31, 30, 29, 28, 27, 26, 25, 24]
     },
     "MM": {
-      "fac-001": [45, 44, 44, 43, 42, 42, 42, 42],
-      "fac-002": [48, 47, 46, 46, 45, 45, 44, 44],
-      "fac-003": [43, 42, 41, 41, 40, 40, 40, 40]
+      "fac-001": [47, 46, 45, 44, 42, 41, 38, 35],
+      "fac-002": [65, 63, 61, 59, 57, 56, 54, 52],
+      "fac-003": [54, 52, 50, 49, 47, 46, 45, 44]
     },
     "ADL": {
-      "fac-001": [20, 20, 19, 19, 18, 18, 18, 18],
-      "fac-002": [22, 21, 20, 20, 20, 19, 19, 19],
-      "fac-003": [19, 18, 18, 17, 17, 17, 16, 17]
+      "fac-001": [20, 19, 18, 17, 16, 15, 14, 13],
+      "fac-002": [30, 29, 28, 27, 26, 25, 25, 24],
+      "fac-003": [24, 23, 22, 21, 20, 20, 19, 18]
     },
     "IC": {
-      "fac-001": [24, 23, 23, 22, 22, 21, 22, 22],
-      "fac-002": [26, 26, 25, 24, 24, 24, 24, 24],
-      "fac-003": [22, 21, 21, 20, 20, 20, 20, 20]
+      "fac-001": [24, 23, 22, 21, 20, 19, 18, 17],
+      "fac-002": [35, 34, 33, 32, 31, 30, 29, 28],
+      "fac-003": [28, 27, 26, 25, 24, 24, 23, 22]
     },
     "HP": {
-      "fac-001": [16, 16, 15, 15, 14, 14, 14, 15],
-      "fac-002": [18, 18, 17, 17, 16, 16, 16, 16],
-      "fac-003": [15, 14, 14, 13, 13, 13, 12, 13]
+      "fac-001": [17, 15, 14, 13, 13, 12, 11, 10],
+      "fac-002": [26, 25, 24, 23, 22, 22, 21, 20],
+      "fac-003": [20, 19, 18, 17, 17, 16, 16, 15]
     },
     "WF": {
-      "fac-001": [18, 18, 17, 17, 16, 16, 16, 16],
-      "fac-002": [20, 19, 19, 18, 18, 17, 17, 17],
-      "fac-003": [17, 16, 16, 15, 15, 15, 14, 15]
+      "fac-001": [10, 11, 11, 12, 12, 13, 13, 14],
+      "fac-002": [15, 15, 16, 16, 17, 17, 19, 20],
+      "fac-003": [13, 13, 14, 14, 15, 15, 16, 17]
     },
     "CE": {
-      "fac-001": [62, 65, 68, 71, 74, 77, 79, 79],
-      "fac-002": [58, 61, 65, 68, 72, 75, 78, 80],
-      "fac-003": [65, 68, 72, 75, 78, 81, 83, 85]
+      "fac-001": [70, 73, 75, 77, 79, 81, 82, 84],
+      "fac-002": [58, 60, 63, 65, 67, 68, 70, 71],
+      "fac-003": [67, 70, 72, 74, 76, 77, 78, 79]
     },
     "QOL": {
-      "fac-001": [58, 61, 64, 68, 71, 74, 76, 76],
-      "fac-002": [54, 58, 61, 65, 68, 71, 74, 76],
-      "fac-003": [61, 64, 68, 71, 74, 77, 79, 81]
+      "fac-001": [64, 67, 69, 72, 74, 76, 78, 80],
+      "fac-002": [52, 55, 57, 59, 62, 63, 65, 67],
+      "fac-003": [60, 63, 66, 68, 70, 72, 73, 74]
     },
     "AH": {
-      "fac-001": [54, 56, 59, 63, 66, 69, 70, 70],
-      "fac-002": [49, 53, 57, 60, 64, 67, 69, 71],
-      "fac-003": [57, 60, 64, 68, 71, 74, 76, 77]
+      "fac-001": [60, 62, 65, 67, 69, 71, 73, 76],
+      "fac-002": [48, 51, 53, 55, 57, 58, 60, 62],
+      "fac-003": [57, 59, 62, 64, 66, 68, 69, 71]
     },
     "EN": {
-      "fac-001": [52, 54, 57, 60, 63, 65, 67, 67],
-      "fac-002": [48, 51, 55, 58, 62, 65, 67, 69],
-      "fac-003": [54, 57, 61, 64, 67, 70, 72, 74]
+      "fac-001": [56, 58, 60, 62, 64, 66, 69, 72],
+      "fac-002": [44, 46, 49, 51, 53, 55, 57, 60],
+      "fac-003": [52, 54, 56, 58, 60, 62, 64, 66]
     },
     "LO": {
-      "fac-001": [48, 51, 55, 59, 63, 66, 68, 68],
-      "fac-002": [44, 48, 53, 57, 62, 65, 68, 70],
-      "fac-003": [51, 55, 59, 63, 67, 71, 73, 75]
+      "fac-001": [57, 59, 62, 64, 66, 68, 71, 74],
+      "fac-002": [42, 44, 47, 49, 52, 53, 55, 57],
+      "fac-003": [51, 53, 56, 58, 61, 62, 63, 65]
     }
   };
   
@@ -1440,11 +1442,27 @@ const buildComparisonRecord = (
     relevantRecords.find(record => record.facilityId === facilityId) ?? fallbackRecord;
 
   const facilityValue = facilityRecord?.value ?? fallbackRecord?.value ?? 0;
-  
-  // Calculate benchmark from actual facilities
-  const benchmarkValue = relevantRecords.length
-    ? relevantRecords.reduce((sum, record) => sum + record.value, 0) / relevantRecords.length
-    : facilityValue;
+
+  // National benchmarks represent sector-wide averages, intentionally distinct from our facility values
+  // Clinical indicators (lower is better): national avg is higher than best facilities
+  // Satisfaction/workforce (higher is better): national avg is below our top performers
+  const nationalBenchmarks: Record<IndicatorCode, number> = {
+    "PI": 12,   // Our facilities: 6, 14, 9 (2 below national, 1 above)
+    "RP": 15,   // Our facilities: 9, 18, 13
+    "UPWL": 17, // Our facilities: 11, 20, 15
+    "FALL": 27, // Our facilities: 18, 32, 24
+    "MM": 47,   // Our facilities: 35, 52, 44
+    "ADL": 20,  // Our facilities: 13, 24, 18
+    "IC": 24,   // Our facilities: 17, 28, 22
+    "HP": 16,   // Our facilities: 10, 20, 15
+    "WF": 15,   // Our facilities: 14, 20, 17
+    "CE": 75,   // Our facilities: 84, 71, 79 (satisfaction, higher is better)
+    "QOL": 71,  // Our facilities: 80, 67, 74
+    "AH": 67,   // Our facilities: 76, 62, 71
+    "EN": 64,   // Our facilities: 72, 60, 66
+    "LO": 60,   // Our facilities: 74, 57, 65
+  };
+  const benchmarkValue = nationalBenchmarks[indicatorCode] ?? facilityValue;
 
   const higherIsBetterFlag = isHigherBetter(indicatorCode);
   

@@ -56,15 +56,15 @@ const KpiDashboard = () => {
     // Aggregate if multiple facilities
     if (indicatorData.length === 1) return indicatorData[0];
     
-    const avgValue = indicatorData.reduce((acc, d) => acc + d.value, 0) / indicatorData.length;
-    const avgPrevValue = indicatorData.reduce((acc, d) => acc + d.previousValue, 0) / indicatorData.length;
-    
+    const sumValue = indicatorData.reduce((acc, d) => acc + d.value, 0);
+    const sumPrevValue = indicatorData.reduce((acc, d) => acc + d.previousValue, 0);
+
     return {
       ...indicatorData[0],
-      value: Math.round(avgValue),
-      previousValue: Math.round(avgPrevValue),
-      delta: Math.round(avgValue - avgPrevValue),
-      deltaPercent: Number(((avgValue - avgPrevValue) / avgPrevValue * 100).toFixed(1))
+      value: Math.round(sumValue),
+      previousValue: Math.round(sumPrevValue),
+      delta: Math.round(sumValue - sumPrevValue),
+      deltaPercent: Number(((sumValue - sumPrevValue) / sumPrevValue * 100).toFixed(1))
     };
   };
 
@@ -111,9 +111,16 @@ const KpiDashboard = () => {
         {INDICATORS.map(indicator => {
           const kpi = getIndicatorKpi(indicator.code);
           const isSelected = selectedIndicator === indicator.code;
-          const comparison = getIndicatorComparison(indicator.code, comparisonFacilityId, selectedPeriod);
-          const facilityName = selectedFacility === "all" 
-            ? "All Facilities" 
+          const rawComparison = getIndicatorComparison(indicator.code, comparisonFacilityId, selectedPeriod);
+          const indicatorRecords = filteredKpiData.filter(k => k.indicatorCode === indicator.code);
+          const allFacilitiesAvg = selectedFacility === "all" && indicatorRecords.length > 0
+            ? Math.round(indicatorRecords.reduce((acc, d) => acc + d.value, 0) / indicatorRecords.length)
+            : undefined;
+          const comparison = allFacilitiesAvg !== undefined
+            ? { ...rawComparison, rockpoolNumber: allFacilitiesAvg }
+            : rawComparison;
+          const facilityName = selectedFacility === "all"
+            ? "All Facilities (avg)"
             : facilities.find(f => f.id === selectedFacility)?.name;
           
           return (

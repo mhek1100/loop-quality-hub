@@ -206,8 +206,8 @@ const aggregateRecords = (records: KpiData[]): AggregatedMetrics | null => {
   const sum = records.reduce((acc, record) => acc + record.value, 0);
   const sumPrev = records.reduce((acc, record) => acc + record.previousValue, 0);
   const completionRate = records.filter(record => record.isComplete).length / count * 100;
-  const value = sum / count;
-  const previous = sumPrev / count;
+  const value = sum;
+  const previous = sumPrev;
   const delta = value - previous;
   const deltaPercent = previous !== 0 ? (delta / previous) * 100 : 0;
   return {
@@ -452,8 +452,9 @@ const IndicatorDashboard = () => {
   const insights: string[] = [];
   if (summary) {
     const direction = summary.delta >= 0 ? "increased" : "decreased";
+    const valueLabel = summary.count > 1 ? "total across all facilities" : "at this facility";
     insights.push(
-      `${getPeriodLabel(selectedPeriod)} average ${direction} to ${Math.round(summary.value)} residents (${Math.abs(Math.round(summary.delta))} vs prior quarter).`
+      `${getPeriodLabel(selectedPeriod)}: ${Math.round(summary.value)} residents ${valueLabel} (${direction} by ${Math.abs(Math.round(summary.delta))} vs prior quarter).`
     );
     insights.push(
       `${summary.completionRate}% of submissions were complete (${summary.count} facility records).`

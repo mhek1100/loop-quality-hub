@@ -1626,6 +1626,72 @@ export const getRpDailyData = (facilityId: string, periodId: string): RpDailyRes
   return { entries, optimalWindowStart };
 };
 
+// --- Pressure Injuries: daily observation data ---
+
+export interface PiDailyEntry {
+  date: string;          // "DD MMM" e.g. "15 Apr"
+  count: number;         // PI observations on this day
+  isOptimalDay: boolean; // true only for the single best collection day
+}
+
+export interface PiDailyResult {
+  entries: PiDailyEntry[];
+  optimalDayIndex: number;
+}
+
+const generatePiDailyCounts = (facilityId: string, periodId: string): number[] => {
+  const facilityOffset = facilityId === "fac-001" ? 0 : facilityId === "fac-002" ? 100 : 200;
+  const periodOffset = hashString("pi-" + periodId);
+  const days = 90;
+  return Array.from({ length: days }, (_, i) => {
+    const seed = facilityOffset + periodOffset + i + 5000;
+    const base = seededRng(seed);
+    const trendFactor = 1 - (i / days) * 0.05;
+    const raw = base * 4 * trendFactor;
+    return Math.round(raw);
+  });
+};
+
+const findOptimalDay = (counts: number[]): number => {
+  let bestIndex = 0;
+  let bestCount = Infinity;
+  for (let i = 0; i < counts.length; i++) {
+    if (counts[i] < bestCount) {
+      bestCount = counts[i];
+      bestIndex = i;
+    }
+  }
+  return bestIndex;
+};
+
+export const getPiDailyData = (facilityId: string, periodId: string): PiDailyResult => {
+  const parts = periodId.split("-");
+  const quarterKey = parts[1] ?? "q1";
+  const year = parseInt(parts[2] ?? "2025", 10);
+  const startMonth = quarterStartMonths[quarterKey] ?? 0;
+  const startDate = new Date(year, startMonth, 1);
+
+  const counts = generatePiDailyCounts(facilityId, periodId);
+  const optimalDayIndex = findOptimalDay(counts);
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  const entries: PiDailyEntry[] = counts.map((count, i) => {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + i);
+    const day = String(d.getDate()).padStart(2, "0");
+    const mon = monthNames[d.getMonth()];
+    return {
+      date: `${day} ${mon}`,
+      count,
+      isOptimalDay: i === optimalDayIndex,
+    };
+  });
+
+  return { entries, optimalDayIndex };
+};
+
 // --- Indicator Detail Data (NQIP field-level counts) ---
 
 const seededRand = (seed: number): number => {

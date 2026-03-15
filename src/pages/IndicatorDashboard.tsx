@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { QuintileStars } from "@/components/QuintileStars";
-import { facilities, getAllKpiData, reportingPeriods, DEFAULT_COMPARISON_FACILITY_ID, getIndicatorComparison, getRpDailyData, RpDailyEntry, getIndicatorDetailData } from "@/lib/mock/data";
+import { facilities, getAllKpiData, reportingPeriods, DEFAULT_COMPARISON_FACILITY_ID, getIndicatorComparison, getRpDailyData, RpDailyEntry, getPiDailyData, PiDailyEntry, getIndicatorDetailData } from "@/lib/mock/data";
 import { getIndicatorByCode, isHigherBetter } from "@/lib/mock/indicators";
 import { IndicatorCode, KpiData } from "@/lib/types";
 import {
@@ -449,6 +449,13 @@ const IndicatorDashboard = () => {
     return getRpDailyData(facilityId, selectedPeriod);
   }, [normalizedCode, selectedFacility, selectedPeriod]);
 
+  // Pressure Injuries: daily observation data
+  const piDailyData = useMemo(() => {
+    if (normalizedCode !== "PI") return null;
+    const facilityId = selectedFacility === "all" ? DEFAULT_COMPARISON_FACILITY_ID : selectedFacility;
+    return getPiDailyData(facilityId, selectedPeriod);
+  }, [normalizedCode, selectedFacility, selectedPeriod]);
+
   const insights: string[] = [];
   if (summary) {
     const direction = summary.delta >= 0 ? "increased" : "decreased";
@@ -736,6 +743,60 @@ const IndicatorDashboard = () => {
               <div className="flex items-center gap-1.5">
                 <span className="inline-block h-3 w-3 rounded-sm bg-[#22c55e]" />
                 <span>Recommended collection window (lowest 3 consecutive days)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="inline-block h-3 w-3 rounded-sm bg-[#fcd34d] opacity-70" />
+                <span>Other days</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {piDailyData && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Pressure injury observations per day</CardTitle>
+            <CardDescription>
+              Daily count of residents with pressure injuries this quarter.
+              The highlighted bar shows the <strong>recommended collection date</strong> (day with the fewest PI observations) — use this as your assessment day for NQIP reporting.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={piDailyData.entries} barCategoryGap="10%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                  <XAxis
+                    dataKey="date"
+                    stroke="hsl(var(--muted-foreground))"
+                    tick={{ fontSize: 11 }}
+                    interval={6}
+                  />
+                  <YAxis stroke="hsl(var(--muted-foreground))" allowDecimals={false} width={30} />
+                  <Tooltip
+                    formatter={(value: number, _key: string, props: { payload?: PiDailyEntry }) => {
+                      const isOptimal = props.payload?.isOptimalDay;
+                      return [value, isOptimal ? "PI count (recommended date)" : "PI count"];
+                    }}
+                    labelFormatter={(label: string) => `Date: ${label}`}
+                  />
+                  <Bar dataKey="count" radius={[2, 2, 0, 0]}>
+                    {piDailyData.entries.map((entry, index) => (
+                      <Cell
+                        key={`pi-cell-${index}`}
+                        fill={entry.isOptimalDay ? "#22c55e" : "#fcd34d"}
+                        opacity={entry.isOptimalDay ? 1 : 0.7}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <span className="inline-block h-3 w-3 rounded-sm bg-[#22c55e]" />
+                <span>Recommended collection date (lowest PI count)</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="inline-block h-3 w-3 rounded-sm bg-[#fcd34d] opacity-70" />

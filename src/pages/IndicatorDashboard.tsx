@@ -756,10 +756,9 @@ const IndicatorDashboard = () => {
       {piDailyData && (
         <Card>
           <CardHeader>
-            <CardTitle>Pressure injury observations per day</CardTitle>
+            <CardTitle>Daily Pressure Injuries</CardTitle>
             <CardDescription>
               Daily count of residents with pressure injuries this quarter.
-              The highlighted bar shows the <strong>recommended collection date</strong> (day with the fewest PI observations) — use this as your assessment day for NQIP reporting.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -792,16 +791,6 @@ const IndicatorDashboard = () => {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-            </div>
-            <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1.5">
-                <span className="inline-block h-3 w-3 rounded-sm bg-[#22c55e]" />
-                <span>Recommended collection date (lowest PI count)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="inline-block h-3 w-3 rounded-sm bg-[#fcd34d] opacity-70" />
-                <span>Other days</span>
-              </div>
             </div>
           </CardContent>
         </Card>
